@@ -1,4 +1,19 @@
 services:
+
+  backend:
+    image: node:24-alpine
+    container_name: tuberia-backend
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    command: sh
+    tty: true
+
   mongo:
     image: mongo:5.0.26
     container_name: mongodb
