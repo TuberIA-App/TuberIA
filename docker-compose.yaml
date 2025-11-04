@@ -1,0 +1,16 @@
+services:
+  mongo:
+    image: mongo:5.0.26
+    container_name: mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongo
+      - MONGO_INITDB_ROOT_PASSWORD=mongo
+      - MONGO_INITDB_DATABASE=tuberia_db
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
