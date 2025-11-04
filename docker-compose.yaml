@@ -1,7 +1,7 @@
 services:
 
   backend:
-    image: node:24-alpine
+    build: ./backend
     container_name: tuberia-backend
     working_dir: /app
     volumes:
@@ -11,8 +11,9 @@ services:
       - "5000:5000"
     env_file:
       - ./backend/.env
-    command: sh
-    tty: true
+    depends_on:
+      - mongo
+    command: npm run dev
 
   mongo:
     image: mongo:5.0.26
