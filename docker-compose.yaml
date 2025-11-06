@@ -16,7 +16,7 @@ services:
     command: npm run dev
 
   mongo:
-    image: mongo:5.0.26
+    build: ./mongo
     container_name: mongodb
     restart: unless-stopped
     ports:
