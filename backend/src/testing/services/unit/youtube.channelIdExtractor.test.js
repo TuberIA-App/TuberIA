@@ -1,4 +1,4 @@
-const { channelId } = require('../../services/youtube/channelIdExtractor');
+const { channelId } = require('../../../services/youtube/channelIdExtractor');
 
 jest.setTimeout(15000);
 

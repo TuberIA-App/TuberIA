@@ -1,4 +1,4 @@
-const { channelFeedExtractor } = require('../../services/youtube/channelFeedExtractor');
+const { channelFeedExtractor } = require('../../../services/youtube/channelFeedExtractor');
 
 jest.setTimeout(20000);
 
