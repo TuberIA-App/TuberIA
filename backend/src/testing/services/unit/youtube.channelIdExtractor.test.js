@@ -1,6 +1,4 @@
-const { channelId } = require('../../../services/youtube/channelIdExtractor');
-
-jest.setTimeout(15000);
+import { channelId } from '../../../services/youtube/channelIdExtractor.js';
 
 describe('YouTube Channel ID fetcher - Integration (real HTTP)', () => {
 

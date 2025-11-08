@@ -1,6 +1,6 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
-const UserAgent = require('user-agents')
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+import UserAgent from 'user-agents';
 
 const userAgent = new UserAgent();
 
@@ -61,7 +61,4 @@ const videoId = async (url) => {
     throw Error(`Unable to get "${url}" video id.`);
 };
 
-module.exports = {
-    channelId,
-    videoId
-};
+export { channelId, videoId };

@@ -1,6 +1,6 @@
-const axios = require('axios');
-const UserAgent = require('user-agents');
-const { XMLParser } = require('fast-xml-parser');
+import axios from 'axios';
+import UserAgent from 'user-agents';
+import { XMLParser } from 'fast-xml-parser';
 
 const userAgent = new UserAgent();
 
@@ -30,6 +30,4 @@ const channelFeedExtractor = async (channelId) => {
 
 }
 
-module.exports = {
-    channelFeedExtractor
-};
+export { channelFeedExtractor };

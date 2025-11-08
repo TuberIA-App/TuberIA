@@ -1,6 +1,4 @@
-const { channelFeedExtractor } = require('../../../services/youtube/channelFeedExtractor');
-
-jest.setTimeout(20000);
+import { channelFeedExtractor } from '../../../services/youtube/channelFeedPoller.js';
 
 describe('YouTube RSS feed extractor - Integration', () => {
   let feed;
