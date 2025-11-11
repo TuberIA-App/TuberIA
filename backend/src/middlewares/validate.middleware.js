@@ -1,5 +1,5 @@
 import { validationResult } from 'express-validator';
-import { errorResponse } from '../utils/response.util';
+import { errorResponse } from '../utils/response.util.js';
 
 /**
  * Middleware to check validation results

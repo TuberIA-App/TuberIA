@@ -1,7 +1,7 @@
-import { asyncHandler } from '../middlewares/asyncHandler.middleware'
-import * as authService from '../services/auth.service'
-import { ConflictError, UnauthorizedError } from '../utils/errorClasses.util';
-import { successResponse } from '../utils/response.util';
+import { asyncHandler } from '../middlewares/asyncHandler.middleware.js'
+import * as authService from '../services/auth.service.js'
+import { ConflictError, UnauthorizedError } from '../utils/errorClasses.util.js';
+import { successResponse } from '../utils/response.util.js';
 
 /**
  * Register new user

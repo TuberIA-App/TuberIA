@@ -1,6 +1,6 @@
-import User from '../model/User';
-import logger from '../utils/logger';
-import { verifyRefreshToken, generateAccessToken } from '../utils/jwt.util';
+import User from '../model/User.js';
+import logger from '../utils/logger.js';
+import { verifyRefreshToken, generateAccessToken } from '../utils/jwt.util.js';
 
 /**
  * Register a new user

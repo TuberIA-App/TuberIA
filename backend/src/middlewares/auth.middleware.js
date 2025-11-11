@@ -1,7 +1,7 @@
-import User from "../model/User";
-import { UnauthorizedError } from "../utils/errorClasses.util";
-import { verifyAccessToken } from "../utils/jwt.util";
-import { asyncHandler } from "./asyncHandler.middleware";
+import User from "../model/User.js";
+import { UnauthorizedError } from "../utils/errorClasses.util.js";
+import { verifyAccessToken } from "../utils/jwt.util.js";
+import { asyncHandler } from "./asyncHandler.middleware.js";
 
 /**
  * Middleware to verify JWT tokens and authenticate the user

@@ -1,4 +1,4 @@
-import { NotFoundError } from '../utils/errorClasses.util';
+import { NotFoundError } from '../utils/errorClasses.util.js';
 
 /**
  * 404 Not Found middleware

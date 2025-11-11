@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { PASSWORD_SALT_ROUNDS } from '../config/constants';
-import { generateAccessToken, generateRefreshToken } from '../utils/jwt.util';
+import { PASSWORD_SALT_ROUNDS } from '../config/constants.js';
+import { generateAccessToken, generateRefreshToken } from '../utils/jwt.util.js';
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -40,8 +40,7 @@ const userSchema = new mongoose.Schema({
     timestamps: true // adds createdAt and updatedAt
 });
 
-// Compound index is kept for quick lookups; email is unique for login
-userSchema.index({ email: 1 });
+// Compound index for quick lookups (email already has unique index from schema definition)
 userSchema.index({ username: 1, email: 1 });
 
 // Define the a virtual for the ID

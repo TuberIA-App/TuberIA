@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
-import logger from '../utils/logger';
-import { AppError } from '../utils/errorClasses.util';
-import { errorResponse } from '../utils/response.util';
+import logger from '../utils/logger.js';
+import { AppError } from '../utils/errorClasses.util.js';
+import { errorResponse } from '../utils/response.util.js';
 
 /**
  * Global error handling middleware
