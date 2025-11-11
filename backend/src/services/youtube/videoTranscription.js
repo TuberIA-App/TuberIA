@@ -20,7 +20,6 @@ const getTranscript = async (videoId) => {
         }
 
         // Return the transcript only if we successfully fetched it
-        console.log(transcript)
         return transcript;
 
     } catch (error) {
