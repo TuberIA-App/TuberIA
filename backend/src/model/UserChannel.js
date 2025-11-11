@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const userChannelSchema = new mongoose.Schema({
     userId: {
@@ -25,4 +25,4 @@ userChannelSchema.index({ userId: 1, channelId: 1 }, { unique: true });
 
 userChannelSchema.index({ channelId: 1 });
 
-module.exports = mongoose.model('UserChannel', userChannelSchema);
+export default mongoose.model('UserChannel', userChannelSchema);

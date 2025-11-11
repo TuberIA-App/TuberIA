@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const channelSchema = new mongoose.Schema({
     owner: {
@@ -48,4 +48,4 @@ channelSchema.index({ owner: 1 });
 channelSchema.index({ channelId: 1 }, { unique: true });
 channelSchema.index({ lastChecked: 1 });
 
-module.exports = mongoose.model('Channel', channelSchema);
+export default mongoose.model('Channel', channelSchema);

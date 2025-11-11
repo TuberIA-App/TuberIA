@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const videoSchema = new mongoose.Schema({
     channelId: {
@@ -81,4 +81,4 @@ videoSchema.index({ videoId: 1 }, { unique: true });
 videoSchema.index({ channelId: 1, publishedAt: -1 });
 videoSchema.index({ status: 1 });
 
-module.exports = mongoose.model('Video', videoSchema);
+export default mongoose.model('Video', videoSchema);

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -41,4 +41,4 @@ userSchema.index({ username: 1, email: 1 });
 
 // TODO: add pre-save hook to hash password (bcrypt) before saving
 
-module.exports = mongoose.model('User', userSchema);
+export default mongoose.model('User', userSchema);
