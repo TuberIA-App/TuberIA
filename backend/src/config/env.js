@@ -1,5 +1,9 @@
 import logger from '../utils/logger';
 
+/**
+ * Validate enviroment variables
+ * @throws {Error} If critical env variables are missing
+ */
 export const validateEnv = () => {
 
     // These are the required ENV VARIABLES that we need to exist on .env file
