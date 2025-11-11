@@ -1,20 +1,5 @@
 services:
 
-  backend:
-    build: ./backend
-    container_name: tuberia-backend
-    working_dir: /app
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    ports:
-      - "5000:5000"
-    env_file:
-      - ./backend/.env
-    depends_on:
-      - mongo
-    command: npm run dev
-
   frontend:
     build: 
       context: ./frontend
@@ -30,6 +15,21 @@ services:
       - CHOKIDAR_USEPOLLING=true
     stdin_open: true
     tty: true
+
+  backend:
+    build: ./backend
+    container_name: tuberia-backend
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - mongo
+    command: npm run dev
 
   mongo:
     build: ./mongo
