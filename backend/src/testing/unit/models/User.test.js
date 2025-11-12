@@ -4,8 +4,17 @@ import User from '../../../model/User.js';
 
 describe('User Model', () => {
     beforeAll(async () => {
-        // Connect to test database
-        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/tuberia-test');
+        // Connect to test database with authentication
+        const testMongoUri = process.env.MONGODB_TEST_URI || 'mongodb://mongo:mongo@localhost:27017/tuberia-test?authSource=admin';
+
+        // Close any existing connections
+        if (mongoose.connection.readyState !== 0) {
+            await mongoose.connection.close();
+        }
+
+        await mongoose.connect(testMongoUri, {
+            serverSelectionTimeoutMS: 5000
+        });
     });
 
     beforeEach(async () => {
@@ -15,7 +24,11 @@ describe('User Model', () => {
 
     afterAll(async () => {
         // Clean up and close connection
-        await User.deleteMany({});
+        try {
+            await User.deleteMany({});
+        } catch (error) {
+            // Ignore errors during cleanup
+        }
         await mongoose.connection.close();
     });
 
@@ -118,6 +131,60 @@ describe('User Model', () => {
 
             expect(user.email).toBe('uppercase@example.com');
         });
+
+        it('should reject invalid email format', async () => {
+            const user = new User({
+                username: 'invalidemailuser',
+                email: 'notanemail',
+                password: 'password123'
+            });
+
+            await expect(user.save()).rejects.toThrow();
+        });
+
+        it('should enforce minimum password length', async () => {
+            const user = new User({
+                username: 'shortpass',
+                email: 'short@example.com',
+                password: 'short'
+            });
+
+            await expect(user.save()).rejects.toThrow();
+        });
+
+        it('should allow name field to be optional', async () => {
+            const user = await User.create({
+                username: 'noname',
+                email: 'noname@example.com',
+                password: 'password123'
+            });
+
+            expect(user.name).toBeUndefined();
+        });
+
+        it('should save name field when provided', async () => {
+            const user = await User.create({
+                username: 'withname',
+                name: 'John Doe',
+                email: 'withname@example.com',
+                password: 'password123'
+            });
+
+            expect(user.name).toBe('John Doe');
+        });
+
+        it('should allow lastLogin to be set', async () => {
+            const loginDate = new Date();
+            const user = await User.create({
+                username: 'loginuser',
+                email: 'login@example.com',
+                password: 'password123',
+                lastLogin: loginDate
+            });
+
+            expect(user.lastLogin).toBeDefined();
+            expect(user.lastLogin).toBeInstanceOf(Date);
+        });
     });
 
     describe('Password Hashing', () => {
@@ -145,6 +212,31 @@ describe('User Model', () => {
             await user.save();
 
             expect(user.password).toBe(originalHash);
+        });
+
+        it('should not include password by default when querying (select: false)', async () => {
+            await User.create({
+                username: 'selecttest',
+                email: 'select@example.com',
+                password: 'password123'
+            });
+
+            const user = await User.findOne({ username: 'selecttest' });
+
+            expect(user.password).toBeUndefined();
+        });
+
+        it('should include password when explicitly selected', async () => {
+            await User.create({
+                username: 'explicitselect',
+                email: 'explicitselect@example.com',
+                password: 'password123'
+            });
+
+            const user = await User.findOne({ username: 'explicitselect' }).select('+password');
+
+            expect(user.password).toBeDefined();
+            expect(user.password.startsWith('$2')).toBe(true);
         });
     });
 
@@ -202,6 +294,50 @@ describe('User Model', () => {
             expect(decoded.userId).toBe(user._id.toString());
             expect(decoded.email).toBe(user.email);
         });
+
+        it('should include only userId in refresh token', async () => {
+            const user = await User.create({
+                username: 'refreshuser',
+                email: 'refresh@example.com',
+                password: 'password123'
+            });
+
+            const { refreshToken } = user.generateAuthTokens();
+            const decoded = JSON.parse(Buffer.from(refreshToken.split('.')[1], 'base64').toString());
+
+            expect(decoded.userId).toBe(user._id.toString());
+            expect(decoded.email).toBeUndefined();
+        });
+
+        it('should generate valid JWT tokens with proper structure', async () => {
+            const user = await User.create({
+                username: 'jwtuser',
+                email: 'jwt@example.com',
+                password: 'password123'
+            });
+
+            const { accessToken, refreshToken } = user.generateAuthTokens();
+
+            // JWT tokens should have 3 parts separated by dots
+            expect(accessToken.split('.').length).toBe(3);
+            expect(refreshToken.split('.').length).toBe(3);
+        });
+
+        it('should include standard JWT claims (iss, exp, iat)', async () => {
+            const user = await User.create({
+                username: 'claimsuser',
+                email: 'claims@example.com',
+                password: 'password123'
+            });
+
+            const { accessToken } = user.generateAuthTokens();
+            const decoded = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString());
+
+            expect(decoded.iss).toBe('tuberia-api');
+            expect(decoded.exp).toBeDefined();
+            expect(decoded.iat).toBeDefined();
+            expect(decoded.exp).toBeGreaterThan(decoded.iat);
+        });
     });
 
     describe('Timestamps', () => {
@@ -217,9 +353,42 @@ describe('User Model', () => {
             expect(user.createdAt).toBeInstanceOf(Date);
             expect(user.updatedAt).toBeInstanceOf(Date);
         });
+
+        it('should update updatedAt when document is modified', async () => {
+            const user = await User.create({
+                username: 'updatetime',
+                email: 'updatetime@example.com',
+                password: 'password123'
+            });
+
+            const originalUpdatedAt = user.updatedAt;
+
+            // Wait a bit to ensure different timestamp
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            user.name = 'Updated Name';
+            await user.save();
+
+            expect(user.updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime());
+        });
+
+        it('should not change createdAt when document is modified', async () => {
+            const user = await User.create({
+                username: 'createtime',
+                email: 'createtime@example.com',
+                password: 'password123'
+            });
+
+            const originalCreatedAt = user.createdAt;
+
+            user.name = 'Updated Name';
+            await user.save();
+
+            expect(user.createdAt.getTime()).toBe(originalCreatedAt.getTime());
+        });
     });
 
-    describe('Virtual id field', () => {
+    describe('Virtual id field and toJSON transform', () => {
         it('should include virtual id in toJSON', async () => {
             const user = await User.create({
                 username: 'virtualuser',
@@ -244,6 +413,50 @@ describe('User Model', () => {
             const json = user.toJSON();
 
             expect(json.password).toBeUndefined();
+        });
+
+        it('should not include __v (version key) in toJSON', async () => {
+            const user = await User.create({
+                username: 'versionuser',
+                email: 'version@example.com',
+                password: 'password123'
+            });
+
+            const json = user.toJSON();
+
+            expect(json.__v).toBeUndefined();
+        });
+
+        it('should include all other fields in toJSON', async () => {
+            const user = await User.create({
+                username: 'fulluser',
+                name: 'Full User',
+                email: 'full@example.com',
+                password: 'password123'
+            });
+
+            const json = user.toJSON();
+
+            expect(json.id).toBeDefined();
+            expect(json.username).toBe('fulluser');
+            expect(json.name).toBe('Full User');
+            expect(json.email).toBe('full@example.com');
+            expect(json.createdAt).toBeDefined();
+            expect(json.updatedAt).toBeDefined();
+            // Should NOT have
+            expect(json._id).toBeUndefined();
+            expect(json.password).toBeUndefined();
+            expect(json.__v).toBeUndefined();
+        });
+
+        it('should access virtual id field directly', async () => {
+            const user = await User.create({
+                username: 'directid',
+                email: 'directid@example.com',
+                password: 'password123'
+            });
+
+            expect(user.id).toBe(user._id.toString());
         });
     });
 });
