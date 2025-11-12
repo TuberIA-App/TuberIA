@@ -7,6 +7,11 @@ describe('JWT Utilities', () => {
    let refreshToken; 
 
    beforeAll(() => {
+
+    // Here we define the ENV variables for JWT since vitest doesn't load the env automatically, so we need to load them here, otherwise tests would fail.
+    process.env.JWT_SECRET = 'your-super-secret-jwt-key-must-be-at-least-32-characters-long-please-change-this';
+    process.env.JWT_REFRESH_SECRET = 'your-super-secret-refresh-key-must-be-at-least-32-characters-long-change-this-too';
+
     testPayload = {
         userId: '507f1f77bcf86cd799439011',
         email: 'test@example.com'
