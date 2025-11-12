@@ -68,8 +68,8 @@ export const loginUser = async ({email, password}) => {
     try {
         // Find the user by email
         // With the +password as configured for security on the User model, we tell the DB to get the password field, since by default we hide it with select: false
-        // With the .lean() we are telling mongoose to return a POJO instead of a complete Mongoose one (so we avoid adding overhead to the code since we are avoiding to receive getters/setters, virtuals memory, etc...)
-        const user = await User.findOne({ email }).select('+password').lean();
+        // NOTE: We DON'T use .lean() here because we need Mongoose methods (comparePassword, generateAuthTokens, save)
+        const user = await User.findOne({ email }).select('+password');
         if (!user) {
             return {
                 error: 'unauthorized',
