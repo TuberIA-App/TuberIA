@@ -1,34 +1,27 @@
-import { getTranscript } from '../../../services/youtube/videoTranscription.js'
+import { getTranscript } from '../../../services/youtube/videoTranscription.js';
+import { BadRequestError } from '../../../utils/errorClasses.util.js';
 
 describe('getTranscript', () => {
     it('should fetch transcript for a valid YouTube video', async () => {
         const videoId = 'kiUM92VDI1Y';
         const transcript = await getTranscript(videoId);
 
-        // Verify it's not an error object
-        expect(transcript.error).toBeUndefined();
-
         // Verify we got a valid transcript array
         expect(Array.isArray(transcript)).toBe(true);
         expect(transcript.length).toBeGreaterThan(0);
     });
 
-    it('should return error object for invalid video ID', async () => {
-        const invalidVideoId = 'INVALID_ID';
-        const result = await getTranscript(invalidVideoId);
+    it('should throw BadRequestError for invalid video ID', async () => {
+        const invalidVideoId = '';
 
-        // Verify we got an error object instead of throwing
-        expect(result).toHaveProperty('error');
-        expect(result.error).toBe('fetch failed');
-        expect(result).toHaveProperty('message');
-        expect(typeof result.message).toBe('string');
+        await expect(getTranscript(invalidVideoId)).rejects.toThrow(BadRequestError);
+        await expect(getTranscript(invalidVideoId)).rejects.toThrow('Invalid video ID provided');
     });
 
-    it('should return error object for non-existent video', async () => {
+    it('should throw error for non-existent video', async () => {
         const nonExistentVideoId = 'xxxNONEXISTENTxxx';
-        const result = await getTranscript(nonExistentVideoId);
 
-        expect(result).toHaveProperty('error');
-        expect(result.error).toBe('fetch failed');
+        // This should throw NotFoundError or InternalServerError depending on the failure mode
+        await expect(getTranscript(nonExistentVideoId)).rejects.toThrow();
     });
 });

@@ -1,4 +1,5 @@
-import { channelFeedExtractor } from '../../../services/youtube/channelFeedPoller.js';
+import { channelFeedExtractor } from '../../../services/youtube/channelFeedExtractor.js';
+import { BadRequestError, NotFoundError } from '../../../utils/errorClasses.util.js';
 
 describe('YouTube RSS feed extractor - Integration', () => {
   let feed;
@@ -8,9 +9,9 @@ describe('YouTube RSS feed extractor - Integration', () => {
   });
 
   it('should successfully fetch feed for valid channel ID', () => {
-    // Verify it's not an error object
-    expect(feed.error).toBeUndefined();
+    // Verify it's a valid feed object (not an error)
     expect(feed).toHaveProperty('title');
+    expect(feed.title).toBeTruthy();
   });
 
   it('should have top-level fields: title, author, published', () => {
@@ -40,22 +41,12 @@ describe('YouTube RSS feed extractor - Integration', () => {
     });
   });
 
-  it('should return error object for invalid channel ID', async () => {
-    const result = await channelFeedExtractor('');
-
-    expect(result).toHaveProperty('error');
-    expect(result.error).toBe('fetch failed');
-    expect(result).toHaveProperty('message');
-    expect(result.message).toContain('Invalid channel ID');
+  it('should throw BadRequestError for invalid channel ID', async () => {
+    await expect(channelFeedExtractor('')).rejects.toThrow(BadRequestError);
+    await expect(channelFeedExtractor('')).rejects.toThrow('Invalid channel ID provided');
   });
 
-  it('should return error object for non-existent channel ID', async () => {
-    const result = await channelFeedExtractor('UC_FAKE_CHANNEL_ID_123456');
-
-    // This might return error or empty feed depending on YouTube's response
-    if (result.error) {
-      expect(result.error).toBe('fetch failed');
-      expect(result).toHaveProperty('message');
-    }
+  it('should throw NotFoundError for non-existent channel ID', async () => {
+    await expect(channelFeedExtractor('UC_FAKE_CHANNEL_ID_123456')).rejects.toThrow(NotFoundError);
   });
 });
