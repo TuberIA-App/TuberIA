@@ -1,0 +1,22 @@
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.logo:hover {
+  opacity: 0.8;
+}
+
+.logo__icon {
+  flex-shrink: 0;
+}
+
+.logo__text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-color, #1f2937);
+  letter-spacing: -0.02em;
+}
