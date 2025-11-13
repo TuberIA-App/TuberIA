@@ -121,6 +121,35 @@
   box-shadow: none !important;
 }
 
+a.button--primary,
+a.button--primary:hover,
+a.button--primary:visited,
+a.button--primary:focus {
+  color: #fff !important;
+  text-decoration: none;
+}
+
+a.button--white,
+a.button--white:hover,
+a.button--white:visited,
+a.button--white:focus {
+  color: var(--primary-color, #ef4444) !important;
+  text-decoration: none;
+}
+
+a.button--outline-white,
+a.button--outline-white:hover,
+a.button--outline-white:visited,
+a.button--outline-white:focus {
+  color: #fff !important;
+  text-decoration: none;
+}
+
+a.button svg {
+  color: currentColor;
+}
+
+
 /* Animaciones adicionales */
 @keyframes button-ripple {
   0% {

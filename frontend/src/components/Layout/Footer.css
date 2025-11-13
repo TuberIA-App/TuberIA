@@ -30,6 +30,7 @@
 .footer__brand-name {
   font-size: 1.25rem;
   font-weight: 700;
+  color: #ffffff;
   /* font-family: var(--font-logo); */ /* Asegúrate de definir esta variable si la usas */
 }
 
@@ -75,6 +76,22 @@
   font-size: 0.875rem;
   color: var(--footer-text-secondary);
   margin: 0;
+}
+
+.footer .footer__brand-link span {
+color: #ffffff;
+}
+
+.footer .footer__brand-link p {
+color: #ffffff;
+}
+
+.footer .footer__tagline {
+color: rgba(255, 255, 255, 0.8);
+}
+
+.footer .footer__tagline p {
+color: rgba(255, 255, 255, 0.8);
 }
 
 /* Mobile-first: Media query para tablets y superior */
