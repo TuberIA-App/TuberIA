@@ -27,7 +27,7 @@ const Footer = () => {
           <div className="footer__brand">
             <Logo to="/" className="footer__brand-link" size="md" />
             <p className="footer__tagline">
-              Transforma videos en conocimiento instantáneo con IA.
+              <p>Tus canales de YouTube, resumidos al instante.</p>
             </p>
           </div>
 
