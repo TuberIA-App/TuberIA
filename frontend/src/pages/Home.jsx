@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRightIcon, SparklesIcon, ClockIcon, TrendingUpIcon, ZapIcon, CheckCircleIcon, UsersIcon, PlayCircleIcon, BookOpenIcon, XIcon, SearchIcon } from 'lucide-react';
-import Button from '../components/Button/Button';
-import Input from '../components/Input/Input';
-import VideoCard from '../components/VideoCard';
+import Button from '../components/common/Button/Button';
+import Input from '../components/common/Input/Input';
+import Card from '../components/common/Card/Card';
+import Modal from '../components/common/Modal/Modal';
 import './Home.css';
 
 const Home = () => {
@@ -79,7 +80,7 @@ const Home = () => {
             Sigue tus canales favoritos en TuberIA y accede a resúmenes automáticos de cada video. Aprende más en menos tiempo con la ayuda de nuestra IA avanzada.
           </p>
           <div className="hero__actions">
-            <Link to="/auth" className="button button--primary button--large">
+            <Link to="/login" className="button button--primary button--large">
               Comenzar gratis <ArrowRightIcon size={20} aria-hidden="true" />
             </Link>
             <Button 
@@ -210,7 +211,7 @@ const Home = () => {
           </Link>
         </header>
         <ul className="featured-videos__grid" aria-labelledby="featured-videos-title">
-          {featuredVideos.map(video => (
+          {/*{featuredVideos.map(video => (
             <li key={video.id}>
               <VideoCard
                 id={video.id}
@@ -220,7 +221,7 @@ const Home = () => {
                 duration={video.duration}
               />
             </li>
-          ))}
+          ))}*/}
         </ul>
       </section>
 
