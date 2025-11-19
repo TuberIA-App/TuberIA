@@ -10,7 +10,8 @@ export const validateEnv = () => {
     const requiredEnvVars = [
         'MONGODB_URI',
         'JWT_SECRET',
-        'JWT_REFRESH_SECRET'
+        'JWT_REFRESH_SECRET',
+        'OPENROUTER_API_KEY'
     ];
 
     const missing = [];
