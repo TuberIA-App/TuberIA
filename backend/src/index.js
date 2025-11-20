@@ -1,15 +1,20 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+
+// Load environment variables FIRST (before any other imports that use them)
+dotenv.config();
+
+// Import secrets (this validates secrets are loaded correctly)
+import './config/secrets.js';
+
 import app from './app.js';
 import logger from './utils/logger.js';
 import { validateEnv } from './config/env.js';
 
-// Load enviroment variables
-dotenv.config();
-
 // Validate environment variables
 try {
     validateEnv();
+    logger.info('Enviroment variables validated successfully :)');
 } catch (error) {
     logger.error('Environment validation failed', { error: error.message });
     process.exit(1);

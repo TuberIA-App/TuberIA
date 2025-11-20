@@ -1,7 +1,21 @@
 node_modules
 .env
+.env.local
+.env.*.local
 .idea
 
 # Logs
 logs/
 *.log
+
+# Docker secrets (CRITICAL - never commit!)
+secrets/*.txt
+secrets/*.key
+secrets/*.pem
+
+# MongoDB backups
+mongo-backups/*
+!mongo-backups/.gitkeep
+
+# Traefik Let's Encrypt data
+letsencrypt/

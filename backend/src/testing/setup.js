@@ -9,8 +9,12 @@ const __dirname = dirname(__filename);
 // Load environment variables from .env file for testing
 dotenv.config({ path: join(__dirname, '../../.env') });
 
-// Verify critical env vars are loaded
-if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
-    console.error('ERROR: JWT secrets not loaded from .env file');
+// Import and verify secrets are loaded correctly
+// This will throw an error if secrets are missing or invalid
+try {
+    await import('../config/secrets.js');
+    console.log('[TEST SETUP] Secrets loaded successfully');
+} catch (error) {
+    console.error('[TEST SETUP] ERROR: Failed to load secrets:', error.message);
     process.exit(1);
 }

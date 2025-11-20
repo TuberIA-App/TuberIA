@@ -2,16 +2,12 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 
 import routes from './routes/index.js';
 import { errorHandler } from './middlewares/errorHandler.middleware.js';
 import { notFound } from './middlewares/notFound.middleware.js';
 import logger from './utils/logger.js';
 import { RATE_LIMIT } from './config/constants.js';
-
-// Load env
-dotenv.config();
 
 const app = express();
 
