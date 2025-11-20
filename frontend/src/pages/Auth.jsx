@@ -32,7 +32,7 @@ const Auth = () => {
         );
         
         login(response.data.user, response.data.accessToken, response.data.refreshToken); 
-        alert('¡Inicio de sesión exitoso! Bienvenido, ' + response.user.name);
+        alert('¡Inicio de sesión exitoso! Bienvenido, ' + response.data.user.name);
         navigate('/');
       } else {
         // REGISTRO
