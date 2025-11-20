@@ -18,6 +18,12 @@ const channelSchema = new mongoose.Schema({
         trim: true
     },
 
+    username: {
+        type: String,
+        trim: true,
+        default: null
+    },
+
     thumbnail: {
         type: String
     },
@@ -46,6 +52,7 @@ const channelSchema = new mongoose.Schema({
 
 channelSchema.index({ owner: 1 });
 channelSchema.index({ channelId: 1 }, { unique: true });
+channelSchema.index({ username: 1 });
 channelSchema.index({ lastChecked: 1 });
 
 export default mongoose.model('Channel', channelSchema);
