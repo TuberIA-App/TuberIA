@@ -1,5 +1,5 @@
 # Usar la imagen oficial de MongoDB
-FROM mongo:5.0.26
+FROM mongo:7.0
 
 # Copiar el script de inicialización
 COPY mongo-init.js /docker-entrypoint-initdb.d/

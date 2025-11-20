@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { secrets, jwtConfig } from '../config/secrets.js';
 
 /**
  * Generate access token (short-lived)
@@ -8,9 +9,9 @@ import jwt from 'jsonwebtoken';
 export const generateAccessToken = (payload) => {
     return jwt.sign(
         payload,
-        process.env.JWT_SECRET,
+        secrets.jwtSecret,
         {
-            expiresIn: process.env.JWT_ACCESS_EXPIRY || '15m',
+            expiresIn: jwtConfig.accessExpiry,
             issuer: 'tuberia-api'
         }
     );
@@ -24,9 +25,9 @@ export const generateAccessToken = (payload) => {
 export const generateRefreshToken = (payload) => {
     return jwt.sign(
         payload,
-        process.env.JWT_REFRESH_SECRET,
+        secrets.jwtRefreshSecret,
         {
-            expiresIn: process.env.JWT_REFRESH_EXPIRY || '7d',
+            expiresIn: jwtConfig.refreshExpiry,
             issuer: 'tuberia-api'
         }
     );
@@ -40,7 +41,7 @@ export const generateRefreshToken = (payload) => {
  */
 export const verifyAccessToken = (token) => {
     try {
-        return jwt.verify(token, process.env.JWT_SECRET);
+        return jwt.verify(token, secrets.jwtSecret);
     } catch (error) {
         throw error;
     }
@@ -54,7 +55,7 @@ export const verifyAccessToken = (token) => {
  */
 export const verifyRefreshToken = (token) => {
     try {
-        return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+        return jwt.verify(token, secrets.jwtRefreshSecret);
     } catch (error) {
         throw error;
     }
