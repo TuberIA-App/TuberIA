@@ -16,6 +16,7 @@ db.users.createIndex({ email: 1 }, { unique: true });
 
 db.channels.createIndex({ owner: 1 });
 db.channels.createIndex({ channelId: 1 }, { unique: true });
+db.channels.createIndex({ username: 1 });
 db.channels.createIndex({ lastChecked: 1 });
 
 db.videos.createIndex({ videoId: 1 }, { unique: true });
