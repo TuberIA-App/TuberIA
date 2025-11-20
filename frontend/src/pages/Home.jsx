@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRightIcon, SparklesIcon, ClockIcon, TrendingUpIcon, ZapIcon, CheckCircleIcon, UsersIcon, PlayCircleIcon, BookOpenIcon, XIcon, SearchIcon } from 'lucide-react';
 import Button from '../components/common/Button/Button';
 import Input from '../components/common/Input/Input';
@@ -11,6 +11,7 @@ const Home = () => {
   const [showTryModal, setShowTryModal] = useState(false);
   const [demoUrl, setDemoUrl] = useState('');
   const modalRef = useRef(null);
+  const navigate = useNavigate();
 
   // Datos de ejemplo
   const featuredVideos = [
@@ -35,6 +36,14 @@ const Home = () => {
 
   const handleTryNow = () => setShowTryModal(true);
   const handleCloseModal = () => setShowTryModal(false);
+
+    const handleRegister = () => {
+    navigate('/login', { state: { isLogin: false } });
+  };
+
+  const handleLogin = () => {
+    navigate('/login', { state: { isLogin: true } });
+  };
 
   const handleDemoSubmit = (e) => {
     e.preventDefault();
@@ -343,11 +352,16 @@ const Home = () => {
                 <span>Resúmenes automáticos de IA</span>
               </li>
             </ul>
-            <Link to="/auth" className="button button--primary button--full button--large">
+            <Button 
+              onClick={handleRegister}
+              variant="primary"
+              size="large"
+              fullWidth
+            >
               Registrarse gratis
-            </Link>
+            </Button>
             <p className="modal__login-prompt">
-              ¿Ya tienes cuenta? <Link to="/auth" className="modal__login-link">Inicia sesión</Link>
+              ¿Ya tienes cuenta? <button onClick={handleLogin} className="modal__login-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>Inicia sesión</button>
             </p>
           </div>
         </div>

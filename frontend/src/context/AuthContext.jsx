@@ -15,24 +15,12 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const register = async (username, name, email, password) => {
-    try {
-      const response = await authService.register(username, name, email, password);
-      setUser(response.data.user);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+  const login = (userData, accessToken, refreshToken) => {
+    setUser(userData);
   };
 
-  const login = async (email, password) => {
-    try {
-      const response = await authService.login(email, password);
-      setUser(response.data.user);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+  const register = (userData, accessToken, refreshToken) => {
+    setUser(userData);
   };
 
   const logout = () => {

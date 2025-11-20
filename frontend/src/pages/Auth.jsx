@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { SparklesIcon, MailIcon, LockIcon, UserIcon } from 'lucide-react';
 import Button from '../components/common/Button/Button';
 import Input from '../components/common/Input/Input';
@@ -9,13 +9,14 @@ import './Auth.css';
 
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  
+  const [isLogin, setIsLogin] = useState(location.state?.isLogin ?? true);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
-  const { login } = useAuth();
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,26 +26,29 @@ const Auth = () => {
     try {
       if (isLogin) {
         // LOGIN
-        const response = await authService.register({
-          username: formData.name.replace(/\s+/g, '').toLowerCase(), // "testuser"
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        });
+        const response = await authService.login(
+          formData.email,
+          formData.password
+        );
         
-        login(response.user, response.accessToken, response.refreshToken);
-        navigate('/dashboard');
+        login(response.data.user, response.data.accessToken, response.data.refreshToken); 
+        alert('¡Inicio de sesión exitoso! Bienvenido, ' + response.user.name);
+        navigate('/');
       } else {
         // REGISTRO
         const response = await authService.register({
-          username: formData.name, // Usar name como username temporalmente
+          username: formData.name.replace(/\s+/g, '').toLowerCase(),
           name: formData.name,
           email: formData.email,
           password: formData.password,
         });
         
-        login(response.user, response.accessToken, response.refreshToken);
-        navigate('/dashboard');
+        console.log('Respuesta completa:', response);  
+        console.log('Usuario:', response.data.user);  
+
+        login(response.data.user, response.data.accessToken, response.data.refreshToken);  
+        alert('¡Registro exitoso! Bienvenido, ' + response.data.user.name);
+        navigate('/');
       }
     } catch (err) {
       setError(err.message || 'Error en la autenticación');
