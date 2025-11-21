@@ -58,6 +58,9 @@ COPY --from=production-deps --chown=nodejs:nodejs /app/node_modules ./node_modul
 # Copy application code
 COPY --chown=nodejs:nodejs . .
 
+# Create logs directory with proper permissions for non-root user
+RUN mkdir -p logs && chown nodejs:nodejs logs
+
 # Switch to non-root user
 USER nodejs
 

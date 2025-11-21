@@ -1,0 +1,82 @@
+# ============================================
+# Caddyfile - Production Configuration
+# Automatic HTTPS with Let's Encrypt
+# ============================================
+#
+# Caddy automatically:
+# - Obtains SSL certificates from Let's Encrypt
+# - Renews certificates before expiration
+# - Redirects HTTP to HTTPS
+# - Enables HTTP/2 and HTTP/3
+#
+# No additional configuration needed!
+# ============================================
+
+# Global options
+{
+    # Email for Let's Encrypt notifications
+    email {$SSL_EMAIL:admin@example.com}
+
+    # Disable admin API (security)
+    admin off
+}
+
+# Main application - tuberia.app
+{$DOMAIN_NAME:localhost} {
+    # Backend API routes - must come first (more specific)
+    handle /api/* {
+        reverse_proxy backend:5000 {
+            # Forward real client information
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+        }
+    }
+
+    # Frontend routes - catch all remaining requests
+    handle {
+        reverse_proxy frontend:3000 {
+            # Forward real client information
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+        }
+    }
+
+    # Enable compression
+    encode gzip zstd
+
+    # Security headers
+    header {
+        # Prevent clickjacking
+        X-Frame-Options "SAMEORIGIN"
+
+        # Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+
+        # Enable XSS protection
+        X-XSS-Protection "1; mode=block"
+
+        # Referrer policy
+        Referrer-Policy "no-referrer-when-downgrade"
+
+        # HSTS - Force HTTPS for 1 year
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+        # Hide server information
+        -Server
+    }
+
+    # Access logging
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 100mb
+            roll_keep 5
+            roll_keep_for 720h
+        }
+        format json
+    }
+}
+
+# WWW redirect (optional - redirects www.tuberia.app to tuberia.app)
+www.{$DOMAIN_NAME:localhost} {
+    redir https://{$DOMAIN_NAME:localhost}{uri} permanent
+}

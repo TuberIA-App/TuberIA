@@ -88,6 +88,13 @@ try {
   const source = existsSync('/run/secrets/jwt_secret') ? 'Docker secrets' : 'environment variables';
   console.log(`[SECRETS] Loaded secrets from ${source}`);
 
+  // Set secrets in process.env for compatibility with environment validation
+  process.env.JWT_SECRET = jwtSecret;
+  process.env.JWT_REFRESH_SECRET = jwtRefreshSecret;
+  if (openRouterApiKey) {
+    process.env.OPENROUTER_API_KEY = openRouterApiKey;
+  }
+
 } catch (error) {
   console.error('[SECRETS] Failed to load secrets:', error.message);
   throw error;

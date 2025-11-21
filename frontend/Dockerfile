@@ -35,13 +35,17 @@ CMD ["npm", "run", "dev"]
 # --------------------------------------------
 FROM base AS build
 
+# Accept build arguments for environment variables
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Install dependencies
 RUN npm ci && npm cache clean --force
 
 # Copy application code
 COPY . .
 
-# Build for production
+# Build for production (environment variables are baked into the bundle)
 RUN npm run build
 
 # --------------------------------------------
