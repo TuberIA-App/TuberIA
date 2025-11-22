@@ -1,9 +1,10 @@
+import { mkdirSync, writeFileSync, existsSync } from 'fs';
 import { getTranscript } from '../../../services/youtube/videoTranscription.js';
 import { BadRequestError } from '../../../utils/errorClasses.util.js';
 
 describe('getTranscript', () => {
     it('should fetch transcript for a valid YouTube video', async () => {
-        const videoId = 'kiUM92VDI1Y';
+        const videoId = 'E5Zd3w_vYAg';
         const transcript = await getTranscript(videoId);
 
         // Verify we got a valid transcript array
