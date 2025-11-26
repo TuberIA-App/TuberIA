@@ -33,12 +33,27 @@ GET /api/channels/search
 
 ### Tipo de Acceso
 
-**Público** - No requiere autenticación (por ahora)
+**🌐 Público** - No requiere autenticación
 
-**Nota**: Si en el futuro se requiere autenticación, necesitarás incluir el header:
-```
-Authorization: Bearer {accessToken}
-```
+Este endpoint es público para permitir que los usuarios exploren canales antes de registrarse. El acceso está protegido por rate limiting (100 requests por IP cada 15 minutos).
+
+**Nota**: Las operaciones de seguimiento/guardado de canales (endpoints futuros como `/follow` o `/unfollow`) sí requerirán autenticación.
+
+### Rate Limiting
+
+Este endpoint está protegido por rate limiting global:
+- **Límite**: 100 requests por IP
+- **Ventana**: 15 minutos
+- **Scope**: Por dirección IP (no por usuario)
+
+Si excedes el límite, recibirás:
+- **Status**: 429 Too Many Requests
+- **Headers**: `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`
+
+**Recomendaciones para Frontend**:
+- Implementa debounce de 500-1000ms en el search input
+- Cachea resultados de búsqueda en localStorage/sessionStorage
+- Muestra mensaje amigable si se recibe 429
 
 ### Query Parameters
 
