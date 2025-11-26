@@ -4,8 +4,12 @@ import { BellIcon, UserIcon, HomeIcon, TrendingUpIcon, UsersIcon, FileTextIcon }
 import Logo from '../common/Logo/Logo';
 import './Header.css';
 
+import { useAuth } from '../../context/AuthContext';
+import Button from '../common/Button/Button';
+
 const Header = () => {
   const location = useLocation();
+  const { isAuthenticated, user, logout } = useAuth();
   const isActive = (path) => location.pathname.startsWith(path);
 
   const navItems = [
@@ -42,12 +46,25 @@ const Header = () => {
         </nav>
 
         <div className="header__actions">
-          <button className="header__action-button" aria-label="Ver notificaciones">
-            <BellIcon size={20} />
-          </button>
-          <button className="header__action-button" aria-label="Ver perfil de usuario">
-            <UserIcon size={20} />
-          </button>
+          {isAuthenticated ? (
+            <>
+              <span className="header__user-name">
+                ¡Hola, {user.name}!
+              </span>
+              <button onClick={logout} className="header__action-button" aria-label="Cerrar sesión">
+                Salir
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" state={{ isLogin: true }} className="button button--secondary">
+                Entrar
+              </Link>
+              <Link to="/login" state={{ isLogin: false }} className="button button--primary">
+                Registrarse
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

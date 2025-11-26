@@ -11,7 +11,7 @@
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
-  transition: all var(--transition-duration, 200ms) ease-in-out;
+  transition: all var(--transition-normal, 250ms) ease-in-out;
   text-decoration: none;
 }
 
@@ -22,7 +22,7 @@
 }
 
 .button--primary:hover {
-  background-color: var(--primary-dark-color, #d83a3a);
+  background-color: var(--primary-hover, #d83a3a);
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
