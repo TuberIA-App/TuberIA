@@ -1,5 +1,4 @@
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 
 // Load environment variables FIRST (before any other imports that use them)
 dotenv.config();
@@ -7,6 +6,7 @@ dotenv.config();
 // Import secrets (this validates secrets are loaded correctly)
 import './config/secrets.js';
 
+import mongoose from 'mongoose';
 import app from './app.js';
 import logger from './utils/logger.js';
 import { validateEnv } from './config/env.js';

@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 
-// Importar interceptores
 import './services/api.interceptor';
 
 // Páginas
@@ -13,24 +12,36 @@ import VideoDetail from './pages/VideoDetail'; // Added
 
 import MainLayout from './components/Layout/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute'; // Added
+import Dashboard from './pages/Dashboard';
+import Video from './pages/Video';
+import ChannelsHome from './pages/ChannelsHome';
+
+import PrivateLayout from './components/Layout/PrivateLayout';
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/home" element={<Home />} />
+          {/* Rutas públicas */}
+          <Route path="/" element={<Home />} />          
           <Route path="/login" element={<Auth />} />
-          <Route path="/channels" element={<ChannelSearch />} />
-          <Route 
-            path="/videos/:id" 
-            element={
-              <ProtectedRoute>
-                <VideoDetail />
-              </ProtectedRoute>
-            } 
-          />
+
+          {/* Rutas privadas */}
+          <Route element={<PrivateLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/home" element={<ChannelsHome />} /> 
+            <Route path="/video" element={<Video />} />
+            <Route path="/videos/:id" 
+              element={
+                <ProtectedRoute>
+                  <VideoDetail />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/channels" element={<ChannelSearch />} /> 
+          </Route>
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

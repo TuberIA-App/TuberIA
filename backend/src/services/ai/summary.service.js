@@ -15,7 +15,7 @@ import logger from '../../utils/logger.js';
 export const generateVideoSummary = async ({
     transcriptArray,
     videoTitle = '',
-    model = 'oz-ai/glm-4.5'
+    model = 'z-ai/glm-4.5'
 }) => {
     try {
         // Validation: Check transcript array
