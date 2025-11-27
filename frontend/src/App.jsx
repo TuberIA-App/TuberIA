@@ -10,9 +10,10 @@ import Auth from './pages/Auth';
 import ChannelSearch from './pages/ChannelSearch';
 import Dashboard from './pages/Dashboard';
 import Video from './pages/Video';
-import ChannelsHome from './pages/ChannelsHome';
+
 
 import PrivateLayout from './components/Layout/PrivateLayout';
+import UserHome from './pages/UserHome';
 
 function App() {
   return (
@@ -25,11 +26,12 @@ function App() {
 
           {/* Rutas privadas */}
           <Route element={<PrivateLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/home" element={<ChannelsHome />} /> 
+            <Route path="/dashboard" element={<UserHome />} />
+            <Route path="/home" element={<Dashboard />} />     
             <Route path="/video" element={<Video />} />
-            <Route path="/channels" element={<ChannelSearch />} /> 
+            <Route path="/channels" element={<ChannelSearch />} />
           </Route>
+
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
