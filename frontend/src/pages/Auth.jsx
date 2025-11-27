@@ -33,7 +33,7 @@ const Auth = () => {
         
         login(response.data.user, response.data.accessToken, response.data.refreshToken); 
         alert('¡Inicio de sesión exitoso! Bienvenido, ' + response.data.user.name);
-        navigate('/channels');
+        navigate('/dashboard');  // antes: '/channels'
       } else {
         // REGISTRO
         const response = await authService.register({
@@ -43,12 +43,9 @@ const Auth = () => {
           password: formData.password,
         });
         
-        console.log('Respuesta completa:', response);  
-        console.log('Usuario:', response.data.user);  
-
-        login(response.data.user, response.data.accessToken, response.data.refreshToken);  
+        login(response.data.user, response.data.accessToken, response.data.refreshToken); 
         alert('¡Registro exitoso! Bienvenido, ' + response.data.user.name);
-        navigate('/channels');
+        navigate('/dashboard');  // antes: '/channels'
       }
     } catch (err) {
       setError(err.message || 'Error en la autenticación');
