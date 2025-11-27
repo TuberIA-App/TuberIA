@@ -8,6 +8,10 @@ import './services/api.interceptor';
 import Home from './pages/Home';
 import Auth from './pages/Auth';
 import ChannelSearch from './pages/ChannelSearch';
+import VideoDetail from './pages/VideoDetail'; // Added
+
+import MainLayout from './components/Layout/MainLayout';
+import ProtectedRoute from './components/ProtectedRoute'; // Added
 import Dashboard from './pages/Dashboard';
 import Video from './pages/Video';
 
@@ -29,7 +33,18 @@ function App() {
             <Route path="/dashboard" element={<UserHome />} />
             <Route path="/home" element={<Dashboard />} />     
             <Route path="/video" element={<Video />} />
+<<<<<<< HEAD
             <Route path="/channels" element={<ChannelSearch />} />
+=======
+            <Route path="/videos/:id" 
+              element={
+                <ProtectedRoute>
+                  <VideoDetail />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/channels" element={<ChannelSearch />} /> 
+>>>>>>> 72f320cd89a22f25cbd20fc603ccc6c1e3026c0e
           </Route>
 
 
