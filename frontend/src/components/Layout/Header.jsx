@@ -1,18 +1,28 @@
 import React from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { BellIcon, UserIcon, HomeIcon, TrendingUpIcon, UsersIcon, FileTextIcon } from 'lucide-react';
 import Logo from '../common/Logo/Logo';
 import './Header.css';
 
+import { useAuth } from '../../context/AuthContext';
+import Button from '../common/Button/Button';
+
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate(); 
+  const { isAuthenticated, user, logout } = useAuth();
   const isActive = (path) => location.pathname.startsWith(path);
 
+  const handleLogout = () => {
+    logout();     
+    navigate('/');
+  };
+
   const navItems = [
-    { path: '/home', label: 'Inicio', icon: HomeIcon },
-    { path: '/video', label: 'Resúmenes', icon: FileTextIcon },
-    { path: '/dashboard', label: 'Canales', icon: TrendingUpIcon },
-    { path: '/channels', label: 'Buscar', icon: UsersIcon }
+  { path: '/dashboard', label: 'Inicio', icon: HomeIcon }, 
+  { path: '/home', label: 'Canales', icon: TrendingUpIcon },
+  { path: '/video', label: 'Resúmenes', icon: FileTextIcon },
+  { path: '/channels', label: 'Buscar', icon: UsersIcon }
   ];
 
   return (
@@ -42,12 +52,29 @@ const Header = () => {
         </nav>
 
         <div className="header__actions">
-          <button className="header__action-button" aria-label="Ver notificaciones">
-            <BellIcon size={20} />
-          </button>
-          <button className="header__action-button" aria-label="Ver perfil de usuario">
-            <UserIcon size={20} />
-          </button>
+          {isAuthenticated ? (
+            <>
+              <span className="header__user-name">
+                ¡Hola, {user.name}!
+              </span>
+              <button 
+                onClick={handleLogout} 
+                className="header__action-button" 
+                aria-label="Cerrar sesión"
+              >
+                Salir
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" state={{ isLogin: true }} className="button button--secondary">
+                Entrar
+              </Link>
+              <Link to="/login" state={{ isLogin: false }} className="button button--primary">
+                Registrarse
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
