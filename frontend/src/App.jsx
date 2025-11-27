@@ -8,15 +8,14 @@ import './services/api.interceptor';
 import Home from './pages/Home';
 import Auth from './pages/Auth';
 import ChannelSearch from './pages/ChannelSearch';
-import VideoDetail from './pages/VideoDetail'; // Added
-
-import MainLayout from './components/Layout/MainLayout';
-import ProtectedRoute from './components/ProtectedRoute'; // Added
+import VideoDetail from './pages/VideoDetail';
 import Dashboard from './pages/Dashboard';
 import Video from './pages/Video';
-import ChannelsHome from './pages/ChannelsHome';
+import UserHome from './pages/UserHome';
 
+// Layouts / protección
 import PrivateLayout from './components/Layout/PrivateLayout';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -24,22 +23,23 @@ function App() {
       <BrowserRouter>
         <Routes>
           {/* Rutas públicas */}
-          <Route path="/" element={<Home />} />          
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Auth />} />
 
           {/* Rutas privadas */}
           <Route element={<PrivateLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/home" element={<ChannelsHome />} /> 
+            <Route path="/dashboard" element={<UserHome />} />
+            <Route path="/home" element={<Dashboard />} />
             <Route path="/video" element={<Video />} />
-            <Route path="/videos/:id" 
+            <Route
+              path="/videos/:id"
               element={
                 <ProtectedRoute>
                   <VideoDetail />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route path="/channels" element={<ChannelSearch />} /> 
+            <Route path="/channels" element={<ChannelSearch />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
