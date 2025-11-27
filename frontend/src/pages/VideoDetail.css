@@ -1,0 +1,127 @@
+/* VideoDetail.css */
+.video-detail {
+  max-width: 56rem; /* 896px */
+  margin: 0 auto;
+}
+
+.video-detail__back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: color 200ms ease-in-out;
+}
+.video-detail__back-link:hover {
+  color: var(--text-color, #1f2937);
+}
+
+.video-card-large {
+  background-color: #ffffff;
+  border-radius: var(--border-radius-md, 12px);
+  border: 1px solid var(--secondary-color, #f3f4f6);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.video-card-large__thumbnail-wrapper {
+  aspect-ratio: 16 / 9;
+  background-color: var(--secondary-color, #f3f4f6);
+}
+
+.video-card-large__thumbnail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-card-large__content {
+  padding: var(--spacing-lg, 2rem);
+}
+
+.video-card-large__title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--text-color, #1f2937);
+  margin-bottom: var(--spacing-md, 1rem);
+}
+
+.video-card-large__meta {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.video-card-large__summary {
+  border-top: 1px solid var(--secondary-color, #f3f4f6);
+  padding-top: 1.5rem;
+}
+
+.video-card-large__summary-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-color, #1f2937);
+  margin-bottom: var(--spacing-md, 1rem);
+}
+
+.prose p {
+  color: var(--text-color, #1f2937);
+  line-height: 1.7;
+  margin-bottom: var(--spacing-md, 1rem);
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.prose strong {
+  font-weight: 700;
+  color: var(--text-color, #1f2937);
+}
+
+.prose__subheading {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.feedback-box {
+  background-color: rgba(var(--color-primary-rgb, 239, 68, 68), 0.05);
+  border: 1px solid rgba(var(--color-primary-rgb, 239, 68, 68), 0.2);
+  border-radius: var(--border-radius-md, 12px);
+  padding: 1.5rem;
+}
+
+.feedback-box__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-color, #1f2937);
+  margin-bottom: 0.5rem;
+}
+
+.feedback-box__subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: var(--spacing-md, 1rem);
+}
+
+.feedback-box__actions {
+  display: flex;
+  gap: 0.75rem;
+}
