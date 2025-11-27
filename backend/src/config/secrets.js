@@ -7,7 +7,7 @@
  *
  * This provides a single source of truth for all secrets across environments.
  */
-
+import 'dotenv/config';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
