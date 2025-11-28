@@ -32,7 +32,7 @@ function App() {
             <Route path="/home" element={<Dashboard />} />
             <Route path="/video" element={<Video />} />
             <Route
-              path="/videos/:id"
+              path="/video/:id"
               element={
                 <ProtectedRoute>
                   <VideoDetail />
