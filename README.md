@@ -1,6 +1,6 @@
 # TuberIA - Plataforma de Resúmenes Automáticos de YouTube con IA
 
-![Status](https://img.shields.io/badge/status-planificación-orange)
+![Status](https://img.shields.io/badge/status-developing-blue)
 
 > **Proyecto en fase de planificación** - Documentación completa, desarrollo por comenzar.
 
@@ -166,3 +166,4 @@ Evidencia adicional: Análisis de comunidades en Reddit confirmó usuarios usand
 ---
 
 **TuberIA** | Proyecto en fase de planificación | 2025 | Equipo 1 | 2ºDAW
+
