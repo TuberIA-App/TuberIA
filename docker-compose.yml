@@ -1,0 +1,51 @@
+# ============================================
+# Docker Compose - Base Configuration
+# Shared settings for all environments
+# ============================================
+version: '3.8'
+
+services:
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development  # Default to development, override in prod
+    container_name: tuberia-frontend
+    networks:
+      - tuberia-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development  # Default to development, override in prod
+    container_name: tuberia-backend
+    networks:
+      - tuberia-network
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  mongo:
+    build: ./mongo
+    container_name: mongodb
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - tuberia-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    ports:
+      - "27017:27017"
+
+volumes:
+  mongo_data:
+
+networks:
+  tuberia-network:
+    driver: bridge

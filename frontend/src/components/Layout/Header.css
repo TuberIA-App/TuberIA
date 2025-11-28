@@ -1,0 +1,108 @@
+/* Header.css */
+.header {
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--header-border);
+  box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: 4rem; /* 64px */
+}
+
+.header__container {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md, 1rem);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* 12px */
+  text-decoration: none;
+}
+
+.header__brand-name {
+  font-size: 1.25rem;
+  /* font-family: var(--font-logo); */
+  font-weight: 700;
+  color: var(--header-text);
+  display: none; /* Oculto en móvil por defecto */
+}
+
+.header__nav-list {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem; /* 4px */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.header__nav-item {
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-md, 12px);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--header-text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  transition: background-color 200ms ease-in-out, color 200ms ease-in-out;
+}
+
+.header__nav-item:hover {
+  background-color: var(--header-nav-hover-bg);
+}
+
+.header__nav-item--active {
+  background-color: var(--header-nav-active-bg);
+  color: var(--header-nav-active-text);
+}
+
+.header__nav-item--active:hover {
+  background-color: var(--header-nav-active-bg); /* Mantenemos el color activo en hover */
+}
+
+.header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header__action-button {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  border-radius: var(--border-radius-md, 12px);
+  cursor: pointer;
+  color: var(--header-text-secondary);
+  transition: background-color 200ms ease-in-out;
+}
+
+.header__action-button:hover {
+  background-color: var(--header-nav-hover-bg);
+}
+
+.header__action-button:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Focus visible para items de navegación */
+.header__nav-item:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Media Queries */
+@media (min-width: 768px) {
+  .header__brand-name {
+    display: block;
+  }
+}

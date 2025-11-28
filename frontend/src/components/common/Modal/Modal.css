@@ -1,0 +1,111 @@
+/* Modal.css - Componente Modal actualizado */
+
+.modal__overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md, 1rem);
+  animation: modalFadeIn 200ms ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal__container {
+  background-color: var(--background-body, #ffffff);
+  border-radius: var(--border-radius-lg, 1rem);
+  box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1));
+  max-width: 32rem;
+  width: 100%;
+  padding: var(--spacing-lg, 2rem);
+  position: relative;
+  animation: modalSlideIn 200ms ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal__close-button {
+  position: absolute;
+  top: var(--spacing-md, 1rem);
+  right: var(--spacing-md, 1rem);
+  background: none;
+  border: none;
+  padding: var(--spacing-sm, 0.5rem);
+  cursor: pointer;
+  color: var(--text-secondary-color, #6b7280);
+  border-radius: 50%;
+  transition: background-color 200ms ease-in-out;
+}
+
+.modal__close-button:hover {
+  background-color: var(--secondary-color, #f3f4f6);
+  color: var(--text-color);
+}
+
+.modal__close-button:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.modal__header {
+  text-align: center;
+  margin-bottom: var(--spacing-lg, 2rem);
+}
+
+.modal__title {
+  font-size: 1.75rem;
+  margin-bottom: var(--spacing-sm, 0.5rem);
+  color: var(--text-color, #1f2937);
+}
+
+.modal__subtitle {
+  margin: 0;
+  color: var(--text-secondary-color, #6b7280);
+}
+
+.modal__body {
+  margin-bottom: var(--spacing-lg, 2rem);
+}
+
+.modal__footer {
+  display: flex;
+  gap: var(--spacing-md, 1rem);
+  justify-content: flex-end;
+}
+
+/* Respeta preferencias de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  .modal__overlay,
+  .modal__container {
+    animation: none;
+  }
+
+  .modal__overlay {
+    opacity: 1;
+  }
+
+  .modal__container {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

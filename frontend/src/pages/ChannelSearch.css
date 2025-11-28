@@ -1,0 +1,52 @@
+/* ChannelSearch.css */
+.channel-search {
+  max-width: 56rem; /* 896px */
+  margin: 0 auto;
+}
+
+.channel-search__header {
+  margin-bottom: var(--spacing-lg, 2rem);
+}
+
+.channel-search__title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: var(--spacing-md, 1rem);
+}
+
+.channel-search__title-icon {
+  color: var(--primary-color, #ef4444);
+}
+
+.channel-search__title {
+  font-size: 1.875rem; /* 30px */
+  font-weight: 700;
+  color: var(--text-color, #1f2937);
+}
+
+.channel-search__subtitle {
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+.channel-search__results,
+.channel-search__followed {
+  margin-bottom: var(--spacing-xl, 3rem);
+}
+
+.channel-search__section-title {
+  font-size: 1.125rem; /* 18px */
+  font-weight: 600;
+  color: var(--text-color, #1f2937);
+  margin-bottom: var(--spacing-md, 1rem);
+}
+
+.channel-search__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* 12px */
+}
