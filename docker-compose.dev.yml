@@ -1,0 +1,54 @@
+# ============================================
+# Docker Compose - Development with Redis
+# For local development with Redis exposed
+# ============================================
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# Note: docker-compose.override.yml is loaded automatically by default
+# This file is for explicit development configuration with Redis
+# ============================================
+version: '3.8'
+
+services:
+
+  # Redis - Development (exposed port for debugging)
+  redis:
+    image: redis:7-alpine
+    container_name: tuberia-redis-dev
+    restart: unless-stopped
+
+    # Expose port for local development tools (RedisInsight, redis-cli)
+    ports:
+      - "6379:6379"
+
+    # Development command (no memory limits for easier debugging)
+    command: redis-server --appendonly yes --appendfsync everysec
+
+    # Development volume (separate from prod)
+    volumes:
+      - redis_dev_data:/data
+
+    # Network - accessible from backend
+    networks:
+      - tuberia-network
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+    # Resource limits (relaxed for development)
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+volumes:
+  redis_dev_data:
+    driver: local
