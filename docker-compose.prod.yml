@@ -1,6 +1,6 @@
 # ============================================
 # Docker Compose - Production Configuration
-# For VPS deployment with Traefik reverse proxy
+# For VPS deployment with Caddy reverse proxy
 # ============================================
 #
 # Usage:
@@ -64,7 +64,7 @@ services:
     container_name: tuberia-frontend-prod
     restart: always
 
-    # No direct port exposure - accessed via Traefik
+    # No direct port exposure - accessed via Caddy
     expose:
       - "3000"
 
@@ -106,7 +106,7 @@ services:
     container_name: tuberia-backend-prod
     restart: always
 
-    # No direct port exposure - accessed via Traefik
+    # No direct port exposure - accessed via Caddy
     expose:
       - "5000"
 
@@ -114,13 +114,13 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5000
-      # MongoDB connection - CONFIGURE THIS FOR YOUR MANAGED MONGODB
-      # Example for MongoDB Atlas:
-      # - MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/tuberia?retryWrites=true&w=majority
-      # For now, using containerized mongo (not recommended for production)
       - MONGODB_URI=mongodb://mongo:mongo@mongo:27017/tuberia?authSource=admin
       - FRONTEND_URL=https://${DOMAIN_NAME:-localhost}
       - LOG_LEVEL=error
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WORKER_CONCURRENCY=2
+      - RSS_POLL_INTERVAL=30
 
     # Docker secrets for sensitive data (read from /run/secrets/ in container)
     secrets:
@@ -144,6 +144,8 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+      redis:
+        condition: service_healthy
 
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
@@ -152,11 +154,10 @@ services:
       retries: 3
       start_period: 40s
 
-  # MongoDB - Production (containerized - NOT RECOMMENDED)
+  # MongoDB - Production (containerized - NOT RECOMMENDED for production)
   # For production, use MongoDB Atlas or managed service instead
-  # See DEPLOYMENT.md for MongoDB Atlas setup
   mongo:
-    image: mongo:7.0  # Use official image instead of custom build
+    image: mongo:7.0
     container_name: mongodb-prod
     restart: always
 
@@ -195,6 +196,52 @@ services:
       retries: 5
       start_period: 20s
 
+  # Redis - Production (BullMQ + Caching)
+  redis:
+    image: redis:7-alpine
+    container_name: tuberia-redis-prod
+    restart: always
+
+    # NO PORT EXPOSURE - internal network only
+    expose:
+      - "6379"
+
+    # Production command with memory limits and LRU eviction
+    command: >
+      redis-server
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1000
+      --save 300 10
+      --save 900 1
+      --appendonly yes
+      --appendfsync everysec
+
+    # Persistent volume for job queue data
+    volumes:
+      - redis_data_prod:/data
+
+    # Resource limits (critical for 2GB VPS)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          memory: 64M
+
+    # Internal network only (no public access)
+    networks:
+      - backend-internal
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 # Docker Secrets for sensitive data
 secrets:
   jwt_secret:
@@ -207,6 +254,9 @@ secrets:
 # Volumes
 volumes:
   mongo_data_prod:
+    driver: local
+
+  redis_data_prod:
     driver: local
 
   # Caddy data volume (stores SSL certificates)
