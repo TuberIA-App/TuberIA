@@ -33,7 +33,7 @@ const Auth = () => {
         
         login(response.data.user, response.data.accessToken, response.data.refreshToken); 
         alert('¡Inicio de sesión exitoso! Bienvenido, ' + response.data.user.name);
-        navigate('/dashboard');  // antes: '/channels'
+        navigate('/dashboard');  
       } else {
         // REGISTRO
         const response = await authService.register({
@@ -45,7 +45,7 @@ const Auth = () => {
         
         login(response.data.user, response.data.accessToken, response.data.refreshToken); 
         alert('¡Registro exitoso! Bienvenido, ' + response.data.user.name);
-        navigate('/dashboard');  // antes: '/channels'
+        navigate('/dashboard');  
       }
     } catch (err) {
       setError(err.message || 'Error en la autenticación');
