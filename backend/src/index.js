@@ -10,11 +10,15 @@ import mongoose from 'mongoose';
 import app from './app.js';
 import logger from './utils/logger.js';
 import { validateEnv } from './config/env.js';
+import redisClient from './config/redis.js';
+
+// Make Redis client globally available
+global.redisClient = redisClient;
 
 // Validate environment variables
 try {
     validateEnv();
-    logger.info('Enviroment variables validated successfully :)');
+    logger.info('Environment variables validated successfully :)');
 } catch (error) {
     logger.error('Environment validation failed', { error: error.message });
     process.exit(1);
@@ -29,13 +33,13 @@ const mongoOptions = {
     socketTimeoutMS: 45000,
 }
 
-// Connect to MongoDb
+// Connect to MongoDB
 mongoose.connect(MONGODB_URI, mongoOptions)
     .then(() => {
         logger.info('MongoDB connected successfully');
         logger.info(`Database: ${mongoose.connection.name}`)
 
-        // start server
+        // Start server
         const server = app.listen(PORT, () => {
             logger.info(`- Server running on port ${PORT}`);
             logger.info(`- Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -43,16 +47,32 @@ mongoose.connect(MONGODB_URI, mongoOptions)
         });
 
         // Graceful shutdown
-        process.on('SIGTERM', () => {
-            logger.info('SIGTERM signal received: closing HTTP server');
-            server.close(() => {
+        const gracefulShutdown = async (signal) => {
+            logger.info(`${signal} signal received: closing HTTP server`);
+            
+            server.close(async () => {
                 logger.info('HTTP Server Closed');
-                mongoose.connection.close(false, () => {
+                
+                try {
+                    await mongoose.connection.close();
                     logger.info('MongoDB connection closed');
+                    
+                    // Close Redis connection if it's still connected
+                    if (redisClient.status === 'ready') {
+                        await redisClient.quit();
+                        logger.info('Redis connection closed');
+                    }
+                    
                     process.exit(0);
-                });
+                } catch (error) {
+                    logger.error('Error during graceful shutdown:', error.message);
+                    process.exit(1);
+                }
             });
-        });
+        };
+
+        process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+        process.on('SIGINT', () => gracefulShutdown('SIGINT'));
     })
     .catch((error) => {
         logger.error('MongoDB connection failed', { error: error.message });
