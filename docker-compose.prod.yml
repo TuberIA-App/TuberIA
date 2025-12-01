@@ -45,11 +45,29 @@ services:
       - SSL_EMAIL=${SSL_EMAIL:-admin@example.com}
 
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2019/health"]
+      test: |
+        node -e "
+        const http = require('http');
+        http.get('http://localhost:5000/health', (res) => {
+          let data = '';
+          res.on('data', chunk => data += chunk);
+          res.on('end', () => {
+            try {
+              const health = JSON.parse(data);
+              const allHealthy = health.status === 'ok' &&
+                                 health.services.redis === 'healthy' &&
+                                 health.services.mongodb === 'healthy';
+              process.exit(allHealthy ? 0 : 1);
+            } catch {
+              process.exit(1);
+            }
+          });
+        }).on('error', () => process.exit(1));
+        "
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 40s
 
   # Frontend - Production build served by Nginx
   frontend:
