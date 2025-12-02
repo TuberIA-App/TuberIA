@@ -1,7 +1,12 @@
+
 # ============================================
 # Docker Compose - Base Configuration
 # Shared settings for all environments
 # ============================================
+# Documentación:
+# - Guía de uso y comandos: docs/README-DOCKER.md
+# - Configuración de Redis: docs/README-REDIS.md
+# - Troubleshooting: docs/README-REDIS.md (sección troubleshooting)
 
 services:
 

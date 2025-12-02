@@ -27,26 +27,32 @@ TuberIA/
 
 ## 🚀 Quick Start
 
-### Development
+
+### Development (Recommended)
 
 ```bash
-# Start development environment (auto-loads docker-compose.override.yml)
-docker compose up
+# Start development environment (with dev config)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 # Rebuild after dependency changes
-docker compose up --build
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 # Stop services
-docker compose down
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 
 # Complete cleanup
-docker compose down -v
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
 ```
 
 **Development URLs:**
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:5000
 - MongoDB: localhost:27017
+- Redis: localhost:6379
+
+**Documentación adicional:**
+- Configuración y comandos de Redis: docs/README-REDIS.md
+- Troubleshooting de Redis y backend: docs/README-REDIS.md (sección troubleshooting)
 
 ### Production
 
@@ -68,7 +74,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml down
 
 | Aspect | Development | Production |
 |--------|-------------|------------|
-| **Command** | `docker compose up` | `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d` |
+| **Command** | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up` | `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d` |
 | **Frontend** | Vite dev server (port 5173) | Nginx serving static build (port 3000) |
 | **Backend** | Nodemon with hot reload | Node.js optimized |
 | **MongoDB** | Exposed on port 27017 | Internal only (or managed service) |
@@ -156,20 +162,21 @@ backend-internal (isolated)
 
 ## 🔧 Common Commands
 
+
 ### Development
 
 ```bash
 # View logs
-docker compose logs -f
+docker compose -f docker-compose.yml -f docker-compose.dev.yml logs -f
 
 # Restart single service
-docker compose restart backend
+docker compose -f docker-compose.yml -f docker-compose.dev.yml restart backend
 
 # Execute command in container
-docker compose exec backend sh
+docker compose -f docker-compose.yml -f docker-compose.dev.yml exec backend sh
 
 # View running containers
-docker compose ps
+docker compose -f docker-compose.yml -f docker-compose.dev.yml ps
 ```
 
 ### Production
@@ -223,27 +230,36 @@ All services include health checks:
 - **MongoDB**: `mongosh --eval "db.adminCommand('ping')"`
 - **Traefik**: Built-in health check
 
+
 ## 🚨 Troubleshooting
 
 ### Development Issues
 
-**Services won't start:**
+**Servicios no inician:**
 ```bash
-docker compose down -v
-docker compose up --build
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
+
+**Redis no inicia:**
+- Verifica logs: `docker compose -f docker-compose.yml -f docker-compose.dev.yml logs redis`
+- Consulta docs/README-REDIS.md para troubleshooting específico.
+
+**Backend no conecta a Redis:**
+- Revisa variables REDIS_HOST y REDIS_PORT en backend/.env
+- Consulta docs/README-REDIS.md
 
 **Port already in use:**
 ```bash
-# Change port in docker-compose.override.yml
-# Or stop conflicting service
+# Cambia el puerto en docker-compose.dev.yml
+# O para el servicio en conflicto
 ```
 
 **Hot reload not working:**
 ```bash
-# Ensure bind mounts are correct
-docker compose down
-docker compose up
+# Verifica los bind mounts
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 ```
 
 ### Production Issues

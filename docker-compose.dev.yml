@@ -1,48 +1,75 @@
-# ============================================
-# Docker Compose - Development with Redis
-# For local development with Redis exposed
-# ============================================
-#
-# Usage:
-#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-#
-# Note: docker-compose.override.yml is loaded automatically by default
-# This file is for explicit development configuration with Redis
-# ============================================
+## ============================================
+## Docker Compose - Development con Redis y hot reload
+## Para desarrollo local con Redis expuesto y frontend/backend con hot reload
+## ============================================
+## Uso recomendado:
+##   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+##
+## Documentación:
+## - Guía de desarrollo y comandos: docs/README-DOCKER.md
+## - Configuración y troubleshooting de Redis: docs/README-REDIS.md
+## ============================================
 version: '3.8'
 
 services:
+
+
+  frontend:
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+      - CHOKIDAR_USEPOLLING=true
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - tuberia-network
+
+  backend:
+    working_dir: /app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+    networks:
+      - tuberia-network
+    depends_on:
+      mongo:
+        condition: service_healthy
 
   # Redis - Development (exposed port for debugging)
   redis:
     image: redis:7-alpine
     container_name: tuberia-redis-dev
     restart: unless-stopped
-
-    # Expose port for local development tools (RedisInsight, redis-cli)
     ports:
       - "6379:6379"
-
-    # Development command (no memory limits for easier debugging)
     command: redis-server --appendonly yes --appendfsync everysec
-
-    # Development volume (separate from prod)
     volumes:
       - redis_dev_data:/data
-
-    # Network - accessible from backend
     networks:
       - tuberia-network
-
-    # Health check
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 5s
-
-    # Resource limits (relaxed for development)
     deploy:
       resources:
         limits:
