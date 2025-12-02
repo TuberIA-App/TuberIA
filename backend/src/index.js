@@ -13,6 +13,7 @@ import { validateEnv } from './config/env.js';
 import { redisConnection, redisClient } from './config/redis.js';
 import transcriptionWorker from './workers/transcription.worker.js';
 import summarizationWorker from './workers/summarization.worker.js';
+import { startRSSPolling, stopRSSPolling } from './services/youtube/rssPoller.service.js';
 
 // Make Redis clients globally available
 global.redisConnection = redisConnection;
@@ -58,6 +59,9 @@ mongoose.connect(MONGODB_URI, mongoOptions)
             logger.info('Summarization worker ready and listening');
         });
 
+        // Start RSS polling on boot
+        startRSSPolling();
+
         // Graceful shutdown
         const gracefulShutdown = async (signal) => {
             logger.info(`${signal} signal received: closing HTTP server`);
@@ -66,7 +70,11 @@ mongoose.connect(MONGODB_URI, mongoOptions)
                 logger.info('HTTP Server Closed');
 
                 try {
-                    // Close BullMQ workers first (finish current jobs)
+                    // Stop RSS polling scheduler (before workers)
+                    await stopRSSPolling();
+                    logger.info('RSS polling stopped');
+
+                    // Close BullMQ workers (finish current jobs)
                     await transcriptionWorker.close();
                     await summarizationWorker.close();
                     logger.info('Workers closed');
