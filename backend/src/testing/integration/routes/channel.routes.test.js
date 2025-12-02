@@ -1,7 +1,10 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import mongoose from 'mongoose';
 import request from 'supertest';
 import app from '../../../app.js';
+import User from '../../../model/User.js';
+import Channel from '../../../model/Channel.js';
+import UserChannel from '../../../model/UserChannel.js';
 
 describe('Channel Routes Integration Tests', () => {
     beforeAll(async () => {
@@ -98,5 +101,305 @@ describe('Channel Routes Integration Tests', () => {
             expect(response.status).toBe(200);
             expect(response.body.data.description).toBeNull();
         }, 30000);
+    });
+
+    /**
+     * FOLLOW/UNFOLLOW CHANNEL TESTS
+     */
+    describe('POST /api/channels/:channelId/follow', () => {
+        let authToken;
+        let testChannelId;
+        let userId;
+
+        beforeEach(async () => {
+            // Create test user and login
+            const user = await User.create({
+                username: 'followtest',
+                name: 'Follow Test User',
+                email: 'followtest@test.com',
+                password: 'password123'
+            });
+            userId = user._id;
+
+            const loginRes = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    email: 'followtest@test.com',
+                    password: 'password123'
+                });
+
+            authToken = loginRes.body.data.accessToken;
+
+            // Create test channel
+            const channel = await Channel.create({
+                channelId: 'UCtest-follow-123',
+                name: 'Test Follow Channel',
+                username: 'testfollowchannel',
+                followersCount: 0
+            });
+            testChannelId = channel._id;
+        });
+
+        afterEach(async () => {
+            await User.deleteMany({ email: 'followtest@test.com' });
+            await Channel.deleteMany({ channelId: 'UCtest-follow-123' });
+            await UserChannel.deleteMany({ userId });
+        });
+
+        it('should follow a channel successfully', async () => {
+            const response = await request(app)
+                .post(`/api/channels/${testChannelId}/follow`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.message).toBe('Channel followed successfully');
+            expect(response.body.data.channel._id).toBe(testChannelId.toString());
+
+            // Verify UserChannel was created
+            const userChannel = await UserChannel.findOne({ userId, channelId: testChannelId });
+            expect(userChannel).toBeDefined();
+
+            // Verify followersCount was incremented
+            const channel = await Channel.findById(testChannelId);
+            expect(channel.followersCount).toBe(1);
+        });
+
+        it('should return 401 if not authenticated', async () => {
+            const response = await request(app)
+                .post(`/api/channels/${testChannelId}/follow`);
+
+            expect(response.status).toBe(401);
+            expect(response.body.success).toBe(false);
+        });
+
+        it('should return 404 if channel does not exist', async () => {
+            const fakeChannelId = new mongoose.Types.ObjectId();
+
+            const response = await request(app)
+                .post(`/api/channels/${fakeChannelId}/follow`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(404);
+            expect(response.body.success).toBe(false);
+            expect(response.body.message).toContain('not found');
+        });
+
+        it('should return 409 if already following (idempotency)', async () => {
+            // Follow first time
+            await request(app)
+                .post(`/api/channels/${testChannelId}/follow`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            // Try to follow again
+            const response = await request(app)
+                .post(`/api/channels/${testChannelId}/follow`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(409);
+            expect(response.body.success).toBe(false);
+            expect(response.body.message).toContain('already following');
+
+            // Verify followersCount wasn't incremented twice
+            const channel = await Channel.findById(testChannelId);
+            expect(channel.followersCount).toBe(1);
+        });
+
+        it('should return 400 if channelId is invalid format', async () => {
+            const response = await request(app)
+                .post('/api/channels/invalid-id/follow')
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(400);
+            expect(response.body.success).toBe(false);
+        });
+    });
+
+    describe('DELETE /api/channels/:channelId/unfollow', () => {
+        let authToken;
+        let testChannelId;
+        let userId;
+
+        beforeEach(async () => {
+            // Create test user and login
+            const user = await User.create({
+                username: 'unfollowtest',
+                name: 'Unfollow Test User',
+                email: 'unfollowtest@test.com',
+                password: 'password123'
+            });
+            userId = user._id;
+
+            const loginRes = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    email: 'unfollowtest@test.com',
+                    password: 'password123'
+                });
+
+            authToken = loginRes.body.data.accessToken;
+
+            // Create test channel
+            const channel = await Channel.create({
+                channelId: 'UCtest-unfollow-123',
+                name: 'Test Unfollow Channel',
+                username: 'testunfollowchannel',
+                followersCount: 1
+            });
+            testChannelId = channel._id;
+
+            // Create UserChannel relationship
+            await UserChannel.create({
+                userId,
+                channelId: testChannelId
+            });
+        });
+
+        afterEach(async () => {
+            await User.deleteMany({ email: 'unfollowtest@test.com' });
+            await Channel.deleteMany({ channelId: 'UCtest-unfollow-123' });
+            await UserChannel.deleteMany({ userId });
+        });
+
+        it('should unfollow a channel successfully', async () => {
+            const response = await request(app)
+                .delete(`/api/channels/${testChannelId}/unfollow`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.message).toContain('unfollowed');
+
+            // Verify UserChannel was deleted
+            const userChannel = await UserChannel.findOne({ userId, channelId: testChannelId });
+            expect(userChannel).toBeNull();
+
+            // Verify followersCount was decremented
+            const channel = await Channel.findById(testChannelId);
+            expect(channel.followersCount).toBe(0);
+        });
+
+        it('should return 401 if not authenticated', async () => {
+            const response = await request(app)
+                .delete(`/api/channels/${testChannelId}/unfollow`);
+
+            expect(response.status).toBe(401);
+            expect(response.body.success).toBe(false);
+        });
+
+        it('should return 404 if not following the channel', async () => {
+            // Delete the UserChannel first
+            await UserChannel.deleteOne({ userId, channelId: testChannelId });
+
+            const response = await request(app)
+                .delete(`/api/channels/${testChannelId}/unfollow`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(404);
+            expect(response.body.success).toBe(false);
+            expect(response.body.message).toContain('not following');
+        });
+
+        it('should return 404 if channel does not exist', async () => {
+            const fakeChannelId = new mongoose.Types.ObjectId();
+
+            const response = await request(app)
+                .delete(`/api/channels/${fakeChannelId}/unfollow`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(404);
+            expect(response.body.success).toBe(false);
+        });
+    });
+
+    describe('GET /api/channels/user/followed', () => {
+        let authToken;
+        let userId;
+        let channel1Id, channel2Id;
+
+        beforeEach(async () => {
+            // Create test user and login
+            const user = await User.create({
+                username: 'followedtest',
+                name: 'Followed Test User',
+                email: 'followedtest@test.com',
+                password: 'password123'
+            });
+            userId = user._id;
+
+            const loginRes = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    email: 'followedtest@test.com',
+                    password: 'password123'
+                });
+
+            authToken = loginRes.body.data.accessToken;
+
+            // Create test channels
+            const channel1 = await Channel.create({
+                channelId: 'UCtest-followed-1',
+                name: 'Test Channel 1',
+                username: 'testchannel1',
+                followersCount: 1
+            });
+            channel1Id = channel1._id;
+
+            const channel2 = await Channel.create({
+                channelId: 'UCtest-followed-2',
+                name: 'Test Channel 2',
+                username: 'testchannel2',
+                followersCount: 1
+            });
+            channel2Id = channel2._id;
+
+            // Create UserChannel relationships
+            await UserChannel.create([
+                { userId, channelId: channel1Id },
+                { userId, channelId: channel2Id }
+            ]);
+        });
+
+        afterEach(async () => {
+            await User.deleteMany({ email: 'followedtest@test.com' });
+            await Channel.deleteMany({ channelId: { $in: ['UCtest-followed-1', 'UCtest-followed-2'] } });
+            await UserChannel.deleteMany({ userId });
+        });
+
+        it('should return all followed channels', async () => {
+            const response = await request(app)
+                .get('/api/channels/user/followed')
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.count).toBe(2);
+            expect(response.body.data.channels).toHaveLength(2);
+            expect(response.body.data.channels[0]).toHaveProperty('channelId');
+            expect(response.body.data.channels[0]).toHaveProperty('name');
+            expect(response.body.data.channels[0]).toHaveProperty('subscribedAt');
+        });
+
+        it('should return empty array if not following any channels', async () => {
+            // Delete all UserChannel relationships
+            await UserChannel.deleteMany({ userId });
+
+            const response = await request(app)
+                .get('/api/channels/user/followed')
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.count).toBe(0);
+            expect(response.body.data.channels).toHaveLength(0);
+        });
+
+        it('should return 401 if not authenticated', async () => {
+            const response = await request(app)
+                .get('/api/channels/user/followed');
+
+            expect(response.status).toBe(401);
+            expect(response.body.success).toBe(false);
+        });
     });
 });

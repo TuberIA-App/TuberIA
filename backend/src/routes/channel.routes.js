@@ -1,11 +1,52 @@
 import express from 'express';
-import { searchChannel } from '../controllers/channel.controller.js';
-import { searchChannelValidator } from '../validators/channel.validator.js';
+import {
+    searchChannel,
+    followChannel,
+    unfollowChannel,
+    getFollowedChannels
+} from '../controllers/channel.controller.js';
+import {
+    searchChannelValidator,
+    followChannelValidator,
+    unfollowChannelValidator
+} from '../validators/channel.validator.js';
 import { validate } from '../middlewares/validate.middleware.js';
-// authMiddleware no es necesario - este endpoint es público intencionalmente
-// Las operaciones de seguimiento de canales (follow/unfollow) usarán authMiddleware
+import { authMiddleware } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
+
+/**
+ * @route   GET /api/channels/user/followed
+ * @desc    Get all channels followed by authenticated user
+ * @access  Private
+ */
+router.get('/user/followed', authMiddleware, getFollowedChannels);
+
+/**
+ * @route   POST /api/channels/:channelId/follow
+ * @desc    Follow a channel
+ * @access  Private
+ */
+router.post(
+    '/:channelId/follow',
+    authMiddleware,
+    followChannelValidator,
+    validate,
+    followChannel
+);
+
+/**
+ * @route   DELETE /api/channels/:channelId/unfollow
+ * @desc    Unfollow a channel
+ * @access  Private
+ */
+router.delete(
+    '/:channelId/unfollow',
+    authMiddleware,
+    unfollowChannelValidator,
+    validate,
+    unfollowChannel
+);
 
 /**
  * @route   GET /api/channels/search
