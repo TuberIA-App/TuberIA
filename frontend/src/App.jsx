@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 import './services/api.interceptor';
 
@@ -23,7 +23,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           {/* Rutas públicas */}
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<PublicHomeRoute />} />
           <Route path="/login" element={<Auth />} />
 
           {/* Rutas privadas */}
@@ -47,6 +47,16 @@ function App() {
       </BrowserRouter>
     </AuthProvider>
   );
+
+  function PublicHomeRoute() {
+    const { isAuthenticated } = useAuth();
+
+    if (isAuthenticated) {
+      return <Navigate to="/dashboard" replace />;
+    }
+
+    return <Home />;
+  }
 }
 
 export default App;

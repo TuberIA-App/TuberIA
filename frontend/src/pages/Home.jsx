@@ -5,6 +5,7 @@ import Button from '../components/common/Button/Button';
 import Input from '../components/common/Input/Input';
 import Card from '../components/common/Card/Card';
 import Modal from '../components/common/Modal/Modal';
+import PublicHeader from '../components/Layout/PublicHeader';
 import './Home.css';
 
 const Home = () => {
@@ -102,6 +103,8 @@ const Home = () => {
   }, [showTryModal]);
 
   return (
+    <>
+      <PublicHeader />
     <main className="home-page">
       {/* Hero Section */}
             {/* Hero Section */}
@@ -327,7 +330,7 @@ const Home = () => {
           </div>
           <aside className="benefits__testimonials" aria-label="Testimonios de usuarios">
             <div className="benefits__testimonials-decoration" aria-hidden="true"></div>
-            <div className="benefits__testimonials-content">
+            <div className="benefits__testimonials-content benefits__testimonials-content--glow">
               <header className="benefits__testimonials-header">
                 <div className="benefits__testimonials-icon-wrapper">
                   <UsersIcon size={32} aria-hidden="true" />
@@ -440,6 +443,7 @@ const Home = () => {
         </div>
       )}
     </main>
+  </>
   );
 };
 
