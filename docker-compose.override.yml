@@ -3,7 +3,6 @@
 # This file is automatically loaded by Docker Compose
 # when running `docker compose up` (no flags needed)
 # ============================================
-version: '3.8'
 
 services:
 

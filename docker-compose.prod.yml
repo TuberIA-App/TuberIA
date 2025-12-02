@@ -11,7 +11,6 @@
 #   2. Set DOMAIN_NAME environment variable or update labels below
 #   3. Ensure MongoDB Atlas or managed MongoDB is configured
 # ============================================
-version: '3.8'
 
 services:
 
@@ -45,25 +44,7 @@ services:
       - SSL_EMAIL=${SSL_EMAIL:-admin@example.com}
 
     healthcheck:
-      test: |
-        node -e "
-        const http = require('http');
-        http.get('http://localhost:5000/health', (res) => {
-          let data = '';
-          res.on('data', chunk => data += chunk);
-          res.on('end', () => {
-            try {
-              const health = JSON.parse(data);
-              const allHealthy = health.status === 'ok' &&
-                                 health.services.redis === 'healthy' &&
-                                 health.services.mongodb === 'healthy';
-              process.exit(allHealthy ? 0 : 1);
-            } catch {
-              process.exit(1);
-            }
-          });
-        }).on('error', () => process.exit(1));
-        "
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://backend:5000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -166,7 +147,25 @@ services:
         condition: service_healthy
 
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: |
+        node -e "
+        const http = require('http');
+        http.get('http://localhost:5000/health', (res) => {
+          let data = '';
+          res.on('data', chunk => data += chunk);
+          res.on('end', () => {
+            try {
+              const health = JSON.parse(data);
+              const allHealthy = health.status === 'ok' &&
+                                 health.services.redis === 'healthy' &&
+                                 health.services.mongodb === 'healthy';
+              process.exit(allHealthy ? 0 : 1);
+            } catch {
+              process.exit(1);
+            }
+          });
+        }).on('error', () => process.exit(1));
+        "
       interval: 30s
       timeout: 10s
       retries: 3
@@ -260,6 +259,15 @@ services:
       retries: 5
       start_period: 10s
 
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=redis"
+
+
 # Docker Secrets for sensitive data
 secrets:
   jwt_secret:
@@ -274,10 +282,10 @@ volumes:
   mongo_data_prod:
     driver: local
 
+  # Redis persistent storage
   redis_data_prod:
     driver: local
 
-  # Caddy data volume (stores SSL certificates)
   caddy_data:
     driver: local
 
