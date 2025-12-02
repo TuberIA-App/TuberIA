@@ -1,7 +1,8 @@
 /* ChannelSearch.css */
 .channel-search {
-  max-width: 56rem; /* 896px */
-  margin: 0 auto;
+  max-width: 80rem;
+  margin: 1.5rem auto 0;
+  padding: 0 1.5rem 3rem;
 }
 
 .channel-search__header {
