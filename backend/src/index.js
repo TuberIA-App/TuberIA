@@ -10,9 +10,10 @@ import mongoose from 'mongoose';
 import app from './app.js';
 import logger from './utils/logger.js';
 import { validateEnv } from './config/env.js';
-import redisClient from './config/redis.js';
+import { redisConnection, redisClient } from './config/redis.js';
 
-// Make Redis client globally available
+// Make Redis clients globally available
+global.redisConnection = redisConnection;
 global.redisClient = redisClient;
 
 // Validate environment variables
@@ -56,13 +57,17 @@ mongoose.connect(MONGODB_URI, mongoOptions)
                 try {
                     await mongoose.connection.close();
                     logger.info('MongoDB connection closed');
-                    
-                    // Close Redis connection if it's still connected
+
+                    // Close Redis connections if still connected
+                    if (redisConnection.status === 'ready') {
+                        await redisConnection.quit();
+                        logger.info('Redis connection (BullMQ) closed');
+                    }
                     if (redisClient.status === 'ready') {
                         await redisClient.quit();
-                        logger.info('Redis connection closed');
+                        logger.info('Redis client closed');
                     }
-                    
+
                     process.exit(0);
                 } catch (error) {
                     logger.error('Error during graceful shutdown:', error.message);
