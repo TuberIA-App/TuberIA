@@ -5,6 +5,7 @@ import Button from '../components/common/Button/Button';
 import Input from '../components/common/Input/Input';
 import Card from '../components/common/Card/Card';
 import Modal from '../components/common/Modal/Modal';
+import PublicHeader from '../components/Layout/PublicHeader';
 import './Home.css';
 
 const Home = () => {
@@ -102,6 +103,8 @@ const Home = () => {
   }, [showTryModal]);
 
   return (
+    <>
+      <PublicHeader />
     <main className="home-page">
       {/* Hero Section */}
             {/* Hero Section */}
@@ -440,6 +443,7 @@ const Home = () => {
         </div>
       )}
     </main>
+  </>
   );
 };
 

@@ -6,7 +6,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  height: 4rem; /* 64px */
+  height: 4rem;
 }
 
 .header__container {
