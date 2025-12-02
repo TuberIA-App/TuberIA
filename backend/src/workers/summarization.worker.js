@@ -1,0 +1,92 @@
+import { Worker } from 'bullmq';
+import { redisConnection } from '../config/redis.js';
+import { generateVideoSummary } from '../services/ai/summary.service.js';
+import Video from '../model/Video.js';
+import logger from '../utils/logger.js';
+
+const summarizationWorker = new Worker(
+  'summarization',
+  async (job) => {
+    const { videoId, transcriptArray, title } = job.data;
+
+    logger.info('Processing summarization', {
+      videoId,
+      jobId: job.id
+    });
+
+    try {
+      // Generate summary using existing service
+      const result = await generateVideoSummary({
+        transcriptArray,
+        videoTitle: title
+      });
+
+      // Check if service returned error
+      if (result.error) {
+        throw new Error(result.message);
+      }
+
+      // Save to database
+      await Video.updateOne(
+        { videoId },
+        {
+          summary: result.summary,
+          keyPoints: result.keyPoints,
+          aiModel: result.aiModel,
+          tokensConsumed: result.tokensConsumed,
+          status: 'completed',
+          completedAt: new Date()
+        }
+      );
+
+      logger.info('Summarization completed', {
+        videoId,
+        tokensUsed: result.tokensConsumed
+      });
+
+      return {
+        success: true,
+        videoId
+      };
+
+    } catch (error) {
+      logger.error('Summarization failed', {
+        videoId,
+        error: error.message
+      });
+
+      await Video.updateOne(
+        { videoId },
+        {
+          status: 'failed',
+          errorInfo: {
+            code: 'SUMMARIZATION_ERROR',
+            message: error.message,
+            failedAt: new Date()
+          }
+        }
+      );
+
+      throw error;
+    }
+  },
+  {
+    connection: redisConnection,
+    concurrency: parseInt(process.env.WORKER_CONCURRENCY) || 2,
+    limiter: {
+      max: 5, // More conservative for AI API
+      duration: 60000
+    },
+    lockDuration: 180000 // 3 minutes (AI can be slow)
+  }
+);
+
+summarizationWorker.on('ready', () => {
+  logger.info('Summarization worker ready');
+});
+
+summarizationWorker.on('error', (error) => {
+  logger.error('Summarization worker error', { error: error.message });
+});
+
+export default summarizationWorker;
