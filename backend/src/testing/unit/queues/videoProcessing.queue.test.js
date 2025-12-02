@@ -20,6 +20,18 @@ describe('Video Processing Queues', () => {
 
     expect(job.id).toBe('test-job-123');
     expect(job.data.videoId).toBe('test123');
-    await job.remove();
+
+    // Clean up - wait for job to be processed or failed before removing
+    try {
+      const jobState = await job.getState();
+      if (jobState === 'active' || jobState === 'waiting') {
+        // Wait a bit for worker to pick it up
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      // Try to remove, but don't fail if it's already processed
+      await job.remove().catch(() => {});
+    } catch (error) {
+      // Job may already be processed/removed
+    }
   });
 });
