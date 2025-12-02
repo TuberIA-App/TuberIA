@@ -11,6 +11,8 @@ import app from './app.js';
 import logger from './utils/logger.js';
 import { validateEnv } from './config/env.js';
 import { redisConnection, redisClient } from './config/redis.js';
+import transcriptionWorker from './workers/transcription.worker.js';
+import summarizationWorker from './workers/summarization.worker.js';
 
 // Make Redis clients globally available
 global.redisConnection = redisConnection;
@@ -47,24 +49,40 @@ mongoose.connect(MONGODB_URI, mongoOptions)
             logger.info(`- API available at http://localhost:${PORT}/api`);
         });
 
+        // Workers start automatically when imported
+        transcriptionWorker.on('ready', () => {
+            logger.info('Transcription worker ready and listening');
+        });
+
+        summarizationWorker.on('ready', () => {
+            logger.info('Summarization worker ready and listening');
+        });
+
         // Graceful shutdown
         const gracefulShutdown = async (signal) => {
             logger.info(`${signal} signal received: closing HTTP server`);
-            
+
             server.close(async () => {
                 logger.info('HTTP Server Closed');
-                
+
                 try {
+                    // Close BullMQ workers first (finish current jobs)
+                    await transcriptionWorker.close();
+                    await summarizationWorker.close();
+                    logger.info('Workers closed');
+
                     await mongoose.connection.close();
                     logger.info('MongoDB connection closed');
 
-                    // Close Redis connections if still connected
-                    if (redisConnection.status === 'ready') {
-                        await redisConnection.quit();
+                    // Close Redis connections
+                    // Use disconnect() instead of quit() to avoid EPIPE errors
+                    // disconnect() is immediate, quit() waits for pending commands
+                    if (redisConnection.status === 'ready' || redisConnection.status === 'connecting') {
+                        await redisConnection.disconnect();
                         logger.info('Redis connection (BullMQ) closed');
                     }
-                    if (redisClient.status === 'ready') {
-                        await redisClient.quit();
+                    if (redisClient.status === 'ready' || redisClient.status === 'connecting') {
+                        await redisClient.disconnect();
                         logger.info('Redis client closed');
                     }
 
