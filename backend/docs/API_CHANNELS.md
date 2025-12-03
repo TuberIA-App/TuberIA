@@ -217,6 +217,77 @@ curl "http://localhost:5000/api/channels/user/followed" \
 
 ---
 
+### 5. Get Channel By ID
+
+Get detailed information about a specific channel by its YouTube channel ID.
+
+**Endpoint:** `GET /api/channels/:id`
+
+**Access:** Public (optional authentication for `isFollowing` status)
+
+**Headers (Optional):**
+```
+Authorization: Bearer <access_token>
+```
+
+**URL Parameters:**
+- `id` (string, required) - YouTube channel ID in UCxxxxxx format (24 characters)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Channel retrieved successfully",
+  "data": {
+    "channel": {
+      "id": "674d8e9f12a3b4c5d6e7f890",
+      "channelId": "UCX6OQ3DkcsbYNE6H8uQQuVA",
+      "name": "MrBeast",
+      "username": "MrBeast",
+      "description": "Channel description text",
+      "avatar": "https://yt3.ggpht.com/ytc/...",
+      "followersCount": 15234,
+      "lastChecked": "2025-12-03T18:00:00.000Z",
+      "isFollowing": false
+    }
+  }
+}
+```
+
+**Response Fields:**
+- `id` (string) - MongoDB ObjectId of the channel
+- `channelId` (string) - YouTube channel ID (UCxxxxxx format)
+- `name` (string) - Channel display name
+- `username` (string) - Channel username/handle
+- `description` (string|null) - Channel description
+- `avatar` (string) - Channel avatar/thumbnail URL (placeholder if not available)
+- `followersCount` (number) - Number of followers in our system
+- `lastChecked` (date|null) - Last time RSS feed was checked
+- `isFollowing` (boolean) - Whether authenticated user follows this channel
+
+**isFollowing Behavior:**
+- If **not authenticated**: Always returns `false`
+- If **authenticated and following**: Returns `true`
+- If **authenticated but not following**: Returns `false`
+
+**Error Responses:**
+- `400` - Invalid channel ID format (not UCxxxxxx format)
+- `404` - Channel not found
+- `500` - Server error
+
+**Examples:**
+
+```bash
+# Get channel without authentication
+curl "http://localhost:5000/api/channels/UCX6OQ3DkcsbYNE6H8uQQuVA"
+
+# Get channel with authentication (includes isFollowing status)
+curl "http://localhost:5000/api/channels/UCX6OQ3DkcsbYNE6H8uQQuVA" \
+  -H "Authorization: Bearer TOKEN"
+```
+
+---
+
 ## Data Models
 
 ### Channel
@@ -306,6 +377,7 @@ See [AUTH_API.md](./AUTH_API.md) for authentication details.
 - Search endpoint: 100 requests per 15 minutes per IP
 - Follow/Unfollow: 20 requests per minute per user
 - Get followed channels: 60 requests per minute per user
+- Get channel by ID: 120 requests per minute per user/IP
 
 ---
 
@@ -316,8 +388,11 @@ See [AUTH_API.md](./AUTH_API.md) for authentication details.
 - Channels with zero followers are not actively polled
 - All timestamps are in ISO 8601 format (UTC)
 - ObjectIds are 24-character hexadecimal strings
+- YouTube channel IDs follow the format: `UC` followed by 22 alphanumeric characters
+- Avatar uses placeholder if channel thumbnail not available: `https://via.placeholder.com/150?text=ChannelName`
+- `GET /api/channels/:id` endpoint works without authentication but provides richer data when authenticated
 
 ---
 
-**Last Updated:** 2025-12-02
+**Last Updated:** 2025-12-03
 **API Version:** 1.0.0

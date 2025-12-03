@@ -101,3 +101,27 @@ export const getFollowedChannels = asyncHandler(async (req, res) => {
         200
     );
 });
+
+/**
+ * Get channel by ID with isFollowing status
+ * @route GET /api/channels/:id
+ * @access Public (optional auth for isFollowing)
+ */
+export const getChannelById = asyncHandler(async (req, res) => {
+    const userId = req.user?.id; // Optional auth
+    const { id: channelId } = req.params;
+
+    const result = await channelService.getChannelById(channelId, userId);
+
+    // Handle errors
+    if (result.error === 'not_found') {
+        throw new NotFoundError(result.message);
+    }
+
+    if (result.error) {
+        throw new Error(result.message);
+    }
+
+    // Success
+    successResponse(res, { channel: result.channel }, 'Channel retrieved successfully', 200);
+});
