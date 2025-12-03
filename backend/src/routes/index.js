@@ -3,6 +3,7 @@ import authRoutes from './auth.routes.js';
 import channelRoutes from './channel.routes.js';
 import videoRoutes from './video.routes.js';
 import healthRoutes from './health.routes.js';
+import userRoutes from './user.routes.js';
 
 const router = express.Router();
 
@@ -13,11 +14,6 @@ router.use('/', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/channels', channelRoutes);
 router.use('/', videoRoutes);
-
-// Future routes
-/**
- * TODO:
- * /users
- */
+router.use('/', userRoutes);
 
 export default router;
