@@ -1,6 +1,6 @@
 # API de Canales de YouTube - TuberIA
 
-Documentación completa del endpoint de búsqueda de canales de YouTube del backend de TuberIA.
+Documentación completa de los endpoints de canales de YouTube del backend de TuberIA.
 
 ## URL Base
 
@@ -13,11 +13,67 @@ http://localhost:5000/api/channels
 ## Tabla de Contenidos
 
 - [1. Búsqueda de Canal](#1-búsqueda-de-canal)
-- [2. Modelo de Datos del Canal](#2-modelo-de-datos-del-canal)
-- [3. Manejo de Errores](#3-manejo-de-errores)
-- [4. Ejemplos de Implementación](#4-ejemplos-de-implementación)
-- [5. Rate Limiting](#5-rate-limiting)
-- [6. Consideraciones Técnicas](#6-consideraciones-técnicas)
+- [2. Seguir Canal](#2-seguir-canal)
+- [3. Dejar de Seguir Canal](#3-dejar-de-seguir-canal)
+- [4. Obtener Canales Seguidos](#4-obtener-canales-seguidos)
+- [5. Modelo de Datos del Canal](#5-modelo-de-datos-del-canal)
+- [6. Manejo de Errores](#6-manejo-de-errores)
+- [7. Ejemplos de Implementación](#7-ejemplos-de-implementación)
+- [8. Rate Limiting](#8-rate-limiting)
+- [9. Consideraciones Técnicas](#9-consideraciones-técnicas)
+
+---
+
+## Autenticación
+
+La API de canales incluye endpoints públicos y privados:
+
+### Endpoints Públicos (Sin autenticación)
+
+- `GET /api/channels/search` - Búsqueda de canales
+
+Estos endpoints no requieren token de autenticación.
+
+### Endpoints Privados (Requieren autenticación)
+
+- `POST /api/channels/:channelId/follow` - Seguir canal
+- `DELETE /api/channels/:channelId/unfollow` - Dejar de seguir canal
+- `GET /api/channels/user/followed` - Obtener canales seguidos
+
+Estos endpoints requieren incluir el token JWT en el header `Authorization`:
+
+```
+Authorization: Bearer <access_token>
+```
+
+### Obtener Token de Acceso
+
+Para usar los endpoints protegidos, primero debes autenticarte:
+
+1. **Registrar usuario**: `POST /api/auth/register`
+2. **Iniciar sesión**: `POST /api/auth/login`
+3. El login retorna un `accessToken` que debes incluir en todas las peticiones protegidas
+
+Ver [api-auth.md](./api-auth.md) para más detalles sobre autenticación.
+
+### Ejemplo de uso con Token
+
+```javascript
+// Obtener token
+const loginResponse = await fetch('http://localhost:5000/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: 'user@example.com', password: 'password123' })
+});
+const { accessToken } = await loginResponse.json();
+
+// Usar token en endpoint protegido
+const response = await fetch('http://localhost:5000/api/channels/user/followed', {
+  headers: {
+    'Authorization': `Bearer ${accessToken}`
+  }
+});
+```
 
 ---
 
@@ -37,7 +93,7 @@ GET /api/channels/search
 
 Este endpoint es público para permitir que los usuarios exploren canales antes de registrarse. El acceso está protegido por rate limiting (100 requests por IP cada 15 minutos).
 
-**Nota**: Las operaciones de seguimiento/guardado de canales (endpoints futuros como `/follow` o `/unfollow`) sí requerirán autenticación.
+**Nota**: Las operaciones de seguimiento/guardado de canales (`/follow`, `/unfollow`, `/user/followed`) sí requieren autenticación.
 
 ### Rate Limiting
 
@@ -367,7 +423,972 @@ const ChannelSearchComponent = () => {
 
 ---
 
-## 2. Modelo de Datos del Canal
+## 2. Seguir Canal
+
+Permite a un usuario autenticado seguir un canal de YouTube para recibir notificaciones de nuevos videos.
+
+### Endpoint
+
+```
+POST /api/channels/:channelId/follow
+```
+
+### Tipo de Acceso
+
+**🔒 Privado** - Requiere autenticación
+
+Debes incluir el token de acceso en el header `Authorization`.
+
+### Parámetros de URL
+
+| Parámetro | Tipo | Requerido | Descripción |
+|-----------|------|-----------|-------------|
+| `channelId` | string | ✅ Sí | MongoDB ObjectId del canal a seguir |
+
+### Headers Requeridos
+
+```
+Authorization: Bearer <access_token>
+```
+
+### Validaciones
+
+- El `channelId` debe ser un ObjectId válido de MongoDB (24 caracteres hexadecimales)
+- El canal debe existir en la base de datos
+- El usuario no debe estar siguiendo ya el canal (idempotencia)
+
+### Respuesta Exitosa (200 OK)
+
+```json
+{
+  "success": true,
+  "message": "Channel followed successfully",
+  "data": {
+    "channel": {
+      "_id": "674d8e9f12a3b4c5d6e7f890",
+      "channelId": "UCam8T03EOFBsNdR0thrFHdQ",
+      "name": "Vegetta777",
+      "username": "@vegetta777",
+      "thumbnail": "https://yt3.ggpht.com/ytc/AOPolaSdq...",
+      "followersCount": 42
+    }
+  }
+}
+```
+
+### Campos de la Respuesta
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `_id` | string | MongoDB ObjectId del canal |
+| `channelId` | string | ID único del canal de YouTube |
+| `name` | string | Nombre del canal |
+| `username` | string | Username del canal con @ |
+| `thumbnail` | string \| null | URL de la imagen del canal |
+| `followersCount` | number | Número actualizado de seguidores en TuberIA (no de YouTube) |
+
+### Errores Posibles
+
+#### 400 Bad Request - channelId inválido
+
+```json
+{
+  "success": false,
+  "message": "Validation failed",
+  "errors": [
+    {
+      "field": "channelId",
+      "message": "Invalid MongoDB ObjectId"
+    }
+  ]
+}
+```
+
+#### 401 Unauthorized - Token faltante o inválido
+
+```json
+{
+  "success": false,
+  "message": "No token provided"
+}
+```
+
+```json
+{
+  "success": false,
+  "message": "Invalid or expired token"
+}
+```
+
+#### 404 Not Found - Canal no existe
+
+```json
+{
+  "success": false,
+  "message": "Channel not found"
+}
+```
+
+#### 409 Conflict - Ya sigues este canal
+
+```json
+{
+  "success": false,
+  "message": "You are already following this channel"
+}
+```
+
+#### 500 Internal Server Error
+
+```json
+{
+  "success": false,
+  "message": "An error occurred while following the channel"
+}
+```
+
+### Ejemplo de uso (JavaScript Fetch)
+
+```javascript
+const followChannel = async (channelId, accessToken) => {
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/channels/${channelId}/follow`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log('Canal seguido:', data.data.channel);
+      return data.data.channel;
+    } else {
+      console.error('Error:', data.message);
+      throw new Error(data.message);
+    }
+  } catch (error) {
+    console.error('Error al seguir canal:', error);
+    throw error;
+  }
+};
+
+// Uso
+const channel = await followChannel('674d8e9f12a3b4c5d6e7f890', userToken);
+```
+
+### Ejemplo de uso (Axios)
+
+```javascript
+import axios from 'axios';
+
+const followChannel = async (channelId, accessToken) => {
+  try {
+    const response = await axios.post(
+      `http://localhost:5000/api/channels/${channelId}/follow`,
+      {}, // No body needed
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    if (response.data.success) {
+      return response.data.data.channel;
+    }
+  } catch (error) {
+    if (error.response) {
+      // Manejo específico de errores
+      switch (error.response.status) {
+        case 401:
+          throw new Error('No estás autenticado. Por favor inicia sesión');
+        case 404:
+          throw new Error('Canal no encontrado');
+        case 409:
+          throw new Error('Ya sigues este canal');
+        default:
+          throw new Error(error.response.data.message || 'Error al seguir el canal');
+      }
+    }
+    throw error;
+  }
+};
+```
+
+### Ejemplo de uso (React Hook)
+
+```typescript
+import { useState } from 'react';
+
+interface ChannelInfo {
+  _id: string;
+  channelId: string;
+  name: string;
+  username: string;
+  thumbnail: string | null;
+  followersCount: number;
+}
+
+interface UseFollowChannelReturn {
+  followChannel: (channelId: string) => Promise<void>;
+  loading: boolean;
+  error: string | null;
+  followedChannel: ChannelInfo | null;
+}
+
+export const useFollowChannel = (accessToken: string): UseFollowChannelReturn => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [followedChannel, setFollowedChannel] = useState<ChannelInfo | null>(null);
+
+  const followChannel = async (channelId: string) => {
+    setLoading(true);
+    setError(null);
+    setFollowedChannel(null);
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/channels/${channelId}/follow`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFollowedChannel(data.data.channel);
+      } else {
+        // Manejo de errores específicos
+        if (response.status === 409) {
+          setError('Ya sigues este canal');
+        } else if (response.status === 404) {
+          setError('Canal no encontrado');
+        } else if (response.status === 401) {
+          setError('Debes iniciar sesión');
+        } else {
+          setError(data.message || 'Error al seguir el canal');
+        }
+      }
+    } catch (err) {
+      setError('Error de conexión. Por favor, intenta de nuevo.');
+      console.error('Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { followChannel, loading, error, followedChannel };
+};
+
+// Uso en componente
+const FollowButton: React.FC<{ channelId: string; accessToken: string }> = ({
+  channelId,
+  accessToken
+}) => {
+  const { followChannel, loading, error, followedChannel } = useFollowChannel(accessToken);
+
+  const handleFollow = () => {
+    followChannel(channelId);
+  };
+
+  return (
+    <div>
+      <button onClick={handleFollow} disabled={loading}>
+        {loading ? 'Siguiendo...' : 'Seguir Canal'}
+      </button>
+
+      {error && <div className="error">{error}</div>}
+
+      {followedChannel && (
+        <div className="success">
+          Ahora sigues a {followedChannel.name}
+          ({followedChannel.followersCount} seguidores en TuberIA)
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+### Notas Importantes
+
+1. **Autenticación Requerida**: Debes obtener el token mediante login (`POST /api/auth/login`)
+2. **channelId es MongoDB ObjectId**: No confundir con el `channelId` de YouTube. Este es el `_id` del documento en la base de datos
+3. **Idempotencia**: Si intentas seguir un canal que ya sigues, recibirás un error 409
+4. **followersCount**: Es el número de usuarios de TuberIA que siguen el canal, no los suscriptores de YouTube
+5. **Operación Atómica**: Se crea la relación UserChannel y se incrementa el contador en una sola transacción
+
+---
+
+## 3. Dejar de Seguir Canal
+
+Permite a un usuario autenticado dejar de seguir un canal de YouTube.
+
+### Endpoint
+
+```
+DELETE /api/channels/:channelId/unfollow
+```
+
+### Tipo de Acceso
+
+**🔒 Privado** - Requiere autenticación
+
+Debes incluir el token de acceso en el header `Authorization`.
+
+### Parámetros de URL
+
+| Parámetro | Tipo | Requerido | Descripción |
+|-----------|------|-----------|-------------|
+| `channelId` | string | ✅ Sí | MongoDB ObjectId del canal a dejar de seguir |
+
+### Headers Requeridos
+
+```
+Authorization: Bearer <access_token>
+```
+
+### Validaciones
+
+- El `channelId` debe ser un ObjectId válido de MongoDB
+- El canal debe existir en la base de datos
+- El usuario debe estar siguiendo el canal actualmente
+
+### Respuesta Exitosa (200 OK)
+
+```json
+{
+  "success": true,
+  "message": "Successfully unfollowed channel",
+  "data": null
+}
+```
+
+### Errores Posibles
+
+#### 400 Bad Request - channelId inválido
+
+```json
+{
+  "success": false,
+  "message": "Validation failed",
+  "errors": [
+    {
+      "field": "channelId",
+      "message": "Invalid MongoDB ObjectId"
+    }
+  ]
+}
+```
+
+#### 401 Unauthorized - Token faltante o inválido
+
+```json
+{
+  "success": false,
+  "message": "No token provided"
+}
+```
+
+#### 404 Not Found - Canal no existe
+
+```json
+{
+  "success": false,
+  "message": "Channel not found"
+}
+```
+
+#### 404 Not Found - No sigues este canal
+
+```json
+{
+  "success": false,
+  "message": "You are not following this channel"
+}
+```
+
+#### 500 Internal Server Error
+
+```json
+{
+  "success": false,
+  "message": "An error occurred while unfollowing the channel"
+}
+```
+
+### Ejemplo de uso (JavaScript Fetch)
+
+```javascript
+const unfollowChannel = async (channelId, accessToken) => {
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/channels/${channelId}/unfollow`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log('Canal dejado de seguir exitosamente');
+      return true;
+    } else {
+      console.error('Error:', data.message);
+      throw new Error(data.message);
+    }
+  } catch (error) {
+    console.error('Error al dejar de seguir canal:', error);
+    throw error;
+  }
+};
+
+// Uso
+await unfollowChannel('674d8e9f12a3b4c5d6e7f890', userToken);
+```
+
+### Ejemplo de uso (Axios)
+
+```javascript
+import axios from 'axios';
+
+const unfollowChannel = async (channelId, accessToken) => {
+  try {
+    const response = await axios.delete(
+      `http://localhost:5000/api/channels/${channelId}/unfollow`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    if (response.data.success) {
+      return true;
+    }
+  } catch (error) {
+    if (error.response) {
+      switch (error.response.status) {
+        case 401:
+          throw new Error('No estás autenticado');
+        case 404:
+          if (error.response.data.message.includes('not following')) {
+            throw new Error('No estás siguiendo este canal');
+          }
+          throw new Error('Canal no encontrado');
+        default:
+          throw new Error(error.response.data.message || 'Error al dejar de seguir');
+      }
+    }
+    throw error;
+  }
+};
+```
+
+### Ejemplo de uso (React Hook)
+
+```typescript
+import { useState } from 'react';
+
+interface UseUnfollowChannelReturn {
+  unfollowChannel: (channelId: string) => Promise<void>;
+  loading: boolean;
+  error: string | null;
+  success: boolean;
+}
+
+export const useUnfollowChannel = (accessToken: string): UseUnfollowChannelReturn => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const unfollowChannel = async (channelId: string) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/channels/${channelId}/unfollow`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccess(true);
+      } else {
+        if (response.status === 404 && data.message.includes('not following')) {
+          setError('No estás siguiendo este canal');
+        } else {
+          setError(data.message || 'Error al dejar de seguir');
+        }
+      }
+    } catch (err) {
+      setError('Error de conexión');
+      console.error('Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { unfollowChannel, loading, error, success };
+};
+
+// Uso en componente
+const UnfollowButton: React.FC<{ channelId: string; accessToken: string }> = ({
+  channelId,
+  accessToken
+}) => {
+  const { unfollowChannel, loading, error, success } = useUnfollowChannel(accessToken);
+
+  const handleUnfollow = () => {
+    if (confirm('¿Estás seguro de que quieres dejar de seguir este canal?')) {
+      unfollowChannel(channelId);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handleUnfollow} disabled={loading}>
+        {loading ? 'Procesando...' : 'Dejar de Seguir'}
+      </button>
+
+      {error && <div className="error">{error}</div>}
+      {success && <div className="success">Has dejado de seguir este canal</div>}
+    </div>
+  );
+};
+```
+
+### Notas Importantes
+
+1. **Operación Irreversible**: Si dejas de seguir un canal, tendrás que volver a seguirlo manualmente
+2. **Decremento Automático**: El `followersCount` del canal se decrementa automáticamente
+3. **No se eliminan datos históricos**: Los videos y resúmenes del canal permanecen en la base de datos
+4. **Polling RSS**: Si el canal llega a 0 seguidores, dejará de ser monitoreado por el sistema de RSS
+
+---
+
+## 4. Obtener Canales Seguidos
+
+Obtiene la lista completa de canales que sigue el usuario autenticado.
+
+### Endpoint
+
+```
+GET /api/channels/user/followed
+```
+
+### Tipo de Acceso
+
+**🔒 Privado** - Requiere autenticación
+
+Debes incluir el token de acceso en el header `Authorization`.
+
+### Headers Requeridos
+
+```
+Authorization: Bearer <access_token>
+```
+
+### Query Parameters
+
+Ninguno. El endpoint usa el `userId` del token JWT automáticamente.
+
+### Respuesta Exitosa (200 OK)
+
+```json
+{
+  "success": true,
+  "message": "Followed channels retrieved successfully",
+  "data": {
+    "channels": [
+      {
+        "_id": "674d8e9f12a3b4c5d6e7f890",
+        "channelId": "UCam8T03EOFBsNdR0thrFHdQ",
+        "name": "Vegetta777",
+        "username": "@vegetta777",
+        "thumbnail": "https://yt3.ggpht.com/ytc/AOPolaSdq...",
+        "description": "Canal de gaming y entretenimiento",
+        "followersCount": 42,
+        "lastChecked": "2025-12-02T18:30:00.000Z",
+        "subscribedAt": "2025-12-01T10:00:00.000Z"
+      },
+      {
+        "_id": "674d8e9f12a3b4c5d6e7f891",
+        "channelId": "UCX6OQ3DkcsbYNE6H8uQQuVA",
+        "name": "MrBeast",
+        "username": "@MrBeast",
+        "thumbnail": "https://yt3.ggpht.com/ytc/...",
+        "description": null,
+        "followersCount": 150,
+        "lastChecked": "2025-12-02T18:25:00.000Z",
+        "subscribedAt": "2025-11-30T14:30:00.000Z"
+      }
+    ],
+    "count": 2
+  }
+}
+```
+
+### Campos de la Respuesta
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `channels` | array | Lista de canales seguidos por el usuario |
+| `count` | number | Número total de canales seguidos |
+
+### Campos de cada Canal
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `_id` | string | MongoDB ObjectId del canal |
+| `channelId` | string | ID único del canal de YouTube |
+| `name` | string | Nombre del canal |
+| `username` | string | Username del canal con @ |
+| `thumbnail` | string \| null | URL de la imagen del canal |
+| `description` | string \| null | Descripción del canal |
+| `followersCount` | number | Número de seguidores en TuberIA |
+| `lastChecked` | string \| null | Última vez que se verificó el canal (ISO 8601) |
+| `subscribedAt` | string | Fecha en que el usuario siguió el canal (ISO 8601) |
+
+### Ordenamiento
+
+Los canales se devuelven ordenados por **fecha de suscripción** (más recientes primero).
+
+### Errores Posibles
+
+#### 401 Unauthorized - Token faltante o inválido
+
+```json
+{
+  "success": false,
+  "message": "No token provided"
+}
+```
+
+```json
+{
+  "success": false,
+  "message": "Invalid or expired token"
+}
+```
+
+#### 500 Internal Server Error
+
+```json
+{
+  "success": false,
+  "message": "An error occurred while fetching followed channels"
+}
+```
+
+### Ejemplo de uso (JavaScript Fetch)
+
+```javascript
+const getFollowedChannels = async (accessToken) => {
+  try {
+    const response = await fetch(
+      'http://localhost:5000/api/channels/user/followed',
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log(`Sigues ${data.data.count} canales:`, data.data.channels);
+      return data.data;
+    } else {
+      console.error('Error:', data.message);
+      throw new Error(data.message);
+    }
+  } catch (error) {
+    console.error('Error al obtener canales seguidos:', error);
+    throw error;
+  }
+};
+
+// Uso
+const { channels, count } = await getFollowedChannels(userToken);
+channels.forEach(channel => {
+  console.log(`- ${channel.name} (${channel.username})`);
+});
+```
+
+### Ejemplo de uso (Axios)
+
+```javascript
+import axios from 'axios';
+
+const getFollowedChannels = async (accessToken) => {
+  try {
+    const response = await axios.get(
+      'http://localhost:5000/api/channels/user/followed',
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    if (response.data.success) {
+      return response.data.data;
+    }
+  } catch (error) {
+    if (error.response?.status === 401) {
+      throw new Error('No estás autenticado. Por favor inicia sesión');
+    }
+    throw new Error(error.response?.data?.message || 'Error al obtener canales');
+  }
+};
+```
+
+### Ejemplo de uso (React Hook)
+
+```typescript
+import { useState, useEffect } from 'react';
+
+interface Channel {
+  _id: string;
+  channelId: string;
+  name: string;
+  username: string;
+  thumbnail: string | null;
+  description: string | null;
+  followersCount: number;
+  lastChecked: string | null;
+  subscribedAt: string;
+}
+
+interface UseFollowedChannelsReturn {
+  channels: Channel[];
+  count: number;
+  loading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+}
+
+export const useFollowedChannels = (accessToken: string): UseFollowedChannelsReturn => {
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [count, setCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchChannels = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        'http://localhost:5000/api/channels/user/followed',
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setChannels(data.data.channels);
+        setCount(data.data.count);
+      } else {
+        setError(data.message || 'Error al cargar canales');
+      }
+    } catch (err) {
+      setError('Error de conexión');
+      console.error('Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (accessToken) {
+      fetchChannels();
+    }
+  }, [accessToken]);
+
+  return { channels, count, loading, error, refetch: fetchChannels };
+};
+
+// Uso en componente
+const FollowedChannelsList: React.FC<{ accessToken: string }> = ({ accessToken }) => {
+  const { channels, count, loading, error, refetch } = useFollowedChannels(accessToken);
+
+  if (loading) {
+    return <div>Cargando canales seguidos...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="error">
+        Error: {error}
+        <button onClick={refetch}>Reintentar</button>
+      </div>
+    );
+  }
+
+  if (count === 0) {
+    return <div>No sigues ningún canal todavía</div>;
+  }
+
+  return (
+    <div>
+      <h2>Canales Seguidos ({count})</h2>
+      <button onClick={refetch}>Actualizar</button>
+
+      <div className="channels-grid">
+        {channels.map(channel => (
+          <div key={channel._id} className="channel-card">
+            {channel.thumbnail && (
+              <img src={channel.thumbnail} alt={channel.name} />
+            )}
+            <h3>{channel.name}</h3>
+            <p>{channel.username}</p>
+            <p className="description">{channel.description || 'Sin descripción'}</p>
+            <p className="meta">
+              {channel.followersCount} seguidores en TuberIA
+            </p>
+            <p className="date">
+              Siguiendo desde: {new Date(channel.subscribedAt).toLocaleDateString()}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+```
+
+### Servicio API Completo (Recomendado)
+
+```typescript
+// services/channelApi.ts
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+export interface Channel {
+  _id: string;
+  channelId: string;
+  name: string;
+  username: string;
+  thumbnail: string | null;
+  description: string | null;
+  followersCount: number;
+  lastChecked: string | null;
+  subscribedAt: string;
+}
+
+export interface FollowedChannelsResponse {
+  channels: Channel[];
+  count: number;
+}
+
+export class ChannelApiError extends Error {
+  constructor(
+    message: string,
+    public statusCode: number,
+    public code: string
+  ) {
+    super(message);
+    this.name = 'ChannelApiError';
+  }
+}
+
+export const channelApi = {
+  /**
+   * Obtiene todos los canales seguidos por el usuario
+   */
+  async getFollowedChannels(accessToken: string): Promise<FollowedChannelsResponse> {
+    const url = `${API_BASE_URL}/channels/user/followed`;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new ChannelApiError(
+          data.message || 'Error al obtener canales',
+          response.status,
+          response.status === 401 ? 'UNAUTHORIZED' : 'SERVER_ERROR'
+        );
+      }
+
+      return data.data;
+
+    } catch (error) {
+      if (error instanceof ChannelApiError) {
+        throw error;
+      }
+      throw new ChannelApiError(
+        'Error de conexión',
+        0,
+        'NETWORK_ERROR'
+      );
+    }
+  }
+};
+
+// Uso
+try {
+  const { channels, count } = await channelApi.getFollowedChannels(userToken);
+  console.log(`Tienes ${count} canales seguidos`);
+} catch (error) {
+  if (error instanceof ChannelApiError) {
+    if (error.code === 'UNAUTHORIZED') {
+      // Redirigir a login
+      window.location.href = '/login';
+    } else {
+      alert('Error al cargar canales');
+    }
+  }
+}
+```
+
+### Notas Importantes
+
+1. **Paginación**: Actualmente no implementada. Devuelve todos los canales seguidos
+2. **Ordenamiento**: Por fecha de suscripción (más recientes primero)
+3. **Canales Eliminados**: Se filtran automáticamente si el canal fue eliminado de la base de datos
+4. **Cache**: Considera implementar caché en el frontend para evitar peticiones innecesarias
+5. **Refetch**: Llama a este endpoint después de seguir/dejar de seguir un canal para actualizar la lista
+
+---
+
+## 5. Modelo de Datos del Canal
 
 ### TypeScript Interface
 
@@ -397,17 +1418,30 @@ interface YouTubeChannel {
 
 El endpoint de búsqueda **NO guarda** el canal en la base de datos. Solo retorna información en tiempo real de YouTube.
 
-Si necesitas guardar el canal para seguirlo, deberás usar el endpoint de "seguir canal" (cuando se implemente).
+Para guardar el canal y seguirlo, usa el endpoint `POST /api/channels/:channelId/follow`.
 
 El modelo `Channel` en la base de datos tiene estos campos adicionales:
 - `owner`: Usuario que agregó el canal (opcional)
 - `followersCount`: Número de usuarios de TuberIA que siguen este canal (no subs de YouTube)
-- `lastChecked`: Última vez que se verificó el canal
+- `lastChecked`: Última vez que se verificó el canal mediante RSS
 - `isActive`: Estado del canal
+
+### Modelo UserChannel (Relación de Seguimiento)
+
+```typescript
+interface UserChannel {
+  _id: ObjectId;
+  userId: ObjectId;       // Referencia al usuario
+  channelId: ObjectId;    // Referencia al canal
+  subscribedAt: Date;     // Fecha en que empezó a seguir
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
 
 ---
 
-## 3. Manejo de Errores
+## 6. Manejo de Errores
 
 ### Estructura de Respuesta de Error
 
@@ -509,7 +1543,7 @@ if (result.error) {
 
 ---
 
-## 4. Ejemplos de Implementación
+## 7. Ejemplos de Implementación
 
 ### Componente de Búsqueda Completo (React)
 
@@ -759,10 +1793,22 @@ try {
 
 ---
 
-## 5. Rate Limiting
+## 8. Rate Limiting
 
-### Límites del Servidor
+### Límites por Endpoint
 
+Los límites varían según el endpoint y si requiere autenticación:
+
+| Endpoint | Límite | Ventana | Scope |
+|----------|--------|---------|-------|
+| `GET /api/channels/search` | 100 requests | 15 min | Por IP |
+| `POST /api/channels/:id/follow` | 20 requests | 1 min | Por usuario |
+| `DELETE /api/channels/:id/unfollow` | 20 requests | 1 min | Por usuario |
+| `GET /api/channels/user/followed` | 60 requests | 1 min | Por usuario |
+
+### Límites del Servidor (Públicos)
+
+**Endpoint de búsqueda** (`GET /api/channels/search`):
 - **Límite**: 100 peticiones por IP
 - **Ventana**: 15 minutos
 - **Scope**: Por dirección IP
@@ -782,6 +1828,13 @@ RateLimit-Limit: 100
 RateLimit-Remaining: 5
 RateLimit-Reset: 1700000900
 ```
+
+### Límites por Usuario (Autenticados)
+
+**Endpoints protegidos** (follow, unfollow, followed):
+- Los límites se aplican por usuario autenticado, no por IP
+- Más generosos que los límites públicos
+- El token JWT identifica al usuario
 
 ### Límites de YouTube
 
@@ -851,7 +1904,7 @@ const ChannelSearchWithDebounce = () => {
 
 ---
 
-## 6. Consideraciones Técnicas
+## 9. Consideraciones Técnicas
 
 ### Timeout y Performance
 
@@ -945,15 +1998,23 @@ GET http://localhost:5000/api/channels/search?q=@vegetta777
 
 ---
 
-## Próximos Endpoints (Roadmap)
+## Endpoints Implementados
 
-Endpoints que se implementarán en el futuro:
+### ✅ Completados
 
-- `POST /api/channels/:channelId/follow` - Seguir un canal
-- `DELETE /api/channels/:channelId/unfollow` - Dejar de seguir un canal
-- `GET /api/channels/following` - Obtener canales que sigue el usuario
-- `GET /api/channels/:channelId/videos` - Obtener videos de un canal
+- ✅ `GET /api/channels/search` - Búsqueda de canal por username o URL
+- ✅ `POST /api/channels/:channelId/follow` - Seguir un canal
+- ✅ `DELETE /api/channels/:channelId/unfollow` - Dejar de seguir un canal
+- ✅ `GET /api/channels/user/followed` - Obtener canales que sigue el usuario
+
+### 🚧 Próximos Endpoints (Roadmap)
+
+Endpoints planificados para futuras versiones:
+
+- `GET /api/channels/:channelId/videos` - Obtener videos de un canal seguido
 - `GET /api/channels/:channelId` - Obtener información detallada de un canal guardado
+- `GET /api/channels/:channelId/is-following` - Verificar si sigues un canal específico
+- `GET /api/channels/popular` - Obtener canales más seguidos en TuberIA
 
 ---
 
@@ -970,8 +2031,18 @@ Si encuentras algún problema o tienes preguntas sobre la API:
 
 ## Changelog
 
+### v2.0.0 (2025-12-03)
+- ✅ Endpoint de seguir canal implementado (`POST /api/channels/:channelId/follow`)
+- ✅ Endpoint de dejar de seguir canal implementado (`DELETE /api/channels/:channelId/unfollow`)
+- ✅ Endpoint de obtener canales seguidos implementado (`GET /api/channels/user/followed`)
+- ✅ Sistema de relaciones UserChannel
+- ✅ Contador automático de seguidores por canal
+- ✅ Autenticación requerida para operaciones de seguimiento
+- ✅ Tests de integración completos para follow/unfollow
+- ✅ Documentación completa con ejemplos de React Hooks
+
 ### v1.0.0 (2025-11-26)
-- ✅ Endpoint de búsqueda de canales implementado
+- ✅ Endpoint de búsqueda de canales implementado (`GET /api/channels/search`)
 - ✅ Soporte para username y URL
 - ✅ Validaciones completas
 - ✅ Manejo de errores robusto
