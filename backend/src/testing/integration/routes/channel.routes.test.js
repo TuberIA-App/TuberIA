@@ -402,4 +402,130 @@ describe('Channel Routes Integration Tests', () => {
             expect(response.body.success).toBe(false);
         });
     });
+
+    /**
+     * GET /api/channels/:id Tests
+     */
+    describe('GET /api/channels/:id', () => {
+        let authToken;
+        let userId;
+        let testChannelId;
+        let testChannelYouTubeId;
+
+        beforeEach(async () => {
+            // Create test user and login
+            const user = await User.create({
+                username: 'channeldetailtest',
+                name: 'Channel Detail Test User',
+                email: 'channeldetailtest@test.com',
+                password: 'password123'
+            });
+            userId = user._id;
+
+            const loginRes = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    email: 'channeldetailtest@test.com',
+                    password: 'password123'
+                });
+
+            authToken = loginRes.body.data.accessToken;
+
+            // Create test channel with valid YouTube channel ID format
+            const testChannel = await Channel.create({
+                channelId: 'UCtest-channeldetail123', // 24 characters total
+                name: 'Channel Detail Test',
+                username: 'channeldetailtest',
+                thumbnail: 'https://example.com/avatar.jpg',
+                description: 'Test channel description',
+                followersCount: 10
+            });
+            testChannelId = testChannel._id;
+            testChannelYouTubeId = testChannel.channelId;
+        });
+
+        afterEach(async () => {
+            await User.deleteMany({ email: 'channeldetailtest@test.com' });
+            await Channel.deleteMany({ channelId: 'UCtest-channeldetail123' });
+            await UserChannel.deleteMany({ userId });
+        });
+
+        it('should return channel details for unauthenticated user (isFollowing = false)', async () => {
+            const response = await request(app)
+                .get(`/api/channels/${testChannelYouTubeId}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.channel).toHaveProperty('id');
+            expect(response.body.data.channel).toHaveProperty('channelId', testChannelYouTubeId);
+            expect(response.body.data.channel).toHaveProperty('name', 'Channel Detail Test');
+            expect(response.body.data.channel).toHaveProperty('avatar');
+            expect(response.body.data.channel).toHaveProperty('description');
+            expect(response.body.data.channel).toHaveProperty('followersCount', 10);
+            expect(response.body.data.channel).toHaveProperty('isFollowing', false);
+        });
+
+        it('should return channel with isFollowing = true if user is following', async () => {
+            // Create UserChannel relationship
+            await UserChannel.create({ userId, channelId: testChannelId });
+
+            const response = await request(app)
+                .get(`/api/channels/${testChannelYouTubeId}`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.data.channel.isFollowing).toBe(true);
+        });
+
+        it('should return channel with isFollowing = false if authenticated but not following', async () => {
+            const response = await request(app)
+                .get(`/api/channels/${testChannelYouTubeId}`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.data.channel.isFollowing).toBe(false);
+        });
+
+        it('should use thumbnail if available, otherwise use placeholder', async () => {
+            const response = await request(app)
+                .get(`/api/channels/${testChannelYouTubeId}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.data.channel.avatar).toBe('https://example.com/avatar.jpg');
+
+            // Test with channel without thumbnail
+            const noThumbChannel = await Channel.create({
+                channelId: 'UCtestNoThumb1234567890', // 24 characters
+                name: 'No Thumb Channel',
+                username: 'nothumbchannel',
+                followersCount: 1
+            });
+
+            const response2 = await request(app)
+                .get(`/api/channels/${noThumbChannel.channelId}`);
+
+            expect(response2.status).toBe(200);
+            expect(response2.body.data.channel.avatar).toContain('placeholder');
+
+            // Cleanup
+            await Channel.deleteOne({ _id: noThumbChannel._id });
+        });
+
+        it('should return 404 if channel does not exist', async () => {
+            const response = await request(app)
+                .get('/api/channels/UCnonexistent1234567890');
+
+            expect(response.status).toBe(404);
+            expect(response.body.success).toBe(false);
+            expect(response.body.message).toContain('not found');
+        });
+
+        it('should return 400 if channel ID format is invalid', async () => {
+            const response = await request(app)
+                .get('/api/channels/invalid-id');
+
+            expect(response.status).toBe(400);
+            expect(response.body.success).toBe(false);
+        });
+    });
 });

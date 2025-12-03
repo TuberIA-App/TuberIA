@@ -40,3 +40,20 @@ export const unfollowChannelValidator = [
         .isMongoId()
         .withMessage('Invalid channel ID format')
 ];
+
+/**
+ * Validator for get channel by ID endpoint
+ * Validates id parameter (YouTube channel ID format: UCxxxxxx)
+ */
+export const getChannelByIdValidator = [
+    param('id')
+        .trim()
+        .notEmpty()
+        .withMessage('Channel ID is required')
+        .isString()
+        .withMessage('Channel ID must be a string')
+        .matches(/^UC[a-zA-Z0-9_-]+$/)
+        .withMessage('Invalid YouTube channel ID format (expected: UCxxxxxx)')
+        .isLength({ min: 3, max: 30 })
+        .withMessage('Channel ID must be between 3 and 30 characters')
+];

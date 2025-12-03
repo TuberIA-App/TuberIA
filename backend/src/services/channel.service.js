@@ -167,13 +167,23 @@ export const getFollowedChannels = async (userId) => {
       })
       .sort({ subscribedAt: -1 }); // Most recently followed first
 
-    // Filter out any null channels (deleted channels)
+    // Filter out any null channels (deleted channels) and enrich with frontend-friendly data
     const validChannels = followedChannels
       .filter(fc => fc.channelId !== null)
-      .map(fc => ({
-        ...fc.channelId.toObject(),
-        subscribedAt: fc.subscribedAt
-      }));
+      .map(fc => {
+        const channel = fc.channelId.toObject();
+        return {
+          id: channel._id,
+          channelId: channel.channelId,
+          name: channel.name,
+          username: channel.username,
+          description: channel.description || null,
+          avatar: channel.thumbnail || `https://via.placeholder.com/150?text=${encodeURIComponent(channel.name)}`,
+          followersCount: channel.followersCount,
+          subscribedAt: fc.subscribedAt,
+          isFollowing: true // Always true since these are followed channels
+        };
+      });
 
     logger.info('Fetched followed channels', {
       userId,
@@ -216,5 +226,71 @@ export const isChannelFollowed = async (userId, channelId) => {
       error: error.message
     });
     return false;
+  }
+};
+
+/**
+ * Get channel by channelId (YouTube ID) with optional isFollowing status
+ * @param {string} channelId - YouTube channel ID (UCxxxxxx format)
+ * @param {string|undefined} userId - Optional MongoDB ObjectId of the user
+ * @returns {Promise<Object>} Success with channel data or error object
+ */
+export const getChannelById = async (channelId, userId = null) => {
+  try {
+    // Find channel by channelId (YouTube ID)
+    const channel = await Channel.findOne({ channelId }).lean();
+
+    if (!channel) {
+      return {
+        error: 'not_found',
+        message: 'Channel not found'
+      };
+    }
+
+    // Check if user is following this channel (if userId provided)
+    let isFollowing = false;
+    if (userId) {
+      const relation = await UserChannel.findOne({
+        userId,
+        channelId: channel._id
+      });
+      isFollowing = !!relation;
+    }
+
+    // Enrich with frontend-friendly data
+    const enrichedChannel = {
+      id: channel._id,
+      channelId: channel.channelId,
+      name: channel.name,
+      username: channel.username,
+      description: channel.description || null,
+      avatar: channel.thumbnail || `https://via.placeholder.com/150?text=${encodeURIComponent(channel.name)}`,
+      followersCount: channel.followersCount,
+      lastChecked: channel.lastChecked,
+      isFollowing
+    };
+
+    logger.info('Fetched channel by ID', {
+      channelId,
+      userId: userId || 'anonymous',
+      isFollowing
+    });
+
+    return {
+      success: true,
+      channel: enrichedChannel
+    };
+
+  } catch (error) {
+    logger.error('Error fetching channel by ID', {
+      channelId,
+      userId,
+      error: error.message
+    });
+
+    return {
+      error: 'server_error',
+      message: 'An error occurred while fetching the channel'
+    };
   }
 };
