@@ -262,11 +262,11 @@ describe('Video Routes Integration Tests', () => {
             // Create UserChannel relationship
             await UserChannel.create({ userId, channelId });
 
-            // Create test video
+            // Create test video (using valid 11-character YouTube format)
             const video = await Video.create({
-                videoId: 'video-detail-test',
+                videoId: 'testVid1234',
                 title: 'Test Video Detail',
-                url: 'https://youtube.com/watch?v=video-detail-test',
+                url: 'https://youtube.com/watch?v=testVid1234',
                 channelId,
                 publishedAt: new Date(),
                 status: 'completed',
@@ -280,7 +280,7 @@ describe('Video Routes Integration Tests', () => {
             await User.deleteMany({ email: 'videodetailtest@test.com' });
             await Channel.deleteMany({ channelId: 'UCtest-video-detail' });
             await UserChannel.deleteMany({ userId });
-            await Video.deleteMany({ videoId: 'video-detail-test' });
+            await Video.deleteMany({ videoId: 'testVid1234' });
         });
 
         it('should return video details for authenticated user who follows the channel', async () => {
