@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon --watch src --ext js,ts,json --exec \"node src/index.js\"",
     "start": "node src/index.js",
-    "test": "vitest run",
+    "test": "vitest run --no-file-parallelism",
     "test:watch": "vitest"
   },
   "keywords": [],
