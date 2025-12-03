@@ -14,6 +14,13 @@ describe('RSS Poller Service', () => {
       await mongoose.connect(testMongoUri);
     }
 
+    // Clean up any existing test data first (in case previous test failed)
+    const existingChannel = await Channel.findOne({ channelId: 'UCX6OQ3DkcsbYNE6H8uQQuVA' });
+    if (existingChannel) {
+      await Video.deleteMany({ channelId: existingChannel._id });
+      await Channel.deleteOne({ channelId: 'UCX6OQ3DkcsbYNE6H8uQQuVA' });
+    }
+
     // Create test channel
     const testChannel = await Channel.create({
       channelId: 'UCX6OQ3DkcsbYNE6H8uQQuVA',  // MrBeast channel (real)

@@ -15,6 +15,9 @@ describe('User Model', () => {
         await mongoose.connect(testMongoUri, {
             serverSelectionTimeoutMS: 5000
         });
+
+        // Ensure indexes are created (critical for unique constraint tests)
+        await User.syncIndexes();
     });
 
     beforeEach(async () => {
