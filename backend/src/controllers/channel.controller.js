@@ -23,12 +23,14 @@ export const searchChannel = asyncHandler(async (req, res) => {
  * Follow a channel
  * @route POST /api/channels/:channelId/follow
  * @access Private
+ * @body channelData - Optional channel data (name, username, thumbnail, channelId)
  */
 export const followChannel = asyncHandler(async (req, res) => {
     const userId = req.user.id; // From authMiddleware (toJSON virtual)
     const { channelId } = req.params;
+    const channelData = req.body; // Optional: channel info for creation
 
-    const result = await channelService.followChannel(userId, channelId);
+    const result = await channelService.followChannel(userId, channelId, channelData);
 
     // Handle errors
     if (result.error === 'not_found') {
@@ -37,6 +39,10 @@ export const followChannel = asyncHandler(async (req, res) => {
 
     if (result.error === 'already_following') {
         throw new ConflictError(result.message);
+    }
+
+    if (result.error === 'invalid_id') {
+        throw new NotFoundError(result.message);
     }
 
     if (result.error) {
