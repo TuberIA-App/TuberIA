@@ -18,18 +18,9 @@ const ChannelItem = ({
   onFollowToggle 
 }) => {
   const handleFollowToggle = () => {
-    if (!isLoading) {
-      // Pass channelId (YouTube ID) and full channel data for follow operation
-      const channelData = {
-        channelId: channelId,
-        name: name,
-        username: username,
-        thumbnail: thumbnail,
-        description: description
-      };
-      
-      // If we have MongoDB _id, use it for unfollow, otherwise use YouTube channelId
-      onFollowToggle(id || channelId, isFollowing ? null : channelData);
+    if (!isLoading && id) {
+      // Pass MongoDB _id (from backend search or followed channels)
+      onFollowToggle(id);
     }
   };
 

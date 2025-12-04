@@ -61,17 +61,16 @@ const searchChannel = async (query) => {
 /**
  * Follow a channel
  * Private endpoint - requires authentication
- * @param {string} channelId - YouTube channelId or MongoDB ObjectId
- * @param {Object} channelData - Channel data for creation (name, username, thumbnail, channelId)
+ * @param {string} channelId - MongoDB ObjectId of the channel (from search result)
  * @returns {Promise<Object>} Updated channel data
  */
-const followChannel = async (channelId, channelData = null) => {
+const followChannel = async (channelId) => {
   try {
     if (!channelId) {
       throw new Error('ID de canal requerido');
     }
 
-    const response = await api.post(`/channels/${channelId}/follow`, channelData || {});
+    const response = await api.post(`/channels/${channelId}/follow`);
 
     if (response.data.success) {
       return response.data.data.channel;
