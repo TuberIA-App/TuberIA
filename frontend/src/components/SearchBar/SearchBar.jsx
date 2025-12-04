@@ -4,6 +4,12 @@ import './SearchBar.css';
 const SearchBar = ({ placeholder, onChange, debounceMs = 600 }) => {
   const [inputValue, setInputValue] = useState('');
   const debounceTimerRef = useRef(null);
+  const onChangeRef = useRef(onChange);
+
+  // Keep onChange ref updated
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     // Clear any existing timer
@@ -13,7 +19,7 @@ const SearchBar = ({ placeholder, onChange, debounceMs = 600 }) => {
 
     // Set up new debounce timer
     debounceTimerRef.current = setTimeout(() => {
-      onChange(inputValue);
+      onChangeRef.current(inputValue);
     }, debounceMs);
 
     // Cleanup on unmount
@@ -22,7 +28,7 @@ const SearchBar = ({ placeholder, onChange, debounceMs = 600 }) => {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [inputValue, debounceMs, onChange]);
+  }, [inputValue, debounceMs]);
 
   const handleChange = (e) => {
     setInputValue(e.target.value);

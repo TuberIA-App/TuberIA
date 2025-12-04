@@ -84,11 +84,13 @@ const ChannelSearch = () => {
       if (isCurrentlyFollowing) {
         // Unfollow using MongoDB _id
         await channelService.unfollowChannel(mongoId);
-        setFollowedChannels(prev => prev.filter(ch => ch._id !== mongoId));
+        // Reload followed channels to ensure sync
+        await loadFollowedChannels();
       } else {
         // Follow using MongoDB _id (backend already created channel during search)
-        const updatedChannel = await channelService.followChannel(mongoId);
-        setFollowedChannels(prev => [updatedChannel, ...prev]);
+        await channelService.followChannel(mongoId);
+        // Reload followed channels to ensure sync
+        await loadFollowedChannels();
       }
       
       // Clear any previous errors
@@ -206,19 +208,19 @@ const ChannelSearch = () => {
           {!followedLoading && !followedError && followedChannels.length > 0 && (
             <ul className="channel-search__list" aria-labelledby="followed-title">
               {followedChannels.map(channel => (
-                <li key={channel._id}>
+                <li key={channel.id || channel._id}>
                   <ChannelItem
-                    id={channel._id}
+                    id={channel.id || channel._id}
                     channelId={channel.channelId}
                     name={channel.name}
                     username={channel.username}
                     description={channel.description}
-                    thumbnail={channel.thumbnail}
+                    thumbnail={channel.avatar || channel.thumbnail}
                     followersCount={channel.followersCount}
                     subscribedAt={channel.subscribedAt}
                     isFollowing={true}
                     showVisitButton={true}
-                    isLoading={followLoading[channel._id]}
+                    isLoading={followLoading[channel.id || channel._id]}
                     onFollowToggle={handleFollowToggle}
                   />
                 </li>

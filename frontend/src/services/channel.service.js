@@ -180,7 +180,9 @@ const getFollowedChannels = async () => {
  * @returns {boolean} Whether the user is following the channel
  */
 const isFollowing = (channelId, followedChannels) => {
-  return followedChannels.some(channel => channel._id === channelId);
+  return followedChannels.some(channel => 
+    channel._id === channelId || channel.id === channelId
+  );
 };
 
 const channelService = {
