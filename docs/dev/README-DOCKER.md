@@ -32,10 +32,10 @@ TuberIA/
 
 ```bash
 # Start development environment (with dev config)
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # Rebuild after dependency changes
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 
 # Stop services
 docker compose -f docker-compose.yml -f docker-compose.dev.yml down

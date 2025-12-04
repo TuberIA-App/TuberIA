@@ -2,6 +2,7 @@ import { asyncHandler } from '../middlewares/asyncHandler.middleware.js';
 import * as videoService from '../services/video.service.js';
 import { successResponse } from '../utils/response.util.js';
 import { NotFoundError, ForbiddenError } from '../utils/errorClasses.util.js';
+import { getOrSet } from '../utils/cache.js';
 
 /**
  * Get personalized video feed for authenticated user
@@ -10,13 +11,24 @@ import { NotFoundError, ForbiddenError } from '../utils/errorClasses.util.js';
  */
 export const getMyVideos = asyncHandler(async (req, res) => {
     const userId = req.user.id; // From authMiddleware (toJSON virtual)
-    const { page, limit, status } = req.query;
+    const { page = 1, limit = 20, status } = req.query;
 
-    const result = await videoService.getUserVideoFeed(userId, {
-        page,
-        limit,
-        status: status === 'all' ? undefined : status
-    });
+    // Construir cache key con todos los parámetros relevantes
+    const cacheKey = `videos:feed:${userId}:${status || 'all'}:${page}:${limit}`;
+
+    // Usar getOrSet con TTL de 60 segundos
+    const result = await getOrSet(
+        cacheKey,
+        60, // 60 segundos TTL
+        async () => {
+            // Ejecutar la query original
+            return await videoService.getUserVideoFeed(userId, {
+                page,
+                limit,
+                status: status === 'all' ? undefined : status
+            });
+        }
+    );
 
     // Handle errors
     if (result.error) {
