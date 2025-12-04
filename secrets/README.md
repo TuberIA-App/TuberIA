@@ -25,7 +25,7 @@ openssl rand -base64 32 > jwt_refresh_secret.txt
 ### 3. `openrouter_api_key.txt`
 Your OpenRouter API key
 ```bash
-echo "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" > openrouter_api_key.txt
+echo "your-openrouter-api-key-here" > openrouter_api_key.txt
 ```
 
 ## Quick Setup
