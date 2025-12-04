@@ -70,32 +70,27 @@ const ChannelSearch = () => {
   };
 
   // Handle follow/unfollow toggle
-  const handleFollowToggle = async (channelId, channelData = null) => {
+  const handleFollowToggle = async (mongoId) => {
     if (!isAuthenticated) {
       setSearchError('Debes iniciar sesión para seguir canales');
       return;
     }
 
-    // Determine which ID to use for checking if following
-    const checkId = channelData?._id || channelId;
-    const isCurrentlyFollowing = channelService.isFollowing(checkId, followedChannels);
+    const isCurrentlyFollowing = channelService.isFollowing(mongoId, followedChannels);
 
     try {
-      setFollowLoading(prev => ({ ...prev, [channelId]: true }));
+      setFollowLoading(prev => ({ ...prev, [mongoId]: true }));
       
       if (isCurrentlyFollowing) {
-        // Unfollow: use MongoDB _id
-        await channelService.unfollowChannel(checkId);
-        setFollowedChannels(prev => prev.filter(ch => ch._id !== checkId));
+        // Unfollow using MongoDB _id
+        await channelService.unfollowChannel(mongoId);
+        // Reload followed channels to ensure sync
+        await loadFollowedChannels();
       } else {
-        // Follow: pass YouTube channelId and channel data for creation
-        const updatedChannel = await channelService.followChannel(channelId, channelData);
-        setFollowedChannels(prev => [updatedChannel, ...prev]);
-        
-        // Update search result with MongoDB _id if it was a search result
-        if (searchResult && searchResult.channelId === channelId) {
-          setSearchResult(prev => ({ ...prev, _id: updatedChannel._id }));
-        }
+        // Follow using MongoDB _id (backend already created channel during search)
+        await channelService.followChannel(mongoId);
+        // Reload followed channels to ensure sync
+        await loadFollowedChannels();
       }
       
       // Clear any previous errors
@@ -104,7 +99,7 @@ const ChannelSearch = () => {
       console.error('Error toggling follow:', error);
       setSearchError(error.message);
     } finally {
-      setFollowLoading(prev => ({ ...prev, [channelId]: false }));
+      setFollowLoading(prev => ({ ...prev, [mongoId]: false }));
     }
   };
 
@@ -149,19 +144,15 @@ const ChannelSearch = () => {
           <ul className="channel-search__list">
             <li>
               <ChannelItem
-                id={searchResult._id || searchResult.channelId}
+                id={searchResult._id}
                 channelId={searchResult.channelId}
                 name={searchResult.name}
                 username={searchResult.username}
                 description={searchResult.description}
                 thumbnail={searchResult.thumbnail}
-                isFollowing={
-                  // Check by MongoDB _id if available, otherwise by YouTube channelId
-                  searchResult._id 
-                    ? channelService.isFollowing(searchResult._id, followedChannels)
-                    : followedChannels.some(ch => ch.channelId === searchResult.channelId)
-                }
-                isLoading={followLoading[searchResult._id || searchResult.channelId]}
+                followersCount={searchResult.followersCount}
+                isFollowing={channelService.isFollowing(searchResult._id, followedChannels)}
+                isLoading={followLoading[searchResult._id]}
                 onFollowToggle={handleFollowToggle}
               />
             </li>
@@ -217,19 +208,19 @@ const ChannelSearch = () => {
           {!followedLoading && !followedError && followedChannels.length > 0 && (
             <ul className="channel-search__list" aria-labelledby="followed-title">
               {followedChannels.map(channel => (
-                <li key={channel._id}>
+                <li key={channel.id || channel._id}>
                   <ChannelItem
-                    id={channel._id}
+                    id={channel.id || channel._id}
                     channelId={channel.channelId}
                     name={channel.name}
                     username={channel.username}
                     description={channel.description}
-                    thumbnail={channel.thumbnail}
+                    thumbnail={channel.avatar || channel.thumbnail}
                     followersCount={channel.followersCount}
                     subscribedAt={channel.subscribedAt}
                     isFollowing={true}
                     showVisitButton={true}
-                    isLoading={followLoading[channel._id]}
+                    isLoading={followLoading[channel.id || channel._id]}
                     onFollowToggle={handleFollowToggle}
                   />
                 </li>
