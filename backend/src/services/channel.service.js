@@ -4,26 +4,89 @@ import logger from '../utils/logger.js';
 import mongoose from 'mongoose';
 
 /**
+ * Find or create a channel by YouTube channelId
+ * @param {Object} channelData - Channel information from YouTube
+ * @returns {Promise<Object>} Channel document
+ */
+export const findOrCreateChannel = async (channelData) => {
+  try {
+    // Try to find existing channel by YouTube channelId
+    let channel = await Channel.findOne({ channelId: channelData.channelId });
+
+    if (!channel) {
+      // Create new channel if it doesn't exist
+      channel = await Channel.create({
+        channelId: channelData.channelId,
+        name: channelData.name,
+        username: channelData.username || null,
+        thumbnail: channelData.thumbnail || null,
+        description: channelData.description || null,
+        followersCount: 0
+      });
+
+      logger.info('Created new channel', {
+        channelId: channel.channelId,
+        name: channel.name
+      });
+    } else {
+      // Update channel info if it exists (in case data changed)
+      channel.name = channelData.name;
+      channel.username = channelData.username || channel.username;
+      channel.thumbnail = channelData.thumbnail || channel.thumbnail;
+      await channel.save();
+
+      logger.info('Updated existing channel', {
+        channelId: channel.channelId,
+        name: channel.name
+      });
+    }
+
+    return channel;
+  } catch (error) {
+    logger.error('Error finding or creating channel', {
+      channelData,
+      error: error.message
+    });
+    throw error;
+  }
+};
+
+/**
  * Follow a channel
  * @param {string} userId - MongoDB ObjectId of the user
- * @param {string} channelId - MongoDB ObjectId of the channel
+ * @param {string} channelId - MongoDB ObjectId of the channel OR YouTube channelId
+ * @param {Object} channelData - Optional channel data for creation if using YouTube channelId
  * @returns {Promise<Object>} Success or error object
  */
-export const followChannel = async (userId, channelId) => {
+export const followChannel = async (userId, channelId, channelData = null) => {
   try {
-    // Check if channel exists
-    const channel = await Channel.findById(channelId);
-    if (!channel) {
+    let channel;
+
+    // Check if channelId is a MongoDB ObjectId or YouTube channelId
+    if (mongoose.Types.ObjectId.isValid(channelId) && channelId.length === 24) {
+      // It's a MongoDB ObjectId
+      channel = await Channel.findById(channelId);
+      if (!channel) {
+        return {
+          error: 'not_found',
+          message: 'Channel not found'
+        };
+      }
+    } else if (channelData) {
+      // It's a YouTube channelId and we have channel data, find or create
+      channel = await findOrCreateChannel(channelData);
+    } else {
+      // Invalid format
       return {
-        error: 'not_found',
-        message: 'Channel not found'
+        error: 'invalid_id',
+        message: 'Invalid channel ID format'
       };
     }
 
     // Check if already following (idempotency)
     const existingFollow = await UserChannel.findOne({
       userId,
-      channelId
+      channelId: channel._id
     });
 
     if (existingFollow) {
@@ -36,13 +99,13 @@ export const followChannel = async (userId, channelId) => {
     // Create UserChannel relationship
     await UserChannel.create({
       userId,
-      channelId,
+      channelId: channel._id,
       subscribedAt: new Date()
     });
 
     // Increment followersCount
     await Channel.findByIdAndUpdate(
-      channelId,
+      channel._id,
       { $inc: { followersCount: 1 } }
     );
 
