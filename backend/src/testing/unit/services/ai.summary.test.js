@@ -1,11 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { generateVideoSummary, generateSummaryFromText } from '../../../services/ai/summary.service.js';
 import * as openRouterService from '../../../services/ai/openrouter.service.js';
+import { redisClient } from '../../../config/redis.js';
 
 describe('AI Summary Service', () => {
-    // Reset all mocks before each test
-    beforeEach(() => {
+    // Reset all mocks and clear Redis cache before each test
+    beforeEach(async () => {
         vi.clearAllMocks();
+        // Clear Redis cache to prevent idempotency cache hits between tests
+        await redisClient.flushdb();
     });
 
     describe('generateVideoSummary', () => {

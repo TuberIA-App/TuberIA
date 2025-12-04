@@ -26,6 +26,19 @@ const summarizationWorker = new Worker(
         throw new Error(result.message);
       }
 
+      // Log cache behavior for monitoring
+      if (result.fromCache) {
+        logger.info('Summary retrieved from cache (idempotency hit)', {
+          videoId,
+          tokensUsed: result.tokensConsumed
+        });
+      } else {
+        logger.info('Summary generated fresh (idempotency miss)', {
+          videoId,
+          tokensUsed: result.tokensConsumed
+        });
+      }
+
       // Save to database
       await Video.updateOne(
         { videoId },
@@ -41,7 +54,8 @@ const summarizationWorker = new Worker(
 
       logger.info('Summarization completed', {
         videoId,
-        tokensUsed: result.tokensConsumed
+        tokensUsed: result.tokensConsumed,
+        cacheHit: result.fromCache || false
       });
 
       return {
