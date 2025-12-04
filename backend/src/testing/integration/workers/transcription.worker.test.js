@@ -13,7 +13,7 @@ describe('Transcription Worker Integration', () => {
   beforeAll(async () => {
     // Connect to test database if not already connected
     if (mongoose.connection.readyState === 0) {
-      const testMongoUri = process.env.MONGODB_TEST_URI || 'mongodb://mongo:mongo@localhost:27017/tuberia-test-workers?authSource=admin';
+      const testMongoUri = process.env.MONGODB_TEST_URI || 'mongodb://mongo:mongo@mongo:27017/tuberia-test-workers?authSource=admin';
       await mongoose.connect(testMongoUri);
     }
 

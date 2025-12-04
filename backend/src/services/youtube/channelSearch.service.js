@@ -2,6 +2,7 @@ import { channelId as extractChannelId } from './channelIdExtractor.js';
 import { channelFeedExtractor } from './channelFeedExtractor.js';
 import { BadRequestError } from '../../utils/errorClasses.util.js';
 import logger from '../../utils/logger.js';
+import { findOrCreateChannel } from '../channel.service.js';
 
 /**
  * Determina si el input es una URL de YouTube o un username
@@ -104,8 +105,24 @@ export const searchChannel = async (query) => {
             description: null // El RSS feed no incluye descripción del canal
         };
 
+        // 9. Guardar/actualizar el canal en la base de datos
+        logger.info(`Saving channel to database: ${channelName}`);
+        const savedChannel = await findOrCreateChannel(channelInfo);
+        logger.info(`Channel saved to database with _id: ${savedChannel._id}`);
+
+        // 10. Retornar información enriquecida con datos de la BD
+        const enrichedChannelInfo = {
+            _id: savedChannel._id.toString(),
+            channelId: savedChannel.channelId,
+            name: savedChannel.name,
+            username: savedChannel.username,
+            thumbnail: savedChannel.thumbnail,
+            description: savedChannel.description,
+            followersCount: savedChannel.followersCount
+        };
+
         logger.info(`Channel search completed successfully for: ${channelName}`);
-        return channelInfo;
+        return enrichedChannelInfo;
 
     } catch (error) {
         // Si el error ya es operacional (de channelIdExtractor o channelFeedExtractor), lo re-lanzamos
