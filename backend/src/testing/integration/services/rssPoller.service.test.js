@@ -10,7 +10,7 @@ describe('RSS Poller Service', () => {
   beforeEach(async () => {
     // Connect to test database if not already connected
     if (mongoose.connection.readyState === 0) {
-      const testMongoUri = process.env.MONGODB_TEST_URI || 'mongodb://mongo:mongo@localhost:27017/tuberia-test-rss?authSource=admin';
+      const testMongoUri = process.env.MONGODB_TEST_URI || 'mongodb://mongo:mongo@mongo:27017/tuberia-test-rss?authSource=admin';
       await mongoose.connect(testMongoUri);
     }
 

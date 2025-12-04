@@ -11,7 +11,7 @@ describe('Channel Routes Integration Tests', () => {
         // Conectar a DB de test
         const testMongoUri = process.env.MONGODB_TEST_URI
             ?.replace('tuberia-test', 'tuberia-test-channel-routes')
-            || 'mongodb://mongo:mongo@localhost:27017/tuberia-test-channel-routes?authSource=admin';
+            || 'mongodb://mongo:mongo@mongo:27017/tuberia-test-channel-routes?authSource=admin';
 
         if (mongoose.connection.readyState !== 0) {
             await mongoose.connection.close();
@@ -55,9 +55,12 @@ describe('Channel Routes Integration Tests', () => {
             expect(response.body.data.channelId).toBe('UCam8T03EOFBsNdR0thrFHdQ');
             expect(response.body.data.name).toBeDefined();
             expect(response.body.data.username).toBe('@vegetta777');
-            
-            // Verificar que NO incluya followersCount
-            expect(response.body.data).not.toHaveProperty('followersCount');
+
+            // Verificar que incluya followersCount y _id (ahora se guarda en DB)
+            expect(response.body.data).toHaveProperty('followersCount');
+            expect(response.body.data.followersCount).toBe(0);
+            expect(response.body.data).toHaveProperty('_id');
+            expect(response.body.data._id).toBeDefined();
         }, 30000);
 
         it('should return 200 and channel info for valid username without @', async () => {
@@ -100,6 +103,56 @@ describe('Channel Routes Integration Tests', () => {
 
             expect(response.status).toBe(200);
             expect(response.body.data.description).toBeNull();
+        }, 30000);
+
+        it('should create channel in database when found on YouTube', async () => {
+            // Clear any existing test channel
+            await Channel.deleteMany({ channelId: 'UCam8T03EOFBsNdR0thrFHdQ' });
+
+            const response = await request(app)
+                .get('/api/channels/search?q=@vegetta777');
+
+            expect(response.status).toBe(200);
+
+            // Verify channel was saved to database
+            const channelInDb = await Channel.findOne({ channelId: 'UCam8T03EOFBsNdR0thrFHdQ' });
+            expect(channelInDb).toBeDefined();
+            expect(channelInDb.name).toBeDefined();
+            expect(channelInDb.followersCount).toBe(0);
+        }, 30000);
+
+        it('should update existing channel data on search', async () => {
+            // Clear any existing test channel first
+            await Channel.deleteMany({ channelId: 'UCam8T03EOFBsNdR0thrFHdQ' });
+
+            // Create channel with old data
+            const existingChannel = await Channel.create({
+                channelId: 'UCam8T03EOFBsNdR0thrFHdQ',
+                name: 'Old Name',
+                username: '@oldusername',
+                followersCount: 5
+            });
+
+            const response = await request(app)
+                .get('/api/channels/search?q=@vegetta777');
+
+            expect(response.status).toBe(200);
+
+            // Verify channel was updated
+            const updatedChannel = await Channel.findById(existingChannel._id);
+            expect(updatedChannel.name).not.toBe('Old Name'); // Updated from YouTube
+            expect(updatedChannel.username).toBe('@vegetta777'); // Updated
+            expect(updatedChannel.followersCount).toBe(5); // Preserved
+        }, 30000);
+
+        it('should return MongoDB _id in response', async () => {
+            const response = await request(app)
+                .get('/api/channels/search?q=@vegetta777');
+
+            expect(response.status).toBe(200);
+            expect(response.body.data._id).toBeDefined();
+            expect(typeof response.body.data._id).toBe('string');
+            expect(response.body.data._id).toMatch(/^[a-f\d]{24}$/i); // Valid MongoDB ObjectId
         }, 30000);
     });
 

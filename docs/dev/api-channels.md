@@ -31,7 +31,7 @@ All endpoints return JSON responses with the following structure:
 
 ### 1. Search Channel
 
-Search for a YouTube channel by username or URL.
+Search for a YouTube channel by username or URL. This endpoint automatically saves the channel to the database for future use.
 
 **Endpoint:** `GET /api/channels/search`
 
@@ -46,14 +46,25 @@ Search for a YouTube channel by username or URL.
   "success": true,
   "message": "Channel found successfully",
   "data": {
+    "_id": "674d8e9f12a3b4c5d6e7f890",
     "channelId": "UCX6OQ3DkcsbYNE6H8uQQuVA",
     "name": "MrBeast",
     "username": "MrBeast",
     "thumbnail": "https://...",
-    "description": null
+    "description": null,
+    "followersCount": 0
   }
 }
 ```
+
+**Response Fields:**
+- `_id` (string) - MongoDB ObjectId of the channel (use this for follow/unfollow operations)
+- `channelId` (string) - YouTube channel ID (UCxxxxxx format)
+- `name` (string) - Channel display name
+- `username` (string|null) - Channel username/handle
+- `thumbnail` (string|null) - Channel thumbnail URL
+- `description` (null) - Always null (RSS feed doesn't include description)
+- `followersCount` (number) - Number of users following this channel in our system
 
 **Error Responses:**
 - `400` - Missing or invalid query parameter
@@ -323,15 +334,22 @@ curl "http://localhost:5000/api/channels/UCX6OQ3DkcsbYNE6H8uQQuVA" \
 
 ## Business Logic
 
+### Search Operation
+1. Fetches channel info from YouTube RSS feed
+2. Creates channel in database if it doesn't exist
+3. Updates channel info if it already exists (name, username, thumbnail)
+4. Preserves followersCount on updates
+5. Returns enriched data including MongoDB _id
+
 ### Follow Operation
-1. Validates channel exists
+1. Validates channel exists in database
 2. Checks if already following (idempotency)
 3. Creates UserChannel relationship
 4. Increments channel.followersCount
 5. Operations are atomic (MongoDB transactions)
 
 ### Unfollow Operation
-1. Validates channel exists
+1. Validates channel exists in database
 2. Checks if currently following
 3. Deletes UserChannel relationship
 4. Decrements channel.followersCount (minimum 0)
@@ -383,6 +401,7 @@ See [AUTH_API.md](./AUTH_API.md) for authentication details.
 
 ## Notes
 
+- **Search endpoint saves to database**: `GET /api/channels/search` automatically creates/updates channels in MongoDB
 - Channel `followersCount` represents app users following, not YouTube subscribers
 - Following a channel enables automatic RSS polling and video processing
 - Channels with zero followers are not actively polled
@@ -391,6 +410,7 @@ See [AUTH_API.md](./AUTH_API.md) for authentication details.
 - YouTube channel IDs follow the format: `UC` followed by 22 alphanumeric characters
 - Avatar uses placeholder if channel thumbnail not available: `https://via.placeholder.com/150?text=ChannelName`
 - `GET /api/channels/:id` endpoint works without authentication but provides richer data when authenticated
+- **Frontend workflow**: Search returns `_id` which can be used directly in follow/unfollow endpoints
 
 ---
 

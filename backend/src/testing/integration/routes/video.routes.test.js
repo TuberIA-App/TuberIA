@@ -12,7 +12,7 @@ describe('Video Routes Integration Tests', () => {
         // Conectar a DB de test
         const testMongoUri = process.env.MONGODB_TEST_URI
             ?.replace('tuberia-test', 'tuberia-test-video-routes')
-            || 'mongodb://mongo:mongo@localhost:27017/tuberia-test-video-routes?authSource=tuberia_db';
+            || 'mongodb://mongo:mongo@mongo:27017/tuberia-test-video-routes?authSource=tuberia_db';
 
         if (mongoose.connection.readyState !== 0) {
             await mongoose.connection.close();

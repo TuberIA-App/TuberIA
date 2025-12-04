@@ -57,8 +57,8 @@ services:
     image: redis:7-alpine
     container_name: tuberia-redis-dev
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # ports:
+    #   - "6379:6379"  # Commented out due to Windows port reservation issue
     command: redis-server --appendonly yes --appendfsync everysec
     volumes:
       - redis_dev_data:/data

@@ -12,7 +12,7 @@ describe('User Routes Integration Tests', () => {
         // Connect to test database
         const testMongoUri = process.env.MONGODB_TEST_URI
             ?.replace('tuberia-test', 'tuberia-test-user-routes')
-            || 'mongodb://mongo:mongo@localhost:27017/tuberia-test-user-routes?authSource=tuberia_db';
+            || 'mongodb://mongo:mongo@mongo:27017/tuberia-test-user-routes?authSource=tuberia_db';
 
         if (mongoose.connection.readyState !== 0) {
             await mongoose.connection.close();
