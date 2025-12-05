@@ -173,6 +173,45 @@ const getFollowedChannels = async () => {
 };
 
 /**
+ * Get detailed information about a specific channel by YouTube channel ID
+ * Public endpoint (optional authentication for isFollowing status)
+ * @param {string} youtubeChannelId - YouTube channel ID (UCxxxxxx format)
+ * @returns {Promise<Object>} Channel details including isFollowing status
+ */
+const getChannelDetails = async (youtubeChannelId) => {
+  try {
+    if (!youtubeChannelId) {
+      throw new Error('ID de canal de YouTube requerido');
+    }
+
+    const response = await api.get(`/channels/${youtubeChannelId}`);
+
+    if (response.data.success) {
+      return response.data.data.channel;
+    }
+    
+    throw new Error(response.data.message || 'Error al obtener detalles del canal');
+  } catch (error) {
+    if (error.response) {
+      const status = error.response.status;
+      const message = error.response.data?.message;
+
+      if (status === 404) {
+        throw new Error('Canal no encontrado');
+      } else if (status === 400) {
+        throw new Error('ID de canal inválido');
+      } else if (status === 500) {
+        throw new Error('Error del servidor. Intenta más tarde.');
+      }
+      
+      throw new Error(message || 'Error al obtener detalles del canal');
+    }
+    
+    throw new Error(error.message || 'Error de conexión');
+  }
+};
+
+/**
  * Check if user is following a specific channel
  * Helper function to determine follow status
  * @param {string} channelId - MongoDB ObjectId of the channel
@@ -190,6 +229,7 @@ const channelService = {
   followChannel,
   unfollowChannel,
   getFollowedChannels,
+  getChannelDetails,
   isFollowing
 };
 

@@ -187,6 +187,37 @@
   gap: 1.5rem;
 }
 
+/* Main empty state - usuario sin canales */
+.user-home__empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 1.5rem;
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.user-home__empty-icon {
+  color: #9ca3af;
+}
+
+.user-home__empty-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-color, #1f2937);
+  margin: 0;
+}
+
+.user-home__empty-text {
+  font-size: 1.125rem;
+  color: #6b7280;
+  margin: 0;
+  max-width: 500px;
+  line-height: 1.6;
+}
+
 /* Empty state */
 .video-section__empty {
   display: flex;
