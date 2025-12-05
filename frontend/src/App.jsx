@@ -12,6 +12,7 @@ import VideoDetail from './pages/VideoDetail';
 import Dashboard from './pages/Dashboard';
 import Video from './pages/Video';
 import UserHome from './pages/UserHome';
+import MyFeedPage from './pages/MyFeedPage';
 
 // Layouts / protección
 import PrivateLayout from './components/Layout/PrivateLayout';
@@ -29,6 +30,7 @@ function App() {
           {/* Rutas privadas */}
           <Route element={<PrivateLayout />}>
             <Route path="/dashboard" element={<UserHome />} />
+            <Route path="/feed" element={<MyFeedPage />} />
             <Route path="/home" element={<Dashboard />} />
             <Route path="/video" element={<Video />} />
             <Route
