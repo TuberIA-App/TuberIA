@@ -223,11 +223,11 @@ services:
     expose:
       - "6379"
 
-    # Production command with memory limits and LRU eviction
+    # Production command with memory limits and noeviction policy for BullMQ
     command: >
       redis-server
       --maxmemory 128mb
-      --maxmemory-policy allkeys-lru
+      --maxmemory-policy noeviction
       --save 60 1000
       --save 300 10
       --save 900 1
