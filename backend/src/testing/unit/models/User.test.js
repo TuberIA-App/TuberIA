@@ -5,7 +5,7 @@ import User from '../../../model/User.js';
 describe('User Model', () => {
     beforeAll(async () => {
         // Connect to test database with authentication
-        const testMongoUri = process.env.MONGODB_TEST_URI || 'mongodb://mongo:mongo@localhost:27017/tuberia-test?authSource=admin';
+        const testMongoUri = process.env.MONGODB_TEST_URI || 'mongodb://mongo:mongo@mongo:27017/tuberia-test?authSource=admin';
 
         // Close any existing connections
         if (mongoose.connection.readyState !== 0) {
@@ -15,6 +15,9 @@ describe('User Model', () => {
         await mongoose.connect(testMongoUri, {
             serverSelectionTimeoutMS: 5000
         });
+
+        // Ensure indexes are created (critical for unique constraint tests)
+        await User.syncIndexes();
     });
 
     beforeEach(async () => {

@@ -1,8 +1,10 @@
 /* UserHome.css */
 .user-home {
   max-width: 80rem;
-  margin: 0 auto;
+  margin: 1.5rem auto 0;
+  padding: 0 1.5rem 3rem;
 }
+
 
 .user-home__welcome-banner {
   background-image: linear-gradient(to bottom right, rgba(var(--color-primary-rgb, 239, 68, 68), 0.1), rgba(var(--color-primary-rgb, 239, 68, 68), 0.05));
@@ -16,7 +18,6 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
 }
 
 .user-home__welcome-icon {
@@ -113,7 +114,7 @@
   padding: 0;
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(1, 1fr);
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   gap: 1.5rem;
 }
 

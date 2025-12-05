@@ -5,11 +5,15 @@ import Button from '../components/common/Button/Button';
 import Input from '../components/common/Input/Input';
 import Card from '../components/common/Card/Card';
 import Modal from '../components/common/Modal/Modal';
+import PublicHeader from '../components/Layout/PublicHeader';
 import './Home.css';
 
 const Home = () => {
   const [showTryModal, setShowTryModal] = useState(false);
   const [demoUrl, setDemoUrl] = useState('');
+  const [demoChannel, setDemoChannel] = useState(null);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoError, setDemoError] = useState('');
   const modalRef = useRef(null);
   const navigate = useNavigate();
 
@@ -38,18 +42,48 @@ const Home = () => {
   const handleCloseModal = () => setShowTryModal(false);
 
     const handleRegister = () => {
-    navigate('/login', { state: { isLogin: false } });
+    navigate('/signup', { state: { isLogin: false } });
   };
 
   const handleLogin = () => {
     navigate('/login', { state: { isLogin: true } });
   };
 
-  const handleDemoSubmit = (e) => {
+  const handleDemoSubmit = async (e) => {
     e.preventDefault();
-    if (demoUrl) {
-      alert('¡Regístrate gratis para obtener tu resumen!');
-      handleCloseModal();
+    if (!demoUrl.trim() || demoUrl.trim().length < 2) {
+      setDemoError('Escribe al menos 2 caracteres');
+      return;
+    }
+
+    setDemoLoading(true);
+    setDemoError('');
+    setDemoChannel(null);
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/channels/search?q=${encodeURIComponent(demoUrl.trim())}`
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        setDemoChannel(data.data);
+      } else {
+        if (response.status === 404) {
+          setDemoError('No se ha encontrado el canal. Revisa el username o la URL.');
+        } else if (response.status === 400) {
+          setDemoError(data.message || 'La búsqueda no es válida.');
+        } else if (response.status === 429) {
+          setDemoError('Has hecho demasiadas búsquedas. Espera un momento.');
+        } else {
+          setDemoError(data.message || 'Ha ocurrido un error al buscar el canal.');
+        }
+      }
+    } catch (err) {
+      setDemoError('No se puede conectar con el servidor. Inténtalo más tarde.');
+      console.error(err);
+    } finally {
+      setDemoLoading(false);
     }
   };
 
@@ -69,6 +103,8 @@ const Home = () => {
   }, [showTryModal]);
 
   return (
+    <>
+      <PublicHeader />
     <main className="home-page">
       {/* Hero Section */}
             {/* Hero Section */}
@@ -89,7 +125,7 @@ const Home = () => {
             Sigue tus canales favoritos en TuberIA y accede a resúmenes automáticos de cada video. Aprende más en menos tiempo con la ayuda de nuestra IA avanzada.
           </p>
           <div className="hero__actions">
-            <Link to="/login" className="button button--primary button--large">
+            <Link to="/signup" className="button button--primary button--large">
               Comenzar gratis <ArrowRightIcon size={20} aria-hidden="true" />
             </Link>
             <Button 
@@ -149,6 +185,46 @@ const Home = () => {
               <p className="try-it__prompt-title">¿Cómo funciona?</p>
               <p className="try-it__prompt-text">Busca tus canales favoritos, síguelos y accede a resúmenes automáticos de cada video publicado.</p>
             </div>
+            {demoError && (
+              <p className="try-it__error">
+                {demoError}
+              </p>
+            )}
+
+            {demoChannel && (
+              <div className="try-it__result">
+                <div className="try-it__result-header">
+                  {demoChannel.thumbnail ? (
+                    <img
+                      src={demoChannel.thumbnail}
+                      alt={demoChannel.name}
+                      className="try-it__result-thumbnail"
+                    />
+                  ) : (
+                    <div className="try-it__result-thumbnail try-it__result-thumbnail--placeholder">
+                      Sin imagen
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="try-it__result-name">{demoChannel.name}</h3>
+                    <p className="try-it__result-username">
+                      {demoChannel.username || 'Username no disponible'}
+                    </p>
+                    <p className="try-it__result-id">ID: {demoChannel.channelId}</p>
+                  </div>
+                </div>
+                <Button
+                  variant="primary"
+                  fullWidth
+                  onClick={() => {
+                    alert('Para empezar a monitorizar este canal necesitas registrarte.');
+                    navigate('/singup', { state: { isLogin: false } });
+                  }}
+                >
+                  Empezar a monitorizar este canal
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -248,13 +324,13 @@ const Home = () => {
                 </li>
               ))}
             </ul>
-            <Link to="/auth" className="button button--primary button--large benefits__cta">
+            <Link to="/signup" className="button button--primary button--large benefits__cta">
               Empezar gratis ahora <ArrowRightIcon size={20} aria-hidden="true" />
             </Link>
           </div>
           <aside className="benefits__testimonials" aria-label="Testimonios de usuarios">
             <div className="benefits__testimonials-decoration" aria-hidden="true"></div>
-            <div className="benefits__testimonials-content">
+            <div className="benefits__testimonials-content benefits__testimonials-content--glow">
               <header className="benefits__testimonials-header">
                 <div className="benefits__testimonials-icon-wrapper">
                   <UsersIcon size={32} aria-hidden="true" />
@@ -301,7 +377,7 @@ const Home = () => {
           <h2 id="cta-title" className="cta__title">Comienza a aprender más rápido hoy</h2>
           <p className="cta__subtitle">Únete a miles de usuarios que ya están transformando su forma de aprender con TuberIA.</p>
           <div className="cta__actions">
-            <Link to="/auth" className="button button--white button--xlarge">
+            <Link to="/signup" className="button button--white button--xlarge">
               Empezar gratis <ArrowRightIcon size={22} aria-hidden="true" />
             </Link>
             <Link to="/dashboard" className="button button--outline-white button--xlarge">
@@ -367,6 +443,7 @@ const Home = () => {
         </div>
       )}
     </main>
+  </>
   );
 };
 

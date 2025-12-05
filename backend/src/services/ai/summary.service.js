@@ -1,11 +1,12 @@
 import { generateCompletion } from './openrouter.service.js';
 import { processTranscript, validateTranscript } from './transcriptionProcessor.js';
 import { SUMMARY_PROMPT, KEY_POINTS_PROMPT } from './prompts.js';
+import { withIdempotency } from '../../utils/idempotency.js';
 import logger from '../../utils/logger.js';
 
 /**
  * Generates a comprehensive summary of a YouTube video from its transcript
- * 
+ *
  * @param {Object} params - Summary generation parameters
  * @param {Array} params.transcriptArray - Transcript array from youtube-transcript-plus
  * @param {string} [params.videoTitle] - Optional video title for context
@@ -17,9 +18,19 @@ export const generateVideoSummary = async ({
     videoTitle = '',
     model = 'z-ai/glm-4.5'
 }) => {
-    try {
-        // Validation: Check transcript array
-        if (!validateTranscript(transcriptArray)) {
+    // Generate unique key based on transcript characteristics
+    const transcriptLength = Array.isArray(transcriptArray)
+        ? transcriptArray.length
+        : 0;
+    const uniqueKey = `summarize:${videoTitle}:${transcriptLength}`;
+
+    return await withIdempotency(
+        uniqueKey,
+        7 * 24 * 3600, // 7 days in seconds (604800)
+        async () => {
+            try {
+                // Validation: Check transcript array
+                if (!validateTranscript(transcriptArray)) {
             logger.error('Invalid transcript array provided to generateVideoSummary', {
                 isArray: Array.isArray(transcriptArray),
                 length: transcriptArray?.length
@@ -105,30 +116,32 @@ export const generateVideoSummary = async ({
             model: summaryResult.model
         });
 
-        // Return success result
-        return {
-            summary: summaryResult.content,
-            keyPoints,
-            aiModel: summaryResult.model,
-            tokensConsumed: totalTokens,
-            transcriptSegments: transcriptArray.length,
-            transcriptLength: truncatedTranscript.length
-        };
+                // Return success result
+                return {
+                    summary: summaryResult.content,
+                    keyPoints,
+                    aiModel: summaryResult.model,
+                    tokensConsumed: totalTokens,
+                    transcriptSegments: transcriptArray.length,
+                    transcriptLength: truncatedTranscript.length
+                };
 
-    } catch (error) {
-        // Log the error
-        logger.error('Error generating video summary', {
-            error: error.message,
-            stack: error.stack,
-            isOperational: error.isOperational
-        });
+            } catch (error) {
+                // Log the error
+                logger.error('Error generating video summary', {
+                    error: error.message,
+                    stack: error.stack,
+                    isOperational: error.isOperational
+                });
 
-        // Return error object (service pattern in this project)
-        return {
-            error: 'server_error',
-            message: error.message || 'Failed to generate video summary'
-        };
-    }
+                // Return error object (service pattern in this project)
+                return {
+                    error: 'server_error',
+                    message: error.message || 'Failed to generate video summary'
+                };
+            }
+        }
+    );
 };
 
 /**

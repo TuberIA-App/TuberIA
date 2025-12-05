@@ -12,6 +12,7 @@ logs/
 secrets/*.txt
 secrets/*.key
 secrets/*.pem
+dev-secrets/
 
 # MongoDB backups
 mongo-backups/*

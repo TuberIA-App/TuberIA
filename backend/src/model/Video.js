@@ -80,5 +80,7 @@ const videoSchema = new mongoose.Schema({
 videoSchema.index({ videoId: 1 }, { unique: true });
 videoSchema.index({ channelId: 1, publishedAt: -1 });
 videoSchema.index({ status: 1 });
+videoSchema.index({ status: 1, createdAt: -1 });
+videoSchema.index({ channelId: 1, status: 1 });
 
 export default mongoose.model('Video', videoSchema);

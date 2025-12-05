@@ -1,0 +1,81 @@
+## ============================================
+## Docker Compose - Development con Redis y hot reload
+## Para desarrollo local con Redis expuesto y frontend/backend con hot reload
+## ============================================
+## Uso recomendado:
+##   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+##
+## Documentación:
+## - Guía de desarrollo y comandos: docs/README-DOCKER.md
+## - Configuración y troubleshooting de Redis: docs/README-REDIS.md
+## ============================================
+version: '3.8'
+
+services:
+
+
+  frontend:
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+      - CHOKIDAR_USEPOLLING=true
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - tuberia-network
+
+  backend:
+    working_dir: /app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+    networks:
+      - tuberia-network
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  # Redis - Development (exposed port for debugging)
+  redis:
+    image: redis:7-alpine
+    container_name: tuberia-redis-dev
+    restart: unless-stopped
+    # ports:
+    #   - "6379:6379"  # Commented out due to Windows port reservation issue
+    command: redis-server --appendonly yes --appendfsync everysec
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - tuberia-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+volumes:
+  redis_dev_data:
+    driver: local

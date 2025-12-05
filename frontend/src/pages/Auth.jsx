@@ -8,15 +8,21 @@ import authService from '../services/auth.service';
 import './Auth.css';
 
 
-const Auth = () => {
+const Auth = ({ isRegister = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { login } = useAuth();
   
-  const [isLogin, setIsLogin] = useState(location.state?.isLogin ?? true);
+  const [isLogin, setIsLogin] = useState(
+    isRegister ? false : (location.state?.isLogin ?? true)
+  );
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+    React.useEffect(() => {
+    setIsLogin(!isRegister);
+  }, [isRegister]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,8 +38,7 @@ const Auth = () => {
         );
         
         login(response.data.user, response.data.accessToken, response.data.refreshToken); 
-        alert('¡Inicio de sesión exitoso! Bienvenido, ' + response.data.user.name);
-        navigate('/dashboard');  // antes: '/channels'
+        navigate('/dashboard');  
       } else {
         // REGISTRO
         const response = await authService.register({
@@ -44,8 +49,7 @@ const Auth = () => {
         });
         
         login(response.data.user, response.data.accessToken, response.data.refreshToken); 
-        alert('¡Registro exitoso! Bienvenido, ' + response.data.user.name);
-        navigate('/dashboard');  // antes: '/channels'
+        navigate('/dashboard');  
       }
     } catch (err) {
       setError(err.message || 'Error en la autenticación');
@@ -91,16 +95,14 @@ const Auth = () => {
               {isLogin ? 'Inicia sesión para continuar aprendiendo' : 'Regístrate gratis y empieza a resumir videos'}
             </p>
           </div>
-
           <div className="auth-card__tabs">
-            <button onClick={() => setIsLogin(true)} className={`auth-card__tab ${isLogin ? 'auth-card__tab--active' : ''}`} role="tab" aria-selected={isLogin}>
+            <Link to="/login" className={`auth-card__tab ${isLogin ? 'auth-card__tab--active' : ''}`}>
               Iniciar sesión
-            </button>
-            <button onClick={() => setIsLogin(false)} className={`auth-card__tab ${!isLogin ? 'auth-card__tab--active' : ''}`} role="tab" aria-selected={!isLogin}>
+            </Link>
+            <Link to="/signup" className={`auth-card__tab ${!isLogin ? 'auth-card__tab--active' : ''}`}>
               Registrarse
-            </button>
+            </Link>
           </div>
-
           {error && (
             <div style={{ 
               color: '#dc2626', 
@@ -184,21 +186,6 @@ const Auth = () => {
               {loading ? 'Cargando...' : (isLogin ? 'Iniciar sesión' : 'Crear cuenta')}
             </button>
           </form>
-
-          <div className="auth-card__divider">
-            <span>O continúa con</span>
-          </div>
-
-          <div className="auth-card__social-logins">
-            <button className="social-button" disabled={loading}>
-              <img src="https://www.google.com/favicon.ico" alt="" className="social-button__icon" />
-              Google
-            </button>
-            <button className="social-button" disabled={loading}>
-              <img src="https://github.com/favicon.ico" alt="" className="social-button__icon" />
-              GitHub
-            </button>
-          </div>
 
           {!isLogin && (
             <p className="auth-card__terms">

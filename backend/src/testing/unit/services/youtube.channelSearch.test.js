@@ -1,8 +1,31 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import mongoose from 'mongoose';
 import { searchChannel } from '../../../services/youtube/channelSearch.service.js';
 import { BadRequestError, NotFoundError } from '../../../utils/errorClasses.util.js';
+import Channel from '../../../model/Channel.js';
 
 describe('YouTube Channel Search Service - Integration Tests', () => {
+    beforeAll(async () => {
+        // Connect to test database
+        const testMongoUri = process.env.MONGODB_TEST_URI
+            ?.replace('tuberia-test', 'tuberia-test-channel-search')
+            || 'mongodb://mongo:mongo@mongo:27017/tuberia-test-channel-search?authSource=admin';
+
+        if (mongoose.connection.readyState !== 0) {
+            await mongoose.connection.close();
+        }
+
+        await mongoose.connect(testMongoUri, {
+            serverSelectionTimeoutMS: 5000
+        });
+    });
+
+    afterAll(async () => {
+        // Clean up test channels
+        await Channel.deleteMany({ channelId: 'UCam8T03EOFBsNdR0thrFHdQ' });
+        await mongoose.connection.close();
+    });
+
     describe('searchChannel', () => {
         it('should return valid channel info for a real YouTube channel URL', async () => {
             const url = 'https://youtube.com/@vegetta777';
@@ -10,18 +33,19 @@ describe('YouTube Channel Search Service - Integration Tests', () => {
 
             // Verificar estructura de la respuesta
             expect(result).toBeDefined();
+            expect(result).toHaveProperty('_id');
             expect(result).toHaveProperty('channelId');
             expect(result).toHaveProperty('name');
             expect(result).toHaveProperty('username');
             expect(result).toHaveProperty('thumbnail');
             expect(result).toHaveProperty('description');
-
-            // Verificar que NO incluya followersCount (eso es para la DB, no para YouTube)
-            expect(result).not.toHaveProperty('followersCount');
+            expect(result).toHaveProperty('followersCount');
 
             // Verificar tipos
+            expect(typeof result._id).toBe('string');
             expect(typeof result.channelId).toBe('string');
             expect(typeof result.name).toBe('string');
+            expect(typeof result.followersCount).toBe('number');
             expect(result.channelId.length).toBeGreaterThan(0);
             expect(result.name.length).toBeGreaterThan(0);
 

@@ -7,7 +7,7 @@ import User from '../../../model/User.js';
 describe('Auth Routes Integration Tests', () => {
     beforeAll(async () => {
         // Connect to test database with authentication - use different DB name to avoid conflicts
-        const testMongoUri = process.env.MONGODB_TEST_URI?.replace('tuberia-test', 'tuberia-test-routes') || 'mongodb://mongo:mongo@localhost:27017/tuberia-test-routes?authSource=admin';
+        const testMongoUri = process.env.MONGODB_TEST_URI?.replace('tuberia-test', 'tuberia-test-routes') || 'mongodb://mongo:mongo@mongo:27017/tuberia-test-routes?authSource=admin';
 
         // Close any existing connections
         if (mongoose.connection.readyState !== 0) {

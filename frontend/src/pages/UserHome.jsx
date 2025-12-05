@@ -25,7 +25,7 @@ const UserHome = () => {
     <main className="user-home">
       <header className="user-home__welcome-banner">
         <div className="user-home__welcome-title-group">
-          <SparklesIcon size={28} className="user-home__welcome-icon" aria-hidden="true" />
+          <SparklesIcon size={30} className="user-home__welcome-icon" aria-hidden="true" />
           <h1 className="user-home__welcome-title">¡Bienvenido de nuevo!</h1>
         </div>
         <p className="user-home__welcome-subtitle">

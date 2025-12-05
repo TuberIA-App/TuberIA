@@ -1,8 +1,12 @@
+
 # ============================================
 # Docker Compose - Base Configuration
 # Shared settings for all environments
 # ============================================
-version: '3.8'
+# Documentación:
+# - Guía de uso y comandos: docs/README-DOCKER.md
+# - Configuración de Redis: docs/README-REDIS.md
+# - Troubleshooting: docs/README-REDIS.md (sección troubleshooting)
 
 services:
 
@@ -43,8 +47,21 @@ services:
     ports:
       - "27017:27017"
 
+  # Redis - Base configuration (overridden in dev/prod)
+  redis:
+    image: redis:7-alpine
+    container_name: tuberia-redis
+    networks:
+      - tuberia-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 volumes:
   mongo_data:
+  redis_data:
 
 networks:
   tuberia-network:

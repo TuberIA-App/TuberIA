@@ -121,6 +121,9 @@
   cursor: pointer;
   color: #6b7280;
   transition: all 200ms ease-in-out;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
 }
 .auth-card__tab:hover {
   color: var(--text-color, #1f2937);

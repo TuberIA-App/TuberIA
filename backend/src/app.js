@@ -4,6 +4,7 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 
 import routes from './routes/index.js';
+import healthRoutes from './routes/health.routes.js';
 import { errorHandler } from './middlewares/errorHandler.middleware.js';
 import { notFound } from './middlewares/notFound.middleware.js';
 import logger from './utils/logger.js';
@@ -13,7 +14,7 @@ const app = express();
 
 // Trust proxy (important for rate limiting behind reverse proxy)
 app.set('trust proxy', 1);
-
+app.use('/', healthRoutes);
 // Security middlewares
 app.use(helmet());
 
@@ -47,16 +48,6 @@ app.use((req, res, next) => {
         userAgent: req.get('user-agent')
     });
     next();
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        enviroment: process.env.NODE_ENV || 'development'
-    });
 });
 
 // API Routes
