@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { UserDataProvider } from './context/UserDataContext';
 
 import './services/api.interceptor';
 
@@ -21,32 +22,34 @@ import ProtectedRoute from './components/ProtectedRoute';
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Rutas públicas */}
-          <Route path="/" element={<PublicHomeRoute />} />
-          <Route path="/login" element={<Auth isRegister={false} />} />
-          <Route path="/signup" element={<Auth isRegister={true} />} />
-          {/* Rutas privadas */}
-          <Route element={<PrivateLayout />}>
-            <Route path="/dashboard" element={<UserHome />} />
-            <Route path="/feed" element={<MyFeedPage />} />
-            <Route path="/home" element={<Dashboard />} />
-            <Route path="/video" element={<Video />} />
-            <Route
-              path="/video/:id"
-              element={
-                <ProtectedRoute>
-                  <VideoDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/channels" element={<ChannelSearch />} />
-          </Route>
+      <UserDataProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Rutas públicas */}
+            <Route path="/" element={<PublicHomeRoute />} />
+            <Route path="/login" element={<Auth isRegister={false} />} />
+            <Route path="/signup" element={<Auth isRegister={true} />} />
+            {/* Rutas privadas */}
+            <Route element={<PrivateLayout />}>
+              <Route path="/dashboard" element={<UserHome />} />
+              <Route path="/feed" element={<MyFeedPage />} />
+              <Route path="/home" element={<Dashboard />} />
+              <Route path="/video" element={<Video />} />
+              <Route
+                path="/video/:id"
+                element={
+                  <ProtectedRoute>
+                    <VideoDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/channels" element={<ChannelSearch />} />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </UserDataProvider>
     </AuthProvider>
   );
 
