@@ -5,7 +5,7 @@ const PublicHeader = () => {
   const navigate = useNavigate();
 
   const handleLogin = () => navigate('/login', { state: { isLogin: true } });
-  const handleRegister = () => navigate('/login', { state: { isLogin: false } });
+  const handleRegister = () => navigate('/signup', { state: { isLogin: false } });
 
   return (
     <header className="header">

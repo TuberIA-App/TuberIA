@@ -42,7 +42,7 @@ const Home = () => {
   const handleCloseModal = () => setShowTryModal(false);
 
     const handleRegister = () => {
-    navigate('/login', { state: { isLogin: false } });
+    navigate('/signup', { state: { isLogin: false } });
   };
 
   const handleLogin = () => {
@@ -125,7 +125,7 @@ const Home = () => {
             Sigue tus canales favoritos en TuberIA y accede a resúmenes automáticos de cada video. Aprende más en menos tiempo con la ayuda de nuestra IA avanzada.
           </p>
           <div className="hero__actions">
-            <Link to="/login" className="button button--primary button--large">
+            <Link to="/signup" className="button button--primary button--large">
               Comenzar gratis <ArrowRightIcon size={20} aria-hidden="true" />
             </Link>
             <Button 
@@ -218,7 +218,7 @@ const Home = () => {
                   fullWidth
                   onClick={() => {
                     alert('Para empezar a monitorizar este canal necesitas registrarte.');
-                    navigate('/login', { state: { isLogin: false } });
+                    navigate('/singup', { state: { isLogin: false } });
                   }}
                 >
                   Empezar a monitorizar este canal
@@ -324,7 +324,7 @@ const Home = () => {
                 </li>
               ))}
             </ul>
-            <Link to="/auth" className="button button--primary button--large benefits__cta">
+            <Link to="/signup" className="button button--primary button--large benefits__cta">
               Empezar gratis ahora <ArrowRightIcon size={20} aria-hidden="true" />
             </Link>
           </div>
@@ -377,7 +377,7 @@ const Home = () => {
           <h2 id="cta-title" className="cta__title">Comienza a aprender más rápido hoy</h2>
           <p className="cta__subtitle">Únete a miles de usuarios que ya están transformando su forma de aprender con TuberIA.</p>
           <div className="cta__actions">
-            <Link to="/auth" className="button button--white button--xlarge">
+            <Link to="/signup" className="button button--white button--xlarge">
               Empezar gratis <ArrowRightIcon size={22} aria-hidden="true" />
             </Link>
             <Link to="/dashboard" className="button button--outline-white button--xlarge">

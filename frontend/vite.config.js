@@ -6,6 +6,14 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    // AÑADE ESTO
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000', // La dirección de tu backend
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '') // Quita /api del path final
+      }
+    }
   },
   build: {
     outDir: 'dist',
