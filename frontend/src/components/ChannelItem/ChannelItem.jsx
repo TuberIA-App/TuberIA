@@ -76,15 +76,16 @@ const ChannelItem = ({
             onClick={handleFollowToggle} 
             disabled={isLoading}
             aria-label={`Dejar de seguir ${name}`}
+            className="btn-following"
           >
             {isLoading ? (
               <>
                 <Loader2 size={16} className="spinner" /> Procesando...
               </>
             ) : (
-              <>
+              <span className="btn-following-content">
                 <CheckIcon size={16} /> Siguiendo
-              </>
+              </span>
             )}
           </Button>
         ) : (

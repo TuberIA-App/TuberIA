@@ -6,7 +6,7 @@ import MainLayout from './MainLayout';
 const PrivateLayout = () => {
   const { isAuthenticated, loading } = useAuth();
 
-  if (loading) return null; // o un spinner
+  if (loading) return null;
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

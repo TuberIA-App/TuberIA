@@ -24,8 +24,8 @@ function App() {
         <Routes>
           {/* Rutas públicas */}
           <Route path="/" element={<PublicHomeRoute />} />
-          <Route path="/login" element={<Auth />} />
-
+          <Route path="/login" element={<Auth isRegister={false} />} />
+          <Route path="/signup" element={<Auth isRegister={true} />} />
           {/* Rutas privadas */}
           <Route element={<PrivateLayout />}>
             <Route path="/dashboard" element={<UserHome />} />
