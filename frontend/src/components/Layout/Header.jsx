@@ -53,18 +53,23 @@ const Header = () => {
 
         <div className="header__actions">
           {isAuthenticated ? (
-            <>
-              <span className="header__user-name">
-                ¡Hola, {user.name}!
-              </span>
-              <button 
-                onClick={handleLogout} 
-                className="header__action-button" 
+            <div className="header__user-chip">
+              <div className="header__user-info">
+                <UserIcon size={18} aria-hidden="true" />
+                <div className="header__user-text">
+                  <span className="header__user-greeting">Hola,</span>
+                  <span className="header__user-name">{user.name}</span>
+                </div>
+              </div>
+              <Button 
+                variant="tertiary" 
+                size="sm"
+                onClick={handleLogout}
                 aria-label="Cerrar sesión"
               >
                 Salir
-              </button>
-            </>
+              </Button>
+            </div>
           ) : (
             <>
               <Link to="/login" state={{ isLogin: true }} className="button button--secondary">
