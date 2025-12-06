@@ -28,10 +28,16 @@ const transcriptionWorker = new Worker(
       // Fetch transcript using existing service
       const transcriptArray = await getTranscript(videoId);
 
+      // Convert transcript array to single string for database storage
+      const transcriptionText = transcriptArray
+        .map(segment => segment.text)
+        .join(' ')
+        .trim();
+
       // Save to database
       await Video.updateOne(
         { videoId },
-        { transcription: transcriptArray }
+        { transcription: transcriptionText }
       );
 
       // Enqueue summarization job
