@@ -14,6 +14,7 @@ import { redisConnection, redisClient } from './config/redis.js';
 import transcriptionWorker from './workers/transcription.worker.js';
 import summarizationWorker from './workers/summarization.worker.js';
 import { startRSSPolling, stopRSSPolling } from './services/youtube/rssPoller.service.js';
+import { startTranscriptionRetryScheduler, stopTranscriptionRetryScheduler } from './services/retryFailedTranscriptions.service.js';
 
 // Make Redis clients globally available
 global.redisConnection = redisConnection;
@@ -62,6 +63,9 @@ mongoose.connect(MONGODB_URI, mongoOptions)
         // Start RSS polling on boot
         startRSSPolling();
 
+        // Start automatic retry scheduler for failed transcriptions
+        startTranscriptionRetryScheduler();
+
         // Graceful shutdown
         const gracefulShutdown = async (signal) => {
             logger.info(`${signal} signal received: closing HTTP server`);
@@ -73,6 +77,10 @@ mongoose.connect(MONGODB_URI, mongoOptions)
                     // Stop RSS polling scheduler (before workers)
                     await stopRSSPolling();
                     logger.info('RSS polling stopped');
+
+                    // Stop retry scheduler
+                    await stopTranscriptionRetryScheduler();
+                    logger.info('Retry scheduler stopped');
 
                     // Close BullMQ workers (finish current jobs)
                     await transcriptionWorker.close();

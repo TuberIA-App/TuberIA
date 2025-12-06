@@ -334,6 +334,49 @@ describe('Channel Routes Integration Tests', () => {
             expect(channel.followersCount).toBe(0);
         });
 
+        it('should set isActive to false when followersCount reaches 0', async () => {
+            // Follow channel first
+            await request(app)
+                .post(`/api/channels/${testChannelId}/follow`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            // Verify it's active
+            let channel = await Channel.findById(testChannelId);
+            expect(channel.followersCount).toBe(1);
+            expect(channel.isActive).toBe(true);
+
+            // Unfollow (count goes to 0)
+            await request(app)
+                .delete(`/api/channels/${testChannelId}/unfollow`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            // Verify isActive is now false
+            channel = await Channel.findById(testChannelId);
+            expect(channel.followersCount).toBe(0);
+            expect(channel.isActive).toBe(false);  // CRITICAL ASSERTION
+        });
+
+        it('should set isActive to true when channel gains a follower', async () => {
+            // Delete existing UserChannel first to start fresh
+            await UserChannel.deleteOne({ userId, channelId: testChannelId });
+
+            // Ensure channel starts with 0 followers and inactive
+            await Channel.findByIdAndUpdate(testChannelId, {
+                followersCount: 0,
+                isActive: false
+            });
+
+            // Follow the channel
+            await request(app)
+                .post(`/api/channels/${testChannelId}/follow`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            // Verify it's now active
+            const channel = await Channel.findById(testChannelId);
+            expect(channel.followersCount).toBe(1);
+            expect(channel.isActive).toBe(true);  // Should reactivate
+        });
+
         it('should return 401 if not authenticated', async () => {
             const response = await request(app)
                 .delete(`/api/channels/${testChannelId}/unfollow`);
@@ -581,6 +624,105 @@ describe('Channel Routes Integration Tests', () => {
 
             expect(response.status).toBe(400);
             expect(response.body.success).toBe(false);
+        });
+    });
+
+    /**
+     * Channel isActive Lifecycle Tests
+     */
+    describe('Channel isActive Lifecycle', () => {
+        beforeEach(async () => {
+            // Clean up ALL channels to avoid contamination from previous tests
+            await Channel.deleteMany({});
+        });
+
+        afterEach(async () => {
+            // Clean up ALL channels after test
+            await Channel.deleteMany({});
+        });
+
+        it('RSS poller query should NOT include channels with isActive: false', async () => {
+            // Create inactive channel (no followers)
+            const inactiveChannel = await Channel.create({
+                channelId: 'UCinactive123',
+                name: 'Inactive Channel',
+                followersCount: 0,
+                isActive: false
+            });
+
+            // Create active channel with followers
+            const activeChannel = await Channel.create({
+                channelId: 'UCactive456',
+                name: 'Active Channel',
+                followersCount: 5,
+                isActive: true
+            });
+
+            // Query like RSS poller does (rssPoller.service.js:140-143)
+            const channels = await Channel.find({
+                isActive: true,
+                followersCount: { $gt: 0 }
+            });
+
+            // Should only include active channel
+            expect(channels.length).toBe(1);
+            expect(channels[0].channelId).toBe('UCactive456');
+            expect(channels[0].isActive).toBe(true);
+            expect(channels[0].followersCount).toBeGreaterThan(0);
+
+            // Verify inactive channel is NOT included
+            const inactiveFound = channels.find(ch => ch.channelId === 'UCinactive123');
+            expect(inactiveFound).toBeUndefined();
+        });
+
+        it('RSS poller query should NOT include channels with followersCount = 0 even if isActive: true', async () => {
+            // Create channel with 0 followers but still marked active (inconsistent state)
+            const inconsistentChannel = await Channel.create({
+                channelId: 'UCinactive123',
+                name: 'Inconsistent Channel',
+                followersCount: 0,
+                isActive: true  // Inconsistent: active but no followers
+            });
+
+            // Query like RSS poller does
+            const channels = await Channel.find({
+                isActive: true,
+                followersCount: { $gt: 0 }
+            });
+
+            // Should return empty array (followersCount: 0 fails the $gt: 0 condition)
+            expect(channels.length).toBe(0);
+        });
+
+        it('RSS poller query should include channels with followers and isActive: true', async () => {
+            // Create multiple active channels with followers
+            await Channel.create([
+                {
+                    channelId: 'UCactive456',
+                    name: 'Active Channel 1',
+                    followersCount: 10,
+                    isActive: true
+                },
+                {
+                    channelId: 'UCinactive123',
+                    name: 'Active Channel 2',
+                    followersCount: 5,
+                    isActive: true
+                }
+            ]);
+
+            // Query like RSS poller does
+            const channels = await Channel.find({
+                isActive: true,
+                followersCount: { $gt: 0 }
+            });
+
+            // Should include both channels
+            expect(channels.length).toBe(2);
+            channels.forEach(channel => {
+                expect(channel.isActive).toBe(true);
+                expect(channel.followersCount).toBeGreaterThan(0);
+            });
         });
     });
 });

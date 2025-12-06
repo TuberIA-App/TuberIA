@@ -17,7 +17,8 @@ http://localhost:5000/api/auth
 - [3. Refrescar Token](#3-refrescar-token)
 - [4. Obtener Usuario Actual](#4-obtener-usuario-actual)
 - [5. Gestión de Tokens JWT](#5-gestión-de-tokens-jwt)
-- [6. Manejo de Errores](#6-manejo-de-errores)
+- [6. Token Expiration Handling](#6-token-expiration-handling)
+- [7. Manejo de Errores](#7-manejo-de-errores)
 
 ---
 
@@ -545,7 +546,253 @@ export default api;
 
 ---
 
-## 6. Manejo de Errores
+## 6. Token Expiration Handling
+
+### Access Token Expiry
+
+- **Duration:** 15 minutes (configurable via `JWT_ACCESS_EXPIRY`)
+- **Behavior:** Returns `401 Unauthorized` immediately when expired
+- **Response Time:** < 100ms (no hanging requests)
+- **Timeout Protection:** All requests have a 30-second timeout to prevent hanging
+
+### Error Responses for JWT Issues
+
+#### Expired Token
+
+When a token has expired, the backend responds immediately:
+
+```http
+GET /api/auth/me
+Authorization: Bearer <expired_token>
+
+HTTP/1.1 401 Unauthorized
+{
+  "success": false,
+  "message": "Token expired"
+}
+```
+
+**Important:** The backend will respond within 100ms, not hang indefinitely.
+
+#### Invalid Token
+
+```http
+GET /api/auth/me
+Authorization: Bearer <invalid_token>
+
+HTTP/1.1 401 Unauthorized
+{
+  "success": false,
+  "message": "Invalid token"
+}
+```
+
+#### Token Not Active Yet
+
+If a token has a `nbf` (not before) claim in the future:
+
+```http
+GET /api/auth/me
+Authorization: Bearer <future_token>
+
+HTTP/1.1 401 Unauthorized
+{
+  "success": false,
+  "message": "Token not active yet"
+}
+```
+
+#### Request Timeout
+
+If a request exceeds the 30-second timeout:
+
+```http
+HTTP/1.1 408 Request Timeout
+{
+  "success": false,
+  "message": "Request timeout",
+  "error": "The server took too long to respond"
+}
+```
+
+### Frontend Implementation Guide
+
+When receiving 401 with "Token expired", implement automatic token refresh:
+
+```javascript
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'http://localhost:5000/api'
+});
+
+// Request interceptor - add token to all requests
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor - automatic token refresh
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Check if error is due to expired token
+    if (
+      error.response?.status === 401 &&
+      error.response?.data?.message === 'Token expired' &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true;
+
+      try {
+        // Attempt to refresh token
+        const refreshToken = localStorage.getItem('refreshToken');
+        const response = await axios.post(
+          'http://localhost:5000/api/auth/refresh',
+          { refreshToken }
+        );
+
+        const { accessToken } = response.data.data;
+        localStorage.setItem('accessToken', accessToken);
+
+        // Retry original request with new token
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return api(originalRequest);
+
+      } catch (refreshError) {
+        // Refresh failed - redirect to login
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
+
+    // For other errors, just reject
+    return Promise.reject(error);
+  }
+);
+
+export default api;
+```
+
+### Best Practices
+
+1. **Client-Side Token Expiry Check**
+   - Decode the JWT on the client to check expiry before making requests
+   - Use a library like `jwt-decode` to read the `exp` claim
+   - Refresh proactively if token expires in < 1 minute
+
+```javascript
+import jwtDecode from 'jwt-decode';
+
+function isTokenExpiringSoon(token) {
+  try {
+    const decoded = jwtDecode(token);
+    const expiryTime = decoded.exp * 1000; // Convert to milliseconds
+    const now = Date.now();
+    const timeUntilExpiry = expiryTime - now;
+
+    // Refresh if expires in less than 1 minute
+    return timeUntilExpiry < 60000;
+  } catch (error) {
+    return true; // If can't decode, assume expired
+  }
+}
+```
+
+2. **Automatic Token Refresh**
+   - Implement interceptors as shown above
+   - Set `_retry` flag to prevent infinite loops
+   - Handle refresh token expiration by redirecting to login
+
+3. **Refresh Token Rotation**
+   - Consider implementing refresh token rotation for enhanced security
+   - Issue a new refresh token each time the access token is refreshed
+
+4. **Logout on Refresh Failure**
+   - Always clear all tokens and redirect to login if refresh fails
+   - This ensures users can't get stuck in an invalid auth state
+
+5. **Silent Authentication**
+   - Refresh tokens in the background without user interaction
+   - Show loading states during token refresh
+
+### Token Lifecycle Flow
+
+```
+User Login/Register
+  ↓
+Receive accessToken (15m) + refreshToken (7d)
+  ↓
+Store tokens in localStorage
+  ↓
+Make API requests with accessToken
+  ↓
+[After ~14 minutes]
+  ↓
+accessToken expires
+  ↓
+Backend responds: 401 "Token expired" (< 100ms)
+  ↓
+Frontend intercepts 401
+  ↓
+Automatically calls /api/auth/refresh with refreshToken
+  ↓
+Receive new accessToken
+  ↓
+Retry failed request with new token
+  ↓
+Continue using app seamlessly
+```
+
+### Debugging Token Issues
+
+If you're experiencing authentication issues:
+
+1. **Check Token Validity**
+```javascript
+const token = localStorage.getItem('accessToken');
+console.log('Token:', token);
+
+try {
+  const decoded = jwtDecode(token);
+  console.log('Decoded:', decoded);
+  console.log('Expires:', new Date(decoded.exp * 1000));
+  console.log('Is expired:', Date.now() > decoded.exp * 1000);
+} catch (error) {
+  console.error('Invalid token:', error);
+}
+```
+
+2. **Monitor Network Requests**
+   - Open browser DevTools → Network tab
+   - Filter by "Auth" or "api/auth"
+   - Check response times (should be < 1 second for 401 errors)
+   - Verify 401 responses contain specific error messages
+
+3. **Check Backend Logs**
+```bash
+docker logs tuberia-backend --tail 100 -f
+```
+
+Look for log entries like:
+```
+Auth middleware error: { errorName: 'TokenExpiredError', errorMessage: 'jwt expired' }
+```
+
+---
+
+## 7. Manejo de Errores
 
 ### Estructura de Respuesta de Error
 
