@@ -31,7 +31,12 @@ describe('RSS Poller Service - Unit Tests', () => {
             'yt:videoId': 'latest-video-id',
             title: 'Latest Video',
             published: '2025-12-06T10:00:00Z',
-            'yt:channelId': 'UCam8T03EOFBsNdR0thrFHdQ'
+            'yt:channelId': 'UCam8T03EOFBsNdR0thrFHdQ',
+            'media:group': {
+              'media:thumbnail': {
+                url: 'https://i.ytimg.com/vi/latest-video-id/hqdefault.jpg'
+              }
+            }
           },
           {
             'yt:videoId': 'old-video-id-1',
@@ -74,6 +79,7 @@ describe('RSS Poller Service - Unit Tests', () => {
         url: 'https://www.youtube.com/watch?v=latest-video-id',
         channelId: mockChannel._id,
         publishedAt: new Date('2025-12-06T10:00:00Z'),
+        thumbnail: 'https://i.ytimg.com/vi/latest-video-id/hqdefault.jpg',
         status: 'pending',
         createdAt: expect.any(Date)
       });
@@ -106,7 +112,12 @@ describe('RSS Poller Service - Unit Tests', () => {
             'yt:videoId': 'existing-video',
             title: 'Already Processed',
             published: '2025-12-06T10:00:00Z',
-            'yt:channelId': 'UCam8T03EOFBsNdR0thrFHdQ'
+            'yt:channelId': 'UCam8T03EOFBsNdR0thrFHdQ',
+            'media:group': {
+              'media:thumbnail': {
+                url: 'https://i.ytimg.com/vi/existing-video/hqdefault.jpg'
+              }
+            }
           },
           // ... more old videos
         ]
@@ -171,7 +182,12 @@ describe('RSS Poller Service - Unit Tests', () => {
           'yt:videoId': 'single-video',
           title: 'Only Video',
           published: '2025-12-06T10:00:00Z',
-          'yt:channelId': 'UCsingleVideo'
+          'yt:channelId': 'UCsingleVideo',
+          'media:group': {
+            'media:thumbnail': {
+              url: 'https://i.ytimg.com/vi/single-video/hqdefault.jpg'
+            }
+          }
         }
       };
 

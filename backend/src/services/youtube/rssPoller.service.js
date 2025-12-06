@@ -35,12 +35,16 @@ async function processChannelVideos(channel) {
       return;
     }
 
+    // Extract thumbnail URL from media:group.media:thumbnail
+    const thumbnail = latestVideo['media:group']?.['media:thumbnail']?.url || null;
+
     const videoData = {
       videoId: latestVideo['yt:videoId'],
       title: latestVideo.title,
       publishedAt: new Date(latestVideo.published),
       channelId: latestVideo['yt:channelId'],
-      url: `https://www.youtube.com/watch?v=${latestVideo['yt:videoId']}`
+      url: `https://www.youtube.com/watch?v=${latestVideo['yt:videoId']}`,
+      thumbnail
     };
 
     // Check if video already exists (deduplication)
@@ -56,6 +60,7 @@ async function processChannelVideos(channel) {
         url: videoData.url,
         channelId: channel._id,
         publishedAt: videoData.publishedAt,
+        thumbnail: videoData.thumbnail,
         status: 'pending',
         createdAt: new Date()
       });
