@@ -134,6 +134,32 @@ describe('Video Routes Integration Tests', () => {
             expect(response.body.data.pagination.totalCount).toBe(3);
         });
 
+        it('should NOT include summary or keyPoints in feed response (lazy loading)', async () => {
+            const response = await request(app)
+                .get('/api/users/me/videos')
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(200);
+            const videos = response.body.data.videos;
+            expect(videos.length).toBeGreaterThan(0);
+
+            // Verify fields are excluded (lazy loading optimization)
+            videos.forEach(video => {
+                expect(video).not.toHaveProperty('summary');
+                expect(video).not.toHaveProperty('keyPoints');
+                expect(video).not.toHaveProperty('aiModel');
+                expect(video).not.toHaveProperty('tokensConsumed');
+
+                // Verify essential fields are present
+                expect(video).toHaveProperty('videoId');
+                expect(video).toHaveProperty('title');
+                expect(video).toHaveProperty('url');
+                expect(video).toHaveProperty('status');
+                expect(video).toHaveProperty('publishedAt');
+                expect(video).toHaveProperty('createdAt');
+            });
+        });
+
         it('should return videos sorted by publishedAt descending (newest first)', async () => {
             const response = await request(app)
                 .get('/api/users/me/videos')
@@ -293,6 +319,22 @@ describe('Video Routes Integration Tests', () => {
             expect(response.body.data.video.videoId).toBe(videoId);
             expect(response.body.data.video.title).toBe('Test Video Detail');
             expect(response.body.data.video.summary).toBe('Test summary');
+        });
+
+        it('should INCLUDE summary and keyPoints in single video response', async () => {
+            const response = await request(app)
+                .get(`/api/videos/${videoId}`)
+                .set('Authorization', `Bearer ${authToken}`);
+
+            expect(response.status).toBe(200);
+            const video = response.body.data.video;
+
+            // Verify summary fields ARE present (NOT lazy loaded on detail page)
+            expect(video).toHaveProperty('summary');
+            expect(video).toHaveProperty('keyPoints');
+            expect(video.summary).toBe('Test summary');
+            expect(video.keyPoints).toEqual(['Point 1', 'Point 2']);
+            expect(Array.isArray(video.keyPoints)).toBe(true);
         });
 
         it('should return 403 if user does not follow the channel', async () => {

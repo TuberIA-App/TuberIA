@@ -58,7 +58,7 @@ export const getUserVideoFeed = async (userId, options = {}) => {
       .sort({ publishedAt: -1 })  // Newest first (uses index: { channelId: 1, publishedAt: -1 })
       .skip(skip)
       .limit(limit)
-      .select('videoId title url channelId publishedAt status summary keyPoints aiModel tokensConsumed thumbnail durationSeconds viewsCount createdAt')
+      .select('videoId title url channelId publishedAt status thumbnail durationSeconds viewsCount createdAt')
       .lean();
 
     // Step 4: Get total count for pagination metadata
