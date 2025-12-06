@@ -35,10 +35,25 @@ export const authMiddleware = asyncHandler(async (req, res, next) => {
         next();
 
     } catch (error) {
-        logger.error(`Auth middleware error, { error: ${error.message} }`)
+        logger.error('Auth middleware error', {
+            errorName: error.name,
+            errorMessage: error.message
+        });
 
+        // Handle JWT-specific errors
         if (error.name === 'JsonWebTokenError') {
             throw new UnauthorizedError('Invalid token');
         }
+
+        if (error.name === 'TokenExpiredError') {
+            throw new UnauthorizedError('Token expired');
+        }
+
+        if (error.name === 'NotBeforeError') {
+            throw new UnauthorizedError('Token not active yet');
+        }
+
+        // Re-throw other errors (database, etc.)
+        throw error;
     }
 })

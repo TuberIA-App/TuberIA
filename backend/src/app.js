@@ -7,6 +7,7 @@ import routes from './routes/index.js';
 import healthRoutes from './routes/health.routes.js';
 import { errorHandler } from './middlewares/errorHandler.middleware.js';
 import { notFound } from './middlewares/notFound.middleware.js';
+import { timeoutMiddleware } from './middlewares/timeout.middleware.js';
 import logger from './utils/logger.js';
 import { RATE_LIMIT } from './config/constants.js';
 
@@ -40,6 +41,9 @@ app.use('/api', limiter);
 // Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Timeout middleware (prevent requests from hanging indefinitely)
+app.use(timeoutMiddleware(30000)); // 30 seconds
 
 // Request logging middleware
 app.use((req, res, next) => {
