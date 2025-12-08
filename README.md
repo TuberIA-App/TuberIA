@@ -16,6 +16,13 @@ TuberIA es una plataforma web que utiliza inteligencia artificial para **automat
 
 ---
 
+## [Wiki](/wiki/INDEX.md)
+
+La wiki completa está organizada en el directorio [`wiki/`](wiki/INDEX.md):
+- [**CLICK AQUÍ PARA ACCEDER A LA WIKI**](/wiki/INDEX.md)
+
+---
+
 ## 📚 Documentación del Proyecto
 
 Toda la documentación está organizada en el directorio [`docs/`](docs/):
