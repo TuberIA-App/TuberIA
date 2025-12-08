@@ -261,3 +261,261 @@ En caso que algún momento haya problemas de rate limit con esta librería, se p
 - Los **IDEs** a utilizar es cuestión de preferencias personales, pero vamos a utilizar principalmente Visual Studio Code, debido a que es de lo más flexibles en el desarrollo full-stack. Como vamos a trabajar tanto de frontend como de backend, las extensiones de Visual Studio Code nos permiten integrar "snippets" útiles para todos los ámbitos del desarrollo (React Snippets, HTML Snippets, etc…) que nos facilitarán el desarrollo a parte de su gran uso en el mundo real por la facilidad que presenta.
 
 - Vamos a realizar **tests unitarios** sobre todo en la parte del backend para facilitar un desarrollo seguro, probar las APIs y que efectivamente retornen lo que debería. Esto es esencial al trabajar en equipo, debido a que si algún miembro hace algún cambio notable y falla en los tests unitarios, significa que se ha cambiado algo que está afectando a un endpoint anterior, lo cual es muy útil porque al hacer los tests unitarios tendremos siempre la seguridad de saber si lo que hemos construido se sigue manteniendo para cambios futuros.
+
+---
+
+## 4. Recursos humanos
+
+### Roles rotativos del equipo
+
+Para fomentar el aprendizaje integral y evitar la sobrecarga de responsabilidad en un solo miembro, el equipo de TuberIA implementa un **sistema de rotación de roles** a lo largo de los 6 sprints del proyecto.
+
+#### Roles principales:
+
+1. **Product Owner (PO)**
+   - Responsable de definir y priorizar el Product Backlog
+   - Toma decisiones sobre el alcance de cada sprint
+   - Valida que las funcionalidades cumplan los requisitos de negocio
+   - Punto de contacto con stakeholders (en este caso, profesores/evaluadores)
+
+2. **Scrum Master (SM)**
+   - Facilita las ceremonias Scrum (Sprint Planning, Daily Standups, Sprint Review, Sprint Retrospective)
+   - Elimina impedimentos que bloqueen al equipo
+   - Mantiene actualizado el tablero de GitHub Projects
+   - Asegura que se respete la metodología ágil
+
+3. **Developer (Dev)**
+   - Implementa las funcionalidades asignadas (Frontend, Backend, BD, DevOps)
+   - Realiza code reviews de los Pull Requests
+   - Participa activamente en las estimaciones de tareas
+   - Mantiene la calidad del código y la documentación técnica
+
+#### Distribución de roles por sprint:
+
+| Sprint | Fechas | Product Owner | Scrum Master | Developers |
+|--------|--------|---------------|--------------|------------|
+| Sprint 1 | 31 Oct - 06 Nov 2025 | Natalia | Ezequiel | Alfonso |
+| Sprint 2 | 07 Nov - 13 Nov 2025 | Ezequiel | Alfonso | Natalia |
+| Sprint 3 | 14 Nov - 20 Nov 2025 | Natalia | Alfonso | Ezequiel |
+| Sprint 4 | 21 Nov - 27 Nov 2025 | Alfonso | Natalia | Ezequiel |
+| Sprint 5 | 28 Nov - 04 Dic 2025 | Alfonso | Ezequiel | Natalia |
+| Sprint 6 | 05 Dic - 11 Dic 2025 | Ezequiel | Natalia | Alfonso |
+
+
+#### Beneficios de la rotación:
+
+- **Visión holística**: Todos los miembros experimentan diferentes perspectivas del proyecto
+- **Desarrollo de habilidades blandas**: Liderazgo, facilitación, negociación
+- **Prevención de burnout**: Ningún miembro está permanentemente en un rol de alta presión
+- **Bus factor reducido**: El conocimiento se distribuye, evitando dependencias críticas de una sola persona
+- **Empatía entre roles**: Entender las responsabilidades de cada rol mejora la colaboración
+
+#### Responsabilidades específicas por sprint:
+
+**Semana previa al sprint:**
+- **PO**: Refinar el Product Backlog, preparar historias de usuario
+- **SM**: Revisar métricas del sprint anterior, preparar agenda de Sprint Planning
+
+**Durante el sprint:**
+- **PO**: Disponible para aclarar requisitos, validar entregas incrementales
+- **SM**: Facilitar Daily Standups (15 min diarios), actualizar tablero, resolver impedimentos
+- **Devs**: Desarrollo, testing, code reviews, documentación
+
+**Final del sprint:**
+- **SM**: Organizar Sprint Review y Sprint Retrospective
+- **PO**: Validar funcionalidades completadas, aceptar/rechazar historias de usuario
+- **Devs**: Preparar demo, presentar trabajo completado
+
+### Herramientas de gestión de tiempo
+
+Para medir con precisión las horas invertidas y mejorar las estimaciones futuras, el equipo utiliza:
+
+#### Toggl Track
+
+- **URL**: https://toggl.com/track/
+- **Propósito**: Registro de tiempo real invertido en cada tarea
+- **Integración**: Vinculado con issues de GitHub mediante tags
+
+**Flujo de trabajo con Toggl Track:**
+
+1. **Inicio de tarea**:
+   - Abrir issue en GitHub Projects
+   - Iniciar timer en Toggl Track con el nombre del issue (ej: `#123 - Implementar autenticación JWT`)
+   - Añadir tag del tipo de tarea: `frontend`, `backend`, `devops`, `testing`, `docs`
+
+2. **Durante el trabajo**:
+   - Pausar timer al hacer descansos, cambiar de tarea o interrupciones
+   - Añadir comentario en el issue de GitHub explicando el progreso
+
+3. **Fin de tarea**:
+   - Detener timer en Toggl Track
+   - Registrar horas totales en el campo "Horas Reales" del issue en GitHub Projects
+   - Comparar con la estimación inicial
+
+4. **Análisis semanal**:
+   - El Scrum Master exporta el reporte semanal de Toggl Track
+   - Se comparan horas estimadas vs. horas reales por categoría
+   - Se ajustan estimaciones para el siguiente sprint basándose en la velocidad real del equipo
+
+#### GitHub Projects
+
+- **URL**: https://github.com/orgs/TuberIA-App/projects/1
+- **Propósito**: Tablero Kanban para visualizar el estado de todas las tareas
+- **Campos personalizados**:
+  - **Sprint**: Sprint 1, Sprint 2, ..., Sprint 6
+  - **Prioridad**: 1 (máxima) a 6 (baja)
+  - **Estimación (horas)**: Horas estimadas antes de comenzar
+  - **Horas Reales**: Horas realmente invertidas (extraídas de Toggl Track)
+  - **Categoría**: Frontend, Backend, BD, DevOps, Testing, Documentación
+  - **Estado**: Backlog, To Do, In Progress, In Review, Done
+  - **Asignado a**: Miembro responsable
+
+### Comunicación del equipo
+
+El equipo mantiene comunicación constante mediante:
+
+- **Discord**: Canal principal para comunicación diaria, dudas rápidas, pair programming
+- **Daily Standup** (15 min, cada mañana):
+  - ¿Qué hice ayer?
+  - ¿Qué haré hoy?
+  - ¿Tengo algún impedimento?
+- **Sprint Planning** (inicio de cada sprint): Planificación del trabajo de la semana
+- **Sprint Review** (final de sprint): Demo de funcionalidades completadas
+- **Sprint Retrospective** (final de sprint): ¿Qué salió bien? ¿Qué mejorar?
+
+---
+
+## 5. Recursos materiales adicionales
+
+Esta sección complementa la información de la **sección 2. Recursos materiales y tecnológicos** con detalles adicionales sobre gestión de credenciales y monitorización.
+
+### Gestión de credenciales y secretos
+
+Para manejar de forma segura las credenciales compartidas del equipo (API keys, contraseñas de bases de datos, tokens de acceso), utilizamos:
+
+#### 1Password Teams (o alternativa: Bitwarden)
+
+⚠️ **Recomendado, no implementado actualmente**
+
+- **Propósito**: Almacenamiento centralizado y seguro de credenciales
+- **Plan**: Teams/Free (según disponibilidad)
+- **Coste**: $0 (plan gratuito o crédito educativo)
+
+Actualmente el equipo gestiona credenciales mediante comunicación directa en Discord y archivos `.env` locales (no commiteados).
+
+**Credenciales almacenadas:**
+
+| Servicio | Credencial | Ubicación en 1Password | Acceso |
+|----------|------------|------------------------|--------|
+| DigitalOcean Droplet | SSH Key + Root Password | `/DevOps/DigitalOcean` | Backend Lead, DevOps |
+| MongoDB | Admin Username/Password | `/Backend/MongoDB` | Backend Lead, Database Manager |
+| Redis | Password (si se configura) | `/Backend/Redis` | Backend Lead |
+| OpenRouter API | API Key | `/Backend/OpenRouter` | Backend Lead |
+| YouTube Data API v3 | API Key | `/Backend/YouTube` | Backend Lead |
+| GitHub Actions | Secrets (Deploy keys) | `/DevOps/GitHub` | DevOps, Backend Lead |
+| Cloudflare | API Token | `/DevOps/Cloudflare` | DevOps |
+| Toggl Track | Team Workspace | `/Team/Toggl` | Todos |
+
+**Buenas prácticas:**
+- ✅ Nunca commitear credenciales en el repositorio (usar `.env` en `.gitignore`)
+- ✅ Rotar credenciales cada 3 meses o al finalizar el proyecto
+- ✅ Usar credenciales diferentes para desarrollo y producción
+- ✅ Acceso basado en roles (principio de mínimo privilegio)
+
+### Variables de entorno
+
+**Desarrollo local** (`.env.example` commiteado al repo):
+```bash
+NODE_ENV=development
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/tuberia_dev
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=your_dev_jwt_secret_here
+OPENROUTER_API_KEY=your_openrouter_key
+YOUTUBE_API_KEY=your_youtube_key
+```
+
+**Producción** (configurado en el servidor VPS):
+```bash
+NODE_ENV=production
+PORT=5000
+MONGODB_URI=mongodb://mongodb:27017/tuberia_prod
+REDIS_URL=redis://redis:6379
+JWT_SECRET=<strong_random_secret_from_1password>
+OPENROUTER_API_KEY=<api_key_from_1password>
+YOUTUBE_API_KEY=<api_key_from_1password>
+```
+
+### Monitorización y logs
+
+Para asegurar el correcto funcionamiento en producción:
+
+#### PM2 (Process Manager para Node.js)
+
+⚠️ **Pendiente de implementar**
+
+- **Propósito**: Mantener el backend corriendo 24/7, reinicio automático en caso de crash
+- **Instalación**: `npm install -g pm2`
+- **Coste**: $0 (open source)
+
+En producción actualmente se usa Docker Compose con `restart: unless-stopped` para mantener los servicios activos.
+
+#### Winston Logger
+
+✅ **Ya implementado** en `src/utils/logger.js`
+
+**Niveles de log:**
+- `error`: Errores críticos que requieren atención inmediata
+- `warn`: Situaciones anómalas pero no críticas
+- `info`: Información general del flujo de la aplicación
+- `debug`: Información detallada para debugging (solo en desarrollo)
+
+**Rotación de logs:**
+- Los logs se rotan por tamaño (5MB máximo por archivo)
+- Se mantienen últimos 5 archivos
+- Archivos: `logs/error.log` y `logs/combined.log`
+
+#### Backups automáticos
+
+**Redis**:
+✅ **Ya implementado** - Scripts disponibles en `/scripts/`:
+- `backup-redis.sh` / `backup-redis.ps1`
+- `monitor-redis.sh` / `monitor-redis.ps1`
+
+Redis persiste automáticamente en `/var/docker/redis/dump.rdb`
+
+### Límites de recursos del VPS
+
+Monitorización del uso de recursos para evitar saturación:
+
+| Recurso | Límite VPS | Uso estimado MVP | Alerta en | Acción |
+|---------|-----------|------------------|-----------|--------|
+| CPU | 1 vCPU | ~40% promedio | >80% | Optimizar queries, caching |
+| RAM | 2 GB | ~1.2 GB | >1.8 GB | Analizar memory leaks, reiniciar servicios |
+| Disco | 50 GB | ~15 GB (10 GB BD + 5 GB logs/backups) | >40 GB | Limpiar logs antiguos, comprimir backups |
+| Ancho de banda | 2000 GB/mes | ~200 GB/mes | >1800 GB/mes | Optimizar assets, CDN |
+
+**Herramientas de monitorización:**
+- `htop`: Uso de CPU y RAM en tiempo real
+- `df -h`: Uso de disco
+- `docker stats`: Uso de recursos por contenedor
+
+### Costes materiales totales (actualización)
+
+| Categoría | Servicio/Herramienta | Coste mensual | Coste 6 meses (MVP) |
+|-----------|---------------------|---------------|---------------------|
+| **Infraestructura** | DigitalOcean Droplet | $12 | $72 (cubierto por crédito estudiantil) |
+| **Dominio** | Dominio .com/.es (opcional) | $1-2 | $12 |
+| **IA** | OpenRouter (modelos gratuitos en dev) | $0-5 | $0-30 |
+| **CDN** | Cloudflare (plan free) | $0 | $0 |
+| **Gestión de secretos** | 1Password Teams (free tier) | $0 | $0 |
+| **Monitorización** | PM2 + Winston (self-hosted) | $0 | $0 |
+| **Total** | | **$13-19/mes** | **$84-114 (6 meses)** |
+
+**Conclusión**: El coste material del proyecto es muy bajo gracias a:
+- Crédito educativo de DigitalOcean ($200)
+- Uso de herramientas open source
+- Modelos de IA gratuitos en fase MVP
+- Self-hosting de todos los servicios
+
+El **coste real** se centra principalmente en las **horas de desarrollo del equipo**, lo cual se detalla en `/docs/presupuesto.md`.
