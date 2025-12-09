@@ -17,6 +17,16 @@ const Dashboard = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [channelToUnfollow, setChannelToUnfollow] = useState(null);
 
+  // Helper to format duration from seconds to MM:SS
+  const formatDuration = (totalSeconds) => {
+    if (isNaN(totalSeconds) || totalSeconds < 0) {
+      return '00:00';
+    }
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
   const fetchChannelsAndVideos = async () => {
     try {
       setLoading(true);
@@ -33,11 +43,7 @@ const Dashboard = () => {
 
       // Agrupar videos por canal
       const channelsWithVideosData = channels.map(channel => {
-        const channelVideos = allVideos.filter(video => 
-          video.channel?._id === channel.id || 
-          video.channel?.id === channel.id ||
-          video.channelId === channel.channelId
-        );
+        const channelVideos = allVideos.filter(video => video.channelId === channel.id);
 
         return {
           ...channel,
@@ -206,11 +212,11 @@ const Dashboard = () => {
                 {channel.videos.map(video => (
                   <li key={video._id || video.id}>
                     <VideoCard
-                      id={video._id || video.id}
+                      id={video.videoId}
                       title={video.title || 'Video sin título'}
                       channelName={channel.name}
                       thumbnail={video.thumbnail || 'https://via.placeholder.com/400x225?text=No+Thumbnail'}
-                      duration={video.duration || '00:00'}
+                      duration={formatDuration(video.durationSeconds)}
                     />
                   </li>
                 ))}

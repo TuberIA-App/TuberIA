@@ -13,6 +13,7 @@ const UserHome = () => {
     followedChannels: 0
   });
   const [recentVideos, setRecentVideos] = useState([]);
+  const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -22,20 +23,32 @@ const UserHome = () => {
     { label: 'Canales seguidos', value: stats.followedChannels.toString(), icon: TrendingUpIcon }
   ];
 
+  // Helper to format duration from seconds to MM:SS
+  const formatDuration = (totalSeconds) => {
+    if (isNaN(totalSeconds) || totalSeconds < 0) {
+      return '00:00';
+    }
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Obtener stats y videos recientes en paralelo
-        const [statsData, videosData] = await Promise.all([
+        // Obtener stats, videos y canales en paralelo
+        const [statsData, videosData, channelsData] = await Promise.all([
           userService.getStats(),
-          videoService.getMyVideos({ limit: 6, status: 'completed' })
+          videoService.getMyVideos({ limit: 6, status: 'completed' }),
+          userService.getMyChannels()
         ]);
 
         setStats(statsData);
         setRecentVideos(videosData.videos || []);
+        setChannels(channelsData.channels || []);
       } catch (err) {
         console.error('Error loading user home data:', err);
         setError(err.message || 'Error al cargar los datos');
@@ -46,6 +59,9 @@ const UserHome = () => {
 
     fetchData();
   }, []);
+
+  // Create a map for quick channel name lookup
+  const channelNameMap = new Map(channels.map(c => [c.id, c.name]));
 
   if (loading) {
     return (
@@ -138,11 +154,11 @@ const UserHome = () => {
                 {recentVideos.map(video => (
                   <li key={video._id || video.id}>
                     <VideoCard
-                      id={video._id || video.id}
+                      id={video.videoId}
                       title={video.title || 'Video sin título'}
-                      channelName={video.channel?.name || 'Canal desconocido'}
+                      channelName={channelNameMap.get(video.channelId) || 'Canal desconocido'}
                       thumbnail={video.thumbnail || 'https://via.placeholder.com/400x225?text=No+Thumbnail'}
-                      duration={video.duration || '00:00'}
+                      duration={formatDuration(video.durationSeconds)}
                     />
                   </li>
                 ))}
