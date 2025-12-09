@@ -82,7 +82,7 @@ const VideoDetail = () => {
       <article className="video-card-large" aria-labelledby="video-title">
         <div className="video-card-large__thumbnail-wrapper">
           <img 
-            src={video.thumbnail || 'https://via.placeholder.com/400x225?text=No+Thumbnail'} 
+            src={video.thumbnail || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyNSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyNSIgc3R5bGU9ImZpbGw6I2NjY2NjYyIvPjwvc3ZnPg=='} 
             alt={video.title} 
             className="video-card-large__thumbnail-img" />
         </div>

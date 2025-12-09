@@ -157,7 +157,7 @@ const UserHome = () => {
                       id={video.videoId}
                       title={video.title || 'Video sin título'}
                       channelName={channelNameMap.get(video.channelId) || 'Canal desconocido'}
-                      thumbnail={video.thumbnail || 'https://via.placeholder.com/400x225?text=No+Thumbnail'}
+                      thumbnail={video.thumbnail || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyNSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyNSIgc3R5bGU9ImZpbGw6I2NjY2NjYyIvPjwvc3ZnPg=='}
                       duration={formatDuration(video.durationSeconds)}
                     />
                   </li>
