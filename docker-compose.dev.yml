@@ -17,7 +17,7 @@ services:
   frontend:
     working_dir: /app
     ports:
-      - "5173:5173"
+      - "5242:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules

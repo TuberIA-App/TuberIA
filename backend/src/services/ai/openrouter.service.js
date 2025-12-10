@@ -9,10 +9,10 @@ const openRouterClient = axios.create({
     baseURL: 'https://openrouter.ai/api/v1',
     headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'HTTP-Referer': process.env.APP_URL || 'http://localhost:5173',
+        'HTTP-Referer': process.env.APP_URL || 'http://localhost:5242',
         'X-Title': 'TuberIA - YouTube AI Summaries'
     },
-    timeout: 60000 // 60 seconds for AI generation
+    timeout: 30000 // 30 seconds per model (4 models × 30s = 120s max, within 180s BullMQ lock)
 });
 
 /**
@@ -82,9 +82,31 @@ export const generateCompletion = async ({
         }
 
         const content = response.data.choices[0].message?.content;
+
+        // First check: content exists
         if (!content) {
-            logger.error('OpenRouter API returned empty content');
+            logger.error('OpenRouter API returned null/undefined content');
             throw new InternalServerError('AI service returned empty response');
+        }
+
+        // Trim whitespace and validate
+        const trimmedContent = content.trim();
+
+        // Second check: content is not empty after trimming
+        if (trimmedContent.length === 0) {
+            logger.error('OpenRouter API returned whitespace-only content', {
+                originalLength: content.length
+            });
+            throw new InternalServerError('AI service returned empty response');
+        }
+
+        // Third check: minimum content length (10 chars ensures it's not just noise)
+        if (trimmedContent.length < 10) {
+            logger.error('OpenRouter API returned suspiciously short content', {
+                contentLength: trimmedContent.length,
+                content: trimmedContent
+            });
+            throw new InternalServerError('AI service returned insufficient content');
         }
 
         const tokensUsed = response.data.usage?.total_tokens || 0;
@@ -92,11 +114,11 @@ export const generateCompletion = async ({
         logger.info('OpenRouter completion successful', {
             model: response.data.model || model,
             tokensUsed,
-            contentLength: content.length
+            contentLength: trimmedContent.length
         });
 
         return {
-            content: content.trim(),
+            content: trimmedContent,
             tokensUsed,
             model: response.data.model || model
         };
