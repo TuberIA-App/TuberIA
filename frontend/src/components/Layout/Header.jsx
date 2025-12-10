@@ -21,7 +21,6 @@ const Header = () => {
   const navItems = [
   { path: '/dashboard', label: 'Inicio', icon: HomeIcon }, 
   { path: '/home', label: 'Canales', icon: TrendingUpIcon },
-  { path: '/video', label: 'Resúmenes', icon: FileTextIcon },
   { path: '/channels', label: 'Buscar', icon: UsersIcon }
   ];
 
