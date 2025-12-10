@@ -310,22 +310,6 @@ Para fomentar el aprendizaje integral y evitar la sobrecarga de responsabilidad 
 - **Bus factor reducido**: El conocimiento se distribuye, evitando dependencias críticas de una sola persona
 - **Empatía entre roles**: Entender las responsabilidades de cada rol mejora la colaboración
 
-#### Responsabilidades específicas por sprint:
-
-**Semana previa al sprint:**
-- **PO**: Refinar el Product Backlog, preparar historias de usuario
-- **SM**: Revisar métricas del sprint anterior, preparar agenda de Sprint Planning
-
-**Durante el sprint:**
-- **PO**: Disponible para aclarar requisitos, validar entregas incrementales
-- **SM**: Facilitar Daily Standups (15 min diarios), actualizar tablero, resolver impedimentos
-- **Devs**: Desarrollo, testing, code reviews, documentación
-
-**Final del sprint:**
-- **SM**: Organizar Sprint Review y Sprint Retrospective
-- **PO**: Validar funcionalidades completadas, aceptar/rechazar historias de usuario
-- **Devs**: Preparar demo, presentar trabajo completado
-
 ### Herramientas de gestión de tiempo
 
 Para medir con precisión las horas invertidas y mejorar las estimaciones futuras, el equipo utiliza:
@@ -341,7 +325,7 @@ Para medir con precisión las horas invertidas y mejorar las estimaciones futura
 1. **Inicio de tarea**:
    - Abrir issue en GitHub Projects
    - Iniciar timer en Toggl Track con el nombre del issue (ej: `#123 - Implementar autenticación JWT`)
-   - Añadir tag del tipo de tarea: `frontend`, `backend`, `devops`, `testing`, `docs`
+   - Añadir tag del tipo de tarea
 
 2. **Durante el trabajo**:
    - Pausar timer al hacer descansos, cambiar de tarea o interrupciones
@@ -363,11 +347,11 @@ Para medir con precisión las horas invertidas y mejorar las estimaciones futura
 - **Propósito**: Tablero Kanban para visualizar el estado de todas las tareas
 - **Campos personalizados**:
   - **Sprint**: Sprint 1, Sprint 2, ..., Sprint 6
-  - **Prioridad**: 1 (máxima) a 6 (baja)
+  - **Prioridad**: 1 (máxima) a 3 (baja)
   - **Estimación (horas)**: Horas estimadas antes de comenzar
   - **Horas Reales**: Horas realmente invertidas (extraídas de Toggl Track)
-  - **Categoría**: Frontend, Backend, BD, DevOps, Testing, Documentación
-  - **Estado**: Backlog, To Do, In Progress, In Review, Done
+  - **Categoría**: Frontend, Backend, BD, Testing, Documentación
+  - **Estado**: To Do, In Progress, In Review, Done
   - **Asignado a**: Miembro responsable
 
 ### Comunicación del equipo
@@ -393,15 +377,7 @@ Esta sección complementa la información de la **sección 2. Recursos materiale
 
 Para manejar de forma segura las credenciales compartidas del equipo (API keys, contraseñas de bases de datos, tokens de acceso), utilizamos:
 
-#### 1Password Teams (o alternativa: Bitwarden)
-
-⚠️ **Recomendado, no implementado actualmente**
-
-- **Propósito**: Almacenamiento centralizado y seguro de credenciales
-- **Plan**: Teams/Free (según disponibilidad)
-- **Coste**: $0 (plan gratuito o crédito educativo)
-
-Actualmente el equipo gestiona credenciales mediante comunicación directa en Discord y archivos `.env` locales (no commiteados).
+#### Bitwarden
 
 **Credenciales almacenadas:**
 
@@ -411,9 +387,6 @@ Actualmente el equipo gestiona credenciales mediante comunicación directa en Di
 | MongoDB | Admin Username/Password | `/Backend/MongoDB` | Backend Lead, Database Manager |
 | Redis | Password (si se configura) | `/Backend/Redis` | Backend Lead |
 | OpenRouter API | API Key | `/Backend/OpenRouter` | Backend Lead |
-| YouTube Data API v3 | API Key | `/Backend/YouTube` | Backend Lead |
-| GitHub Actions | Secrets (Deploy keys) | `/DevOps/GitHub` | DevOps, Backend Lead |
-| Cloudflare | API Token | `/DevOps/Cloudflare` | DevOps |
 | Toggl Track | Team Workspace | `/Team/Toggl` | Todos |
 
 **Buenas prácticas:**
@@ -448,33 +421,6 @@ YOUTUBE_API_KEY=<api_key_from_1password>
 
 ### Monitorización y logs
 
-Para asegurar el correcto funcionamiento en producción:
-
-#### PM2 (Process Manager para Node.js)
-
-⚠️ **Pendiente de implementar**
-
-- **Propósito**: Mantener el backend corriendo 24/7, reinicio automático en caso de crash
-- **Instalación**: `npm install -g pm2`
-- **Coste**: $0 (open source)
-
-En producción actualmente se usa Docker Compose con `restart: unless-stopped` para mantener los servicios activos.
-
-#### Winston Logger
-
-✅ **Ya implementado** en `src/utils/logger.js`
-
-**Niveles de log:**
-- `error`: Errores críticos que requieren atención inmediata
-- `warn`: Situaciones anómalas pero no críticas
-- `info`: Información general del flujo de la aplicación
-- `debug`: Información detallada para debugging (solo en desarrollo)
-
-**Rotación de logs:**
-- Los logs se rotan por tamaño (5MB máximo por archivo)
-- Se mantienen últimos 5 archivos
-- Archivos: `logs/error.log` y `logs/combined.log`
-
 #### Backups automáticos
 
 **Redis**:
@@ -505,11 +451,8 @@ Monitorización del uso de recursos para evitar saturación:
 | Categoría | Servicio/Herramienta | Coste mensual | Coste 6 meses (MVP) |
 |-----------|---------------------|---------------|---------------------|
 | **Infraestructura** | DigitalOcean Droplet | $12 | $72 (cubierto por crédito estudiantil) |
-| **Dominio** | Dominio .com/.es (opcional) | $1-2 | $12 |
+| **Dominio** | Dominio | $1-2 | $12 |
 | **IA** | OpenRouter (modelos gratuitos en dev) | $0-5 | $0-30 |
-| **CDN** | Cloudflare (plan free) | $0 | $0 |
-| **Gestión de secretos** | 1Password Teams (free tier) | $0 | $0 |
-| **Monitorización** | PM2 + Winston (self-hosted) | $0 | $0 |
 | **Total** | | **$13-19/mes** | **$84-114 (6 meses)** |
 
 **Conclusión**: El coste material del proyecto es muy bajo gracias a:
