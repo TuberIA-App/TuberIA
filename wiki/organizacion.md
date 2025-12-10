@@ -14,13 +14,10 @@
 Para el proyecto TuberIA, hemos adoptado un **sistema de priorización numérico ascendente** donde:
 
 - **Prioridad 1**: Máxima prioridad - Tareas críticas que bloquean otras o son fundamentales para el funcionamiento del MVP
-- **Prioridad 2-3**: Alta prioridad - Tareas importantes para el sprint actual
-- **Prioridad 4-5**: Prioridad media - Tareas necesarias pero no urgentes
-- **Prioridad 6**: Baja prioridad - Mejoras, optimizaciones o funcionalidades secundarias
+- **Prioridad 2**: prioridad media - Tareas necesarias pero no urgentes
+- **Prioridad 3**: Baja prioridad - Mejoras, optimizaciones o funcionalidades secundarias
 
 #### Reglas de Priorización
-
-1. **Una persona = Una prioridad por sprint**: Cada miembro del equipo no puede tener dos tareas con la misma prioridad dentro del mismo sprint. Esto asegura un orden claro de ejecución.
 
 2. **Trabajo secuencial por prioridad**: Los desarrolladores deben trabajar en las tareas ordenadas por prioridad ascendente, completando la tarea de menor número antes de pasar a la siguiente.
 
@@ -57,10 +54,8 @@ Al asignar prioridades, consideramos:
 | Prioridad | Tarea | Justificación |
 |-----------|-------|---------------|
 | 1 | Configurar estructura base del backend | Bloquea todo el desarrollo backend |
-| 2 | Crear modelos de datos en MongoDB | Necesario para cualquier funcionalidad CRUD |
-| 3 | Implementar sistema de autenticación JWT | Funcionalidad core del MVP |
-| 4 | Configurar Docker Compose | Facilita el desarrollo pero no bloquea |
-| 5 | Crear componentes UI base en React | Puede avanzar en paralelo al backend |
+| 2 | Implementar sistema de autenticación JWT | Funcionalidad core del MVP |
+| 3 | Configurar Docker Compose | Facilita el desarrollo pero no bloquea |
 
 ### Proceso de Asignación de Prioridades
 
@@ -80,20 +75,6 @@ Al asignar prioridades, consideramos:
 4. **Documentación en GitHub Projects**
    - Cada issue tiene su campo "Prioridad" actualizado
    - El tablero refleja el orden de ejecución
-
-#### Gestión de Cambios en Prioridades
-
-Las prioridades pueden ajustarse durante el sprint solo si:
-
-1. **Bloqueo técnico imprevisto**: Una tarea bloqueada requiere que otra suba en prioridad
-2. **Bug crítico**: Se detecta un error que debe resolverse inmediatamente
-3. **Cambio en requisitos**: El Product Owner identifica un cambio de alcance crítico
-
-**Cualquier cambio debe**:
-- Ser comunicado al equipo completo
-- Documentarse en el issue correspondiente
-- Revisarse en la Daily Standup
-- Ser aprobado por el Scrum Master
 
 #### Columnas en GitHub Projects
 
@@ -121,9 +102,7 @@ Para cada desarrollador:
 
 Medimos la efectividad de nuestro sistema de priorización mediante:
 
-- **Burn-down chart**: Tareas completadas vs planificadas por día
 - **Tareas bloqueadas**: Número de tareas que no pudieron completarse por dependencias mal priorizadas
-- **Reordenaciones**: Frecuencia de cambios en prioridades durante el sprint
 - **Velocidad del equipo**: Puntos/horas completadas por sprint
 
 El objetivo es minimizar las reordenaciones y maximizar el flujo continuo de trabajo.

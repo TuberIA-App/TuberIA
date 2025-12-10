@@ -138,7 +138,6 @@ Las decisiones técnicas importantes se documentarán en GitHub mediante issues 
 | MongoDB | Contenedor Docker en VPS, 10GB storage dedicado | Self-hosted | Incluido en VPS |
 | Redis | Contenedor Docker en VPS, 512MB memoria | Self-hosted | Incluido en VPS |
 | Nginx | Reverse proxy + SSL. | Self-hosted | Incluido en VPS |
-| Cloudflare | CDN, DNS, protección DDoS, caché estático | Free Tier | $0 |
 | GitHub | Repositorio privado + GitHub Actions CI/CD | Free for Students | $0 |
 | Docker Hub | Registry para imágenes Docker (public) | Free Tier | $0 |
 
@@ -167,7 +166,6 @@ Las decisiones técnicas importantes se documentarán en GitHub mediante issues 
 | YouTube RSS Feeds | Ilimitado | N/A | Gratis | Polling cada 15 min por canal activo |
 | youtube-transcript-plus | Ilimitado | N/A | Gratis | 1-3 requests por vídeo nuevo |
 | OpenRouter API | Limitado | Por uso | Ver tabla abajo | 1 request por vídeo (resumen) |
-| YouTube Data API v3 | 10,000 unidades/día | N/A | Gratis | ~100 unidades por búsqueda de canal |
 
 #### Detalles de APIs:
 
@@ -218,41 +216,17 @@ En caso que algún momento haya problemas de rate limit con esta librería, se p
 
 ● Autenticación: API Key requerida
 
-● Límite gratuito: Existe una IA gratuita que se utilizará a la hora de el development, aunque a veces tiene límites, en tal caso si falla, se cambiaría para esa solicitud a un modelo de reserva de pago.
-
-● Modelos disponibles: Llama, GPT, Claude, Mistral, etc.
+● Límite gratuito: Existe una IA gratuita GML 4.5 que se utilizará a la hora de el development, aunque a veces tiene límites, en tal caso si falla, se cambiaría para esa solicitud a un modelo de reserva de pago.
 
 ● Coste por modelo:
 
 | Modelo | Input (por 1M tokens) | Output (por 1M tokens) | Contexto | Opción gratuita |
 |--------|----------------------|------------------------|----------|-----------------|
 | Z.AI: GLM 4.5 Air | $0.13 | $0.85 | 131,072 | Si |
-| Meta Llama 3.1 70B | $0.35 | $0.40 | 131,072 | No |
-| GPT-4o mini | $0.15 | $0.60 | 128,000 | No |
-| Meta Llama 3.1 8B | $0.02 | $0.02 | 16,384 | No |
+
+- Con opción gratuita (siempre que esté disponible)
 
 **Recomendación para MVP:** Se realizará un análisis y pruebas con prompt engineering para ver cual es el mejor modelo para el MVP, pero se intentará que se seleccione un modelo gratuito el cual tenga su alternativa de pago para asegurar siempre la misma calidad.
-
-**YouTube Data API v3**
-
-● Autenticación: API Key (en proceso de obtención)
-
-● Límite gratuito: 10,000 unidades/día (quota)
-
-● Coste de operaciones:
-  - Búsqueda de canales: ~100 unidades
-  - Obtener info de canal: 1 unidad
-  - Obtener info de vídeo: 1 unidad
-
-● Uso en MVP:
-  - Búsqueda de canales por nombre/handle (~100 operaciones/día máximo)
-  - Obtener Channel ID desde username (backup si web scraping falla)
-
-● Límite práctico: ~100 búsquedas de canales por día
-
-● Coste: $0 (dentro del límite gratuito)
-
-● Alternativa: En caso de no ser aceptados por la API oficial de YouTube Data API v3 para obtener el channel id de cualquier canal de YouTube, se procedería a realizar un web scraping legítimo de páginas públicas de YouTube.
 
 ### Herramientas de desarrollo (Git, IDE, testing, etc.).
 
@@ -310,22 +284,6 @@ Para fomentar el aprendizaje integral y evitar la sobrecarga de responsabilidad 
 - **Bus factor reducido**: El conocimiento se distribuye, evitando dependencias críticas de una sola persona
 - **Empatía entre roles**: Entender las responsabilidades de cada rol mejora la colaboración
 
-#### Responsabilidades específicas por sprint:
-
-**Semana previa al sprint:**
-- **PO**: Refinar el Product Backlog, preparar historias de usuario
-- **SM**: Revisar métricas del sprint anterior, preparar agenda de Sprint Planning
-
-**Durante el sprint:**
-- **PO**: Disponible para aclarar requisitos, validar entregas incrementales
-- **SM**: Facilitar Daily Standups (15 min diarios), actualizar tablero, resolver impedimentos
-- **Devs**: Desarrollo, testing, code reviews, documentación
-
-**Final del sprint:**
-- **SM**: Organizar Sprint Review y Sprint Retrospective
-- **PO**: Validar funcionalidades completadas, aceptar/rechazar historias de usuario
-- **Devs**: Preparar demo, presentar trabajo completado
-
 ### Herramientas de gestión de tiempo
 
 Para medir con precisión las horas invertidas y mejorar las estimaciones futuras, el equipo utiliza:
@@ -341,7 +299,7 @@ Para medir con precisión las horas invertidas y mejorar las estimaciones futura
 1. **Inicio de tarea**:
    - Abrir issue en GitHub Projects
    - Iniciar timer en Toggl Track con el nombre del issue (ej: `#123 - Implementar autenticación JWT`)
-   - Añadir tag del tipo de tarea: `frontend`, `backend`, `devops`, `testing`, `docs`
+   - Añadir tag del tipo de tarea
 
 2. **Durante el trabajo**:
    - Pausar timer al hacer descansos, cambiar de tarea o interrupciones
@@ -363,11 +321,11 @@ Para medir con precisión las horas invertidas y mejorar las estimaciones futura
 - **Propósito**: Tablero Kanban para visualizar el estado de todas las tareas
 - **Campos personalizados**:
   - **Sprint**: Sprint 1, Sprint 2, ..., Sprint 6
-  - **Prioridad**: 1 (máxima) a 6 (baja)
+  - **Prioridad**: 1 (máxima) a 3 (baja)
   - **Estimación (horas)**: Horas estimadas antes de comenzar
   - **Horas Reales**: Horas realmente invertidas (extraídas de Toggl Track)
-  - **Categoría**: Frontend, Backend, BD, DevOps, Testing, Documentación
-  - **Estado**: Backlog, To Do, In Progress, In Review, Done
+  - **Categoría**: Frontend, Backend, BD, Testing, Documentación
+  - **Estado**: To Do, In Progress, In Review, Done
   - **Asignado a**: Miembro responsable
 
 ### Comunicación del equipo
@@ -393,15 +351,7 @@ Esta sección complementa la información de la **sección 2. Recursos materiale
 
 Para manejar de forma segura las credenciales compartidas del equipo (API keys, contraseñas de bases de datos, tokens de acceso), utilizamos:
 
-#### 1Password Teams (o alternativa: Bitwarden)
-
-⚠️ **Recomendado, no implementado actualmente**
-
-- **Propósito**: Almacenamiento centralizado y seguro de credenciales
-- **Plan**: Teams/Free (según disponibilidad)
-- **Coste**: $0 (plan gratuito o crédito educativo)
-
-Actualmente el equipo gestiona credenciales mediante comunicación directa en Discord y archivos `.env` locales (no commiteados).
+#### Bitwarden
 
 **Credenciales almacenadas:**
 
@@ -411,9 +361,6 @@ Actualmente el equipo gestiona credenciales mediante comunicación directa en Di
 | MongoDB | Admin Username/Password | `/Backend/MongoDB` | Backend Lead, Database Manager |
 | Redis | Password (si se configura) | `/Backend/Redis` | Backend Lead |
 | OpenRouter API | API Key | `/Backend/OpenRouter` | Backend Lead |
-| YouTube Data API v3 | API Key | `/Backend/YouTube` | Backend Lead |
-| GitHub Actions | Secrets (Deploy keys) | `/DevOps/GitHub` | DevOps, Backend Lead |
-| Cloudflare | API Token | `/DevOps/Cloudflare` | DevOps |
 | Toggl Track | Team Workspace | `/Team/Toggl` | Todos |
 
 **Buenas prácticas:**
@@ -448,33 +395,6 @@ YOUTUBE_API_KEY=<api_key_from_1password>
 
 ### Monitorización y logs
 
-Para asegurar el correcto funcionamiento en producción:
-
-#### PM2 (Process Manager para Node.js)
-
-⚠️ **Pendiente de implementar**
-
-- **Propósito**: Mantener el backend corriendo 24/7, reinicio automático en caso de crash
-- **Instalación**: `npm install -g pm2`
-- **Coste**: $0 (open source)
-
-En producción actualmente se usa Docker Compose con `restart: unless-stopped` para mantener los servicios activos.
-
-#### Winston Logger
-
-✅ **Ya implementado** en `src/utils/logger.js`
-
-**Niveles de log:**
-- `error`: Errores críticos que requieren atención inmediata
-- `warn`: Situaciones anómalas pero no críticas
-- `info`: Información general del flujo de la aplicación
-- `debug`: Información detallada para debugging (solo en desarrollo)
-
-**Rotación de logs:**
-- Los logs se rotan por tamaño (5MB máximo por archivo)
-- Se mantienen últimos 5 archivos
-- Archivos: `logs/error.log` y `logs/combined.log`
-
 #### Backups automáticos
 
 **Redis**:
@@ -491,9 +411,9 @@ Monitorización del uso de recursos para evitar saturación:
 | Recurso | Límite VPS | Uso estimado MVP | Alerta en | Acción |
 |---------|-----------|------------------|-----------|--------|
 | CPU | 1 vCPU | ~40% promedio | >80% | Optimizar queries, caching |
-| RAM | 2 GB | ~1.2 GB | >1.8 GB | Analizar memory leaks, reiniciar servicios |
-| Disco | 50 GB | ~15 GB (10 GB BD + 5 GB logs/backups) | >40 GB | Limpiar logs antiguos, comprimir backups |
-| Ancho de banda | 2000 GB/mes | ~200 GB/mes | >1800 GB/mes | Optimizar assets, CDN |
+| RAM | 1 GB | ~0.9 GB | >1 GB | Analizar memory leaks, reiniciar servicios |
+| Disco |25 GB | ~15 GB (10 GB BD + 5 GB logs/backups) | >10 GB | Limpiar logs antiguos, comprimir backups |
+| Ancho de banda | 1000 GB/mes | ~200 GB/mes | >1800 GB/mes | Optimizar assets, CDN |
 
 **Herramientas de monitorización:**
 - `htop`: Uso de CPU y RAM en tiempo real
@@ -505,11 +425,8 @@ Monitorización del uso de recursos para evitar saturación:
 | Categoría | Servicio/Herramienta | Coste mensual | Coste 6 meses (MVP) |
 |-----------|---------------------|---------------|---------------------|
 | **Infraestructura** | DigitalOcean Droplet | $12 | $72 (cubierto por crédito estudiantil) |
-| **Dominio** | Dominio .com/.es (opcional) | $1-2 | $12 |
-| **IA** | OpenRouter (modelos gratuitos en dev) | $0-5 | $0-30 |
-| **CDN** | Cloudflare (plan free) | $0 | $0 |
-| **Gestión de secretos** | 1Password Teams (free tier) | $0 | $0 |
-| **Monitorización** | PM2 + Winston (self-hosted) | $0 | $0 |
+| **Dominio** | Dominio | $1 | $2 (cubierto por crédito estudiantil) |
+| **IA** | OpenRouter (modelos gratuitos siempre que no se supere el limite) | $0-5 | $0-30 |
 | **Total** | | **$13-19/mes** | **$84-114 (6 meses)** |
 
 **Conclusión**: El coste material del proyecto es muy bajo gracias a:
