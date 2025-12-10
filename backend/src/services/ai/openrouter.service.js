@@ -9,7 +9,7 @@ const openRouterClient = axios.create({
     baseURL: 'https://openrouter.ai/api/v1',
     headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'HTTP-Referer': process.env.APP_URL || 'http://localhost:5242',
+        'HTTP-Referer': process.env.APP_URL || 'http://localhost:5173',
         'X-Title': 'TuberIA - YouTube AI Summaries'
     },
     timeout: 30000 // 30 seconds per model (4 models × 30s = 120s max, within 180s BullMQ lock)
