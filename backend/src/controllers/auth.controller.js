@@ -90,7 +90,7 @@ export const logout = asyncHandler(async (req, res) => {
     const accessToken = authHeader.substring(7); // Remove "Bearer " prefix
 
     // Optional: Get refresh token from request body
-    const { refreshToken } = req.body;
+    const { refreshToken } = req.body || {};
 
     const result = await authService.logoutUser(accessToken, refreshToken);
 

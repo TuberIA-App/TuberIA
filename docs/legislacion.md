@@ -35,9 +35,6 @@ TuberIA es una plataforma web que recoge datos personales de usuarios europeos, 
 - Endpoint PUT `/api/users/me` - Rectificación de datos incorrectos
 - Documentar derechos de oposición y limitación del tratamiento
 
-**Comunicaciones HTTPS**: 
-- Configurar certificado SSL/TLS válido en entorno de producción
-
 ---
 
 ## 2. Política de Cookies - Ley LSSI y ePrivacy
@@ -91,13 +88,15 @@ TuberIA es una plataforma web que recoge datos personales de usuarios europeos, 
 - ✅ Formularios navegables con Tab
 - ✅ Elementos interactivos accesibles (botones, enlaces)
 
-### ❌ Por Implementar:
-
 **Contraste de colores**: Auditoría WCAG AA (4.5:1 para texto normal, 3:1 para texto grande)
 
-**Etiquetas alt en imágenes**: Todas las imágenes deben tener atributo `alt` descriptivo
+**Compatibilidad con lectores de pantalla**: Se ha añadido atributos ARIA donde sea necesario, garantizando así las mejores practicas posibles.
 
-**Compatibilidad con lectores de pantalla**: Añadir atributos ARIA donde sea necesario
+**Etiquetas alt en imágenes**: Todas las imágenes tienen atributo `alt` descriptivo.
+
+**Test Lighthouse implementado para medir al accesibilidad y mejores prácticas**
+![Lighthouse Accessibility Test](images/lighthouse-accessibility-header.png)
+![Lighthouse Best Practises Test](images/lighthouse-bestpractises-header.png)
 
 ---
 
@@ -108,13 +107,6 @@ TuberIA es una plataforma web que recoge datos personales de usuarios europeos, 
 **Recursos de terceros**:
 - ✅ Lucide React (licencia MIT)
 - ✅ Verificadas licencias de dependencias
-
-### ❌ Por Implementar:
-
-**APIs externas**:
-- YouTube Data API v3: Cumplir Términos de Servicio de Google
-
-**Código del proyecto**: Definir licencia (MIT, Apache 2.0, GPL) y añadir archivo `LICENSE`
 
 ---
 
@@ -172,13 +164,6 @@ No aplica: TuberIA en fase MVP no requiere permisos especiales
 - **DELETE /api/users/me** - Borrar cuenta y todos los datos
 - **PUT /api/users/me** - Actualizar datos personales
 
-### 8.5. Auditoría de accesibilidad (Frontend)
-
-**Validaciones WCAG 2.1 AA**:
-- Revisar contraste en todos los componentes
-- Añadir alt text en imágenes
-- Validar navegación por teclado
-
 ---
 
 ## 9. Checklist de Cumplimiento Legal
@@ -190,13 +175,8 @@ No aplica: TuberIA en fase MVP no requiere permisos especiales
 - [ ] Endpoint GET `/api/users/me/export`
 - [ ] Endpoint DELETE `/api/users/me`
 - [ ] Endpoint PUT `/api/users/me`
-- [ ] Revisar alt text en imágenes
-- [ ] Auditoría de contraste WCAG AA
 
 ### Post-MVP
-- [ ] Certificado SSL/TLS en producción
 - [ ] Logs de auditoría de acceso a datos
 - [ ] Traducción de políticas (EN)
 - [ ] Test con lectores de pantalla
-
----

@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import request from 'supertest';
 import app from '../../../app.js';
 import User from '../../../model/User.js';
+import { redisClient } from '../../../config/redis.js';
 
 describe('Auth Routes Integration Tests', () => {
     beforeAll(async () => {
@@ -21,11 +22,21 @@ describe('Auth Routes Integration Tests', () => {
 
     beforeEach(async () => {
         await User.deleteMany({});
+        // Clear Redis blacklist before each test
+        const keys = await redisClient.keys('blacklist:token:*');
+        if (keys.length > 0) {
+            await redisClient.del(...keys);
+        }
     });
 
     afterAll(async () => {
         try {
             await User.deleteMany({});
+            // Clear Redis blacklist
+            const keys = await redisClient.keys('blacklist:token:*');
+            if (keys.length > 0) {
+                await redisClient.del(...keys);
+            }
         } catch (error) {
             // Ignore errors during cleanup
         }
@@ -532,6 +543,9 @@ describe('Auth Routes Integration Tests', () => {
                 .post('/api/auth/logout')
                 .set('Authorization', `Bearer ${accessToken}`)
                 .send({ refreshToken });
+
+            // Wait 1 second to ensure new JWT has different iat timestamp
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             // Login again with same credentials
             const loginResponse = await request(app)

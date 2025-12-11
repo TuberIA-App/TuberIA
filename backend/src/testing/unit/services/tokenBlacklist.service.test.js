@@ -2,16 +2,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as tokenBlacklistService from '../../../services/tokenBlacklist.service.js';
 import crypto from 'crypto';
 
-// Mock Redis client
-const mockRedisClient = {
-  setex: vi.fn(),
-  get: vi.fn(),
-};
-
-// Mock redis config module
+// Mock redis config module with factory function
 vi.mock('../../../config/redis.js', () => ({
-  redisClient: mockRedisClient,
+  redisClient: {
+    setex: vi.fn(),
+    get: vi.fn(),
+  },
 }));
+
+// Import the mocked redis client after the mock is set up
+import { redisClient as mockRedisClient } from '../../../config/redis.js';
 
 // Mock logger to avoid console noise in tests
 vi.mock('../../../utils/logger.js', () => ({

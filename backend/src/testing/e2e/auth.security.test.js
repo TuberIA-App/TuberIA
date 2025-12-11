@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import request from 'supertest';
 import app from '../../app.js';
 import User from '../../model/User.js';
+import { redisClient } from '../../config/redis.js';
 
 /**
  * E2E Security Tests for Authentication
@@ -25,11 +26,21 @@ describe('Auth Security E2E Tests', () => {
 
     beforeEach(async () => {
         await User.deleteMany({});
+        // Clear Redis blacklist before each test
+        const keys = await redisClient.keys('blacklist:token:*');
+        if (keys.length > 0) {
+            await redisClient.del(...keys);
+        }
     });
 
     afterAll(async () => {
         try {
             await User.deleteMany({});
+            // Clear Redis blacklist
+            const keys = await redisClient.keys('blacklist:token:*');
+            if (keys.length > 0) {
+                await redisClient.del(...keys);
+            }
         } catch (error) {
             // Ignore errors during cleanup
         }
@@ -71,7 +82,10 @@ describe('Auth Security E2E Tests', () => {
             expect(attackerRefreshAttempt.status).toBe(401);
             expect(attackerRefreshAttempt.body.success).toBe(false);
 
-            // Step 5: User A can log in again with new credentials
+            // Step 5: Wait 1 second to ensure new JWT has different iat timestamp
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // User A can log in again with new credentials
             const reLoginResponse = await request(app)
                 .post('/api/auth/login')
                 .send({
@@ -90,7 +104,7 @@ describe('Auth Security E2E Tests', () => {
                 .set('Authorization', `Bearer ${newAccessToken}`);
 
             expect(meResponse.status).toBe(200);
-            expect(meResponse.body.data.user.email).toBe('userA@example.com');
+            expect(meResponse.body.data.user.email).toBe('usera@example.com');
         });
 
         it('should prevent attacker from using stolen refresh token to get new access tokens', async () => {
@@ -304,7 +318,7 @@ describe('Auth Security E2E Tests', () => {
                 .set('Authorization', `Bearer ${userBTokens.access}`);
 
             expect(userBStillWorks.status).toBe(200);
-            expect(userBStillWorks.body.data.user.email).toBe('userB@concurrent.com');
+            expect(userBStillWorks.body.data.user.email).toBe('userb@concurrent.com');
 
             // User B can also refresh
             const userBRefresh = await request(app)
@@ -385,7 +399,10 @@ describe('Auth Security E2E Tests', () => {
 
             expect(oldTokenCheck.status).toBe(401);
 
-            // Step 4: User re-authenticates
+            // Step 4: Wait 1 second to ensure new JWT has different iat timestamp
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // User re-authenticates
             const reLogin = await request(app)
                 .post('/api/auth/login')
                 .send({

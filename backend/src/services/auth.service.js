@@ -1,7 +1,7 @@
 import User from '../model/User.js';
 import logger from '../utils/logger.js';
 import { verifyRefreshToken, generateAccessToken, verifyAccessToken } from '../utils/jwt.util.js';
-import { addToBlacklist } from './tokenBlacklist.service.js';
+import { addToBlacklist, isBlacklisted } from './tokenBlacklist.service.js';
 
 /**
  * Register a new user
@@ -124,6 +124,18 @@ export const refreshAccessToken = async (refreshToken) => {
     try {
         // Verify refresh token
         const decoded = verifyRefreshToken(refreshToken);
+
+        // Check if refresh token is blacklisted (revoked)
+        const tokenIsBlacklisted = await isBlacklisted(refreshToken);
+        if (tokenIsBlacklisted) {
+            logger.warn('Attempted to refresh with revoked token', {
+                userId: decoded.userId
+            });
+            return {
+                error: 'unauthorized',
+                message: 'Token has been revoked'
+            };
+        }
 
         // Find the user
         const user = await User.findById(decoded.userId).lean();
