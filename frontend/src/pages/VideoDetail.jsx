@@ -106,6 +106,17 @@ const VideoDetail = () => {
             </ul>
           </header>
           
+          {video.keyPoints && video.keyPoints.length > 0 && (
+            <div className="video-card-large__key-points">
+              <h2 className="video-card-large__summary-title">Puntos principales</h2>
+              <ul>
+                {video.keyPoints.map((point, index) => (
+                  <li key={index}>{point}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="video-card-large__summary">
             <h2 className="video-card-large__summary-title">Resumen</h2>
             <div className="prose">

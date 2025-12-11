@@ -101,3 +101,26 @@
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
 }
+
+/* New styles for Key Points section */
+.video-card-large__key-points {
+  margin-bottom: 1.5rem; /* Space before the summary */
+  border-top: 1px solid var(--secondary-color, #f3f4f6);
+  padding-top: 1.5rem;
+}
+
+.video-card-large__key-points ul {
+  list-style: disc; /* Use disc for bullet points */
+  padding-left: 1.25rem; /* Indent the list */
+  margin-top: 1rem;
+  color: var(--text-color, #1f2937);
+}
+
+.video-card-large__key-points li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.video-card-large__key-points li:last-child {
+  margin-bottom: 0;
+}

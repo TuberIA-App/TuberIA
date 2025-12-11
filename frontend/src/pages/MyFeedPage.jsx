@@ -234,7 +234,7 @@ const MyFeedPage = () => {
         {videos.map(video => (
           <VideoCard
             key={video._id || video.id}
-            id={video._id || video.id}
+            id={video.videoId}
             title={video.title || 'Video sin título'}
             channelName={video.channel?.name || 'Canal desconocido'}
             thumbnail={video.thumbnail || 'https://via.placeholder.com/400x225?text=No+Thumbnail'}
