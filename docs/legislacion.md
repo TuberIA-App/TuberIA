@@ -183,7 +183,7 @@ No aplica: TuberIA en fase MVP no requiere permisos especiales
 
 ## 9. Checklist de Cumplimiento Legal
 
-### MVP - Próximas 2 sprints
+### MVP - Necesario para cumplir con la legislación vigente
 - [ ] Crear 4 páginas legales
 - [ ] Implementar Banner de cookies
 - [ ] Añadir checkbox de aceptación en registro
@@ -200,6 +200,3 @@ No aplica: TuberIA en fase MVP no requiere permisos especiales
 - [ ] Test con lectores de pantalla
 
 ---
-
-**Última actualización**: 10 Diciembre 2025  
-**Versión**: 2.0
