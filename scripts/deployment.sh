@@ -16,7 +16,7 @@ echo "[+] Codigo actualizado"
 
 echo "[2/5] Verificando .env y secrets..."
 [ -f .env ]     || { echo "ERROR: Falta .env"; exit 1; }
-[ -f secrets ]  || { echo "ERROR: Falta carpeta secrets/"; exit 1; }
+[ -d secrets ]  || { echo "ERROR: Falta carpeta secrets/"; exit 1; }
 echo "[+] .env y secrets presentes"
 
 echo "[3/5] Deteniendo contenedores..."
