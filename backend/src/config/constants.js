@@ -15,7 +15,7 @@ export const PASSWORD_SALT_ROUNDS = 10;
 
 export const RATE_LIMIT = {
     WINDOW_MS: 15 * 60 * 1000, // 15 minutes
-    MAX_REQUESTS: 666
+    MAX_REQUESTS: 1000
 }
 
 export const TOKEN_EXPIRY = {

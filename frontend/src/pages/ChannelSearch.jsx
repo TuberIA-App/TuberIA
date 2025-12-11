@@ -4,13 +4,15 @@ import ChannelItem from '../components/ChannelItem/ChannelItem';
 import { UsersIcon, StarIcon, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useUserData } from '../context/UserDataContext';
+import { useNavigate } from 'react-router-dom';
 import channelService from '../services/channel.service';
 import './ChannelSearch.css';
 
 const ChannelSearch = () => {
   const { isAuthenticated } = useAuth();
   const { incrementChannelsCount, decrementChannelsCount } = useUserData();
-  
+  const navigate = useNavigate();
+
   // State management
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResult, setSearchResult] = useState(null);
@@ -258,6 +260,7 @@ const ChannelSearch = () => {
                     showVisitButton={true}
                     isLoading={followLoading[channel.id || channel._id]}
                     onFollowToggle={handleFollowToggle}
+                    onChannelClick={() => navigate('/home')}
                   />
                 </li>
               ))}

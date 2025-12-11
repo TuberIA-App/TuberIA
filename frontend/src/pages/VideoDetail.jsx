@@ -114,15 +114,6 @@ const VideoDetail = () => {
           </div>
         </div>
       </article>
-
-      <aside className="feedback-box" aria-labelledby="feedback-title">
-        <h3 id="feedback-title" className="feedback-box__title">¿Te resultó útil este resumen?</h3>
-        <p className="feedback-box__subtitle">Ayúdanos a mejorar calificando la calidad del resumen.</p>
-        <div className="feedback-box__actions">
-          <button className="button button--secondary">👍 Útil</button>
-          <button className="button button--secondary">👎 No útil</button>
-        </div>
-      </aside>
     </main>
   );
 };

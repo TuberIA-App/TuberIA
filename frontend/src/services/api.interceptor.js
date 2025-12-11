@@ -37,43 +37,38 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Si el error es 401 y no hemos intentado refrescar
+    // 1. Detectar si el error es 401
     if (error.response?.status === 401 && !originalRequest._retry) {
-      
-      if (isRefreshing) {
-        // Si ya estamos refrescando, añadir a la cola
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
-      }
+  if (originalRequest.url.includes('/auth/refresh')) {
+    authService.logout();
+    return Promise.reject(error);
+  }
 
-      originalRequest._retry = true;
-      isRefreshing = true;
+  if (isRefreshing) {
+    return new Promise((resolve, reject) => {
+      failedQueue.push({ resolve, reject });
+    }).then(token => {
+      originalRequest.headers.Authorization = `Bearer ${token}`;
+      return api(originalRequest);
+    }).catch(err => Promise.reject(err));
+  }
 
-      try {
-        const newToken = await authService.refreshToken();
-        processQueue(null, newToken);
-        
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        return api(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        
-        // Redirigir a login
-        authService.logout();
-        window.location.href = '/login';
-        
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
-    }
+  originalRequest._retry = true;
+  isRefreshing = true;
 
+  try {
+    const newToken = await authService.refreshToken();
+    processQueue(null, newToken);
+    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+    return api(originalRequest);
+  } catch (refreshError) {
+    processQueue(refreshError, null);
+    authService.logout();
+    return Promise.reject(refreshError);
+  } finally {
+    isRefreshing = false;
+  }
+}
     return Promise.reject(error);
   }
 );

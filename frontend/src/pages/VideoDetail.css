@@ -2,6 +2,7 @@
 .video-detail {
   max-width: 56rem; /* 896px */
   margin: 0 auto;
+  padding: 1rem;
 }
 
 .video-detail__back-link {
@@ -99,29 +100,4 @@
   font-weight: 700;
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
-}
-
-.feedback-box {
-  background-color: rgba(var(--color-primary-rgb, 239, 68, 68), 0.05);
-  border: 1px solid rgba(var(--color-primary-rgb, 239, 68, 68), 0.2);
-  border-radius: var(--border-radius-md, 12px);
-  padding: 1.5rem;
-}
-
-.feedback-box__title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--text-color, #1f2937);
-  margin-bottom: 0.5rem;
-}
-
-.feedback-box__subtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-bottom: var(--spacing-md, 1rem);
-}
-
-.feedback-box__actions {
-  display: flex;
-  gap: 0.75rem;
 }

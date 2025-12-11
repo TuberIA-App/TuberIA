@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
+    console.log('[AuthProvider] currentUser', currentUser, 'isAuth?', authService.isAuthenticated());
     if (currentUser && authService.isAuthenticated()) {
       setUser(currentUser);
     }
