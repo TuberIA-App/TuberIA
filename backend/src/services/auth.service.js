@@ -1,6 +1,7 @@
 import User from '../model/User.js';
 import logger from '../utils/logger.js';
-import { verifyRefreshToken, generateAccessToken } from '../utils/jwt.util.js';
+import { verifyRefreshToken, generateAccessToken, verifyAccessToken } from '../utils/jwt.util.js';
+import { addToBlacklist } from './tokenBlacklist.service.js';
 
 /**
  * Register a new user
@@ -151,5 +152,63 @@ export const refreshAccessToken = async (refreshToken) => {
             error: 'unauthorized',
             message: 'Invalid or expired refresh token'
         }
+    }
+}
+
+/**
+ * Logout user by revoking their tokens
+ * @param {string} accessToken - Access token from Authorization header
+ * @param {string} refreshToken - Optional refresh token from request body
+ * @returns {Promise<Object>} Success message or error object
+ */
+export const logoutUser = async (accessToken, refreshToken = null) => {
+    try {
+        // Decode access token to get expiration time
+        const decodedAccess = verifyAccessToken(accessToken);
+        const currentTime = Math.floor(Date.now() / 1000);
+        const accessTokenTTL = decodedAccess.exp - currentTime;
+
+        // Add access token to blacklist if it hasn't expired yet
+        if (accessTokenTTL > 0) {
+            const blacklistedAccess = await addToBlacklist(accessToken, accessTokenTTL);
+            if (!blacklistedAccess) {
+                logger.warn('Failed to blacklist access token, but continuing logout');
+            }
+        }
+
+        // If refresh token is provided, blacklist it too
+        if (refreshToken) {
+            try {
+                const decodedRefresh = verifyRefreshToken(refreshToken);
+                const refreshTokenTTL = decodedRefresh.exp - currentTime;
+
+                if (refreshTokenTTL > 0) {
+                    const blacklistedRefresh = await addToBlacklist(refreshToken, refreshTokenTTL);
+                    if (!blacklistedRefresh) {
+                        logger.warn('Failed to blacklist refresh token, but continuing logout');
+                    }
+                }
+            } catch (error) {
+                // If refresh token is invalid/expired, just log it and continue
+                logger.warn('Invalid refresh token provided during logout, skipping blacklist');
+            }
+        }
+
+        logger.info('User logged out successfully', {
+            userId: decodedAccess.userId,
+            tokensRevoked: refreshToken ? 'access + refresh' : 'access only'
+        });
+
+        return {
+            success: true,
+            message: 'Logout successful'
+        };
+
+    } catch (error) {
+        logger.error(`Error in logoutUser service { error: ${error.message} }`);
+        return {
+            error: 'server_error',
+            message: error.message || 'Error during logout'
+        };
     }
 }

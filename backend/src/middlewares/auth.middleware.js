@@ -3,6 +3,7 @@ import { UnauthorizedError } from "../utils/errorClasses.util.js";
 import { verifyAccessToken } from "../utils/jwt.util.js";
 import { asyncHandler } from "./asyncHandler.middleware.js";
 import logger from "../utils/logger.js";
+import { isBlacklisted } from "../services/tokenBlacklist.service.js";
 
 /**
  * Middleware to verify JWT tokens and authenticate the user
@@ -21,6 +22,12 @@ export const authMiddleware = asyncHandler(async (req, res, next) => {
     try {
         // Verify the token
         const decoded = verifyAccessToken(token);
+
+        // Check if token is blacklisted (revoked)
+        const tokenIsBlacklisted = await isBlacklisted(token);
+        if (tokenIsBlacklisted) {
+            throw new UnauthorizedError('Token has been revoked');
+        }
 
         // Find user (we deleted the old .lean() implementation here so we can leverage the model's toJSON transform, also we avoid violating the DRY principle)
         const user = await User.findById(decoded.userId).select('-password');

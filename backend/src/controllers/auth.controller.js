@@ -79,3 +79,26 @@ export const getMe = asyncHandler(async (req, res) => {
     // req.user is injected & protected by authMiddleware
     successResponse(res, { user: req.user }, 'User data retrieved successfully', 200);
 })
+
+/**
+ * Logout user (revoke tokens)
+ * POST /api/auth/logout
+ */
+export const logout = asyncHandler(async (req, res) => {
+    // Extract access token from Authorization header
+    const authHeader = req.headers.authorization;
+    const accessToken = authHeader.substring(7); // Remove "Bearer " prefix
+
+    // Optional: Get refresh token from request body
+    const { refreshToken } = req.body;
+
+    const result = await authService.logoutUser(accessToken, refreshToken);
+
+    // Handle errors from service
+    if (result.error) {
+        throw new Error(result.message);
+    }
+
+    // Success
+    successResponse(res, result, 'Logout successful', 200);
+})
