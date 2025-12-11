@@ -1,8 +1,6 @@
 # TuberIA - Plataforma de Resúmenes Automáticos de YouTube con IA
 
-![Status](https://img.shields.io/badge/status-developing-blue)
-
-> **Proyecto en fase de planificación** - Documentación completa, desarrollo por comenzar.
+![Status](https://img.shields.io/badge/status-running-green)
 
 ---
 
@@ -20,6 +18,12 @@ TuberIA es una plataforma web que utiliza inteligencia artificial para **automat
 
 La wiki completa está organizada en el directorio [`wiki/`](wiki/INDEX.md):
 - [**CLICK AQUÍ PARA ACCEDER A LA WIKI**](/wiki/INDEX.md)
+
+---
+
+## 🦾 Documentación técnica Full-Stack para Dani
+
+- [**CLICK AQUÍ para acceder a la Documentación técnica Full-Stack para Dani**](docs/dani/INDEX.md)
 
 ---
 
@@ -94,13 +98,11 @@ Toda la documentación está organizada en el directorio [`docs/`](docs/):
 - **Hosting:** DigitalOcean Droplet (cubierto con crédito estudiantil)
 - **Despliegue:** Docker + Docker Compose
 - **Proxy:** Nginx + SSL (Let's Encrypt)
-- **CDN:** Cloudflare (Free Tier)
 
 ### APIs Externas
 - YouTube RSS Feeds (gratis, ilimitado)
 - youtube-transcript-plus (gratis, testado hasta 1000 req/min)
 - OpenRouter API (modelo gratuito + fallback de pago)
-- YouTube Data API v3 (10,000 unidades/día gratis)
 
 📖 Especificaciones técnicas completas en [recursos.md](docs/recursos.md) y [viabilidad-tecnica.md](docs/viabilidad-tecnica.md)
 
@@ -123,7 +125,7 @@ Toda la documentación está organizada en el directorio [`docs/`](docs/):
 
 ## 📅 Estado Actual
 
-### ✅ Fase de Planificación (Completada)
+### ✅ MVP (Completada)
 - [x] Investigación y validación del problema
 - [x] Definición de usuarios objetivo
 - [x] Análisis de competencia
@@ -132,15 +134,22 @@ Toda la documentación está organizada en el directorio [`docs/`](docs/):
 - [x] Selección de stack tecnológico
 - [x] Definición de roles del equipo
 - [x] Análisis de costes y recursos
+- [x] Setup inicial del proyecto (repos, Docker, CI/CD)
+- [x] Desarrollo del backend (API + autenticación)
+- [x] Desarrollo del frontend (UI + panel)
+- [x] Integración YouTube + IA
+- [x] Testing y optimización
+- [x] Despliegue en VPS
+- [x] CI/CD Automatización de despliegue automático
+- [x] Buena documentación cumpliendo todos los criterios al 100%
 
-### ⏳ Próximos 45 días (MVP)
-- [ ] Setup inicial del proyecto (repos, Docker, CI/CD)
-- [ ] Desarrollo del backend (API + autenticación)
-- [ ] Desarrollo del frontend (UI + panel)
-- [ ] Integración YouTube + IA
-- [ ] Testing y optimización
-- [ ] Despliegue en VPS
-- [ ] Pruebas con usuarios reales (≥5 usuarios)
+### ⏳ Post-MVP
+- [] Cumplir con la legislación y normas vigentes
+- [] Añadir verificación de email para registrarte
+- [] Notificaciones push/Telegram/WhatsApp
+- [] Exportación de resúmenes
+- [] Sistema de suscripciones de pago
+- [] Pruebas con usuarios reales (≥5 usuarios)
 
 ---
 
@@ -172,5 +181,5 @@ Evidencia adicional: Análisis de comunidades en Reddit confirmó usuarios usand
 
 ---
 
-**TuberIA** | Proyecto en fase de planificación | 2025 | Equipo 1 | 2ºDAW
+**TuberIA** | 2025 | Equipo 1 | 2ºDAW
 
