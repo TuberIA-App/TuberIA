@@ -9,10 +9,10 @@
  */
 
 export const SUMMARIZATION_MODELS = [
-  'z-ai/glm-4.5',
   'amazon/nova-2-lite-v1:free',
   'amazon/nova-2-lite-v1',
-  'x-ai/grok-4-fast'
+  'x-ai/grok-4-fast',
+  'z-ai/glm-4.5'
 ];
 
 /**
