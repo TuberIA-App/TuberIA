@@ -6,6 +6,7 @@ import Input from '../components/common/Input/Input';
 import Card from '../components/common/Card/Card';
 import Modal from '../components/common/Modal/Modal';
 import PublicHeader from '../components/Layout/PublicHeader';
+import channelService from '../services/channel.service';
 import './Home.css';
 
 const Home = () => {
@@ -65,26 +66,10 @@ const Home = () => {
     setDemoChannel(null);
 
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/channels/search?q=${encodeURIComponent(demoUrl.trim())}`
-      );
-      const data = await response.json();
-
-      if (data.success) {
-        setDemoChannel(data.data);
-      } else {
-        if (response.status === 404) {
-          setDemoError('No se ha encontrado el canal. Revisa el username o la URL.');
-        } else if (response.status === 400) {
-          setDemoError(data.message || 'La búsqueda no es válida.');
-        } else if (response.status === 429) {
-          setDemoError('Has hecho demasiadas búsquedas. Espera un momento.');
-        } else {
-          setDemoError(data.message || 'Ha ocurrido un error al buscar el canal.');
-        }
-      }
+      const channelData = await channelService.searchChannel(demoUrl.trim());
+      setDemoChannel(channelData);
     } catch (err) {
-      setDemoError('No se puede conectar con el servidor. Inténtalo más tarde.');
+      setDemoError(err.message || 'No se puede conectar con el servidor. Inténtalo más tarde.');
       console.error(err);
     } finally {
       setDemoLoading(false);
