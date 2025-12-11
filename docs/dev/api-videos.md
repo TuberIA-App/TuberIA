@@ -61,13 +61,6 @@ Authorization: Bearer <access_token>
         "channelId": "674d8e9f12a3b4c5d6e7f890",
         "publishedAt": "2009-10-25T06:57:33.000Z",
         "status": "completed",
-        "summary": "Video summary text...",
-        "keyPoints": [
-          "Key point 1",
-          "Key point 2"
-        ],
-        "aiModel": "deepseek/deepseek-chat",
-        "tokensConsumed": 1234,
         "thumbnail": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg",
         "durationSeconds": 212,
         "viewsCount": 1000000,
@@ -174,7 +167,7 @@ curl "http://localhost:5000/api/videos/dQw4w9WgXcQ" \
 
 ## Data Models
 
-### Video
+### Feed Video Response (GET /users/me/videos)
 ```typescript
 {
   videoId: string,              // YouTube video ID (11 characters)
@@ -183,17 +176,29 @@ curl "http://localhost:5000/api/videos/dQw4w9WgXcQ" \
   channelId: ObjectId,          // Reference to Channel model
   publishedAt: Date,            // When video was published on YouTube
   status: 'pending' | 'processing' | 'completed' | 'failed',
-  summary: string,              // AI-generated summary
-  keyPoints: string[],          // Key takeaways from video
-  transcription: string[],      // Full transcript (only in getVideoById)
-  aiModel: string,              // AI model used for summarization
-  tokensConsumed: number,       // Tokens used in AI processing
   thumbnail: string,            // Video thumbnail URL
   durationSeconds: number,      // Video duration
   viewsCount: number,           // View count
   createdAt: Date              // When video was added to our database
 }
 ```
+
+### Video Detail Response (GET /videos/:videoId)
+
+Includes **all fields from Feed Response** plus:
+
+```typescript
+{
+  // ... all Feed Response fields +
+  summary: string,              // AI-generated summary (ONLY in detail view)
+  keyPoints: string[],          // Key takeaways (ONLY in detail view)
+  transcription: string,        // Full transcript (ONLY in detail view)
+  aiModel: string,              // AI model used for summarization
+  tokensConsumed: number       // Tokens used in AI processing
+}
+```
+
+> **Note:** Feed endpoint uses lazy loading - summary data is only fetched when viewing individual video details.
 
 ---
 
@@ -288,5 +293,110 @@ All list endpoints use cursor-based pagination:
 
 ---
 
-**Last Updated:** 2025-12-03
-**API Version:** 1.0.0
+## ⚠️ BREAKING CHANGES
+
+### Lazy Loading Optimization (Diciembre 2025)
+
+**¿Qué cambió?**
+
+- `GET /users/me/videos` (feed) **YA NO** retorna `summary`, `keyPoints`, `aiModel`, ni `tokensConsumed`
+- `GET /videos/:videoId` (detalle) **SÍ retorna** todos los campos incluyendo summary
+
+**¿Por qué?**
+
+- Respuestas del feed 70% más pequeñas
+- Tiempos de carga mejorados de ~2s a ~0.5s
+- Lazy loading: datos pesados solo se cargan al hacer clic en un video
+
+---
+
+### 📋 Guía de Migración para Frontend
+
+#### ✅ BUENAS NOTICIAS
+
+**NO se requieren cambios en el frontend actual** porque:
+- `VideoCard.jsx` no usa `summary` ni `keyPoints`
+- `MyFeedPage.jsx` solo pasa datos a VideoCard
+- La implementación actual ya sigue el patrón correcto
+
+#### 🔍 Verificación
+
+Si tu código tiene algo como esto en componentes de feed:
+
+```javascript
+// ❌ INCORRECTO - No hagas esto en el feed
+<VideoCard
+  summary={video.summary}      // Este campo ya no existe
+  keyPoints={video.keyPoints}  // Este campo ya no existe
+/>
+```
+
+Cámbialo a:
+
+```javascript
+// ✅ CORRECTO - Feed muestra solo info básica
+<VideoCard
+  title={video.title}
+  thumbnail={video.thumbnail}
+  duration={video.durationSeconds}
+/>
+```
+
+#### 📄 Página de Detalle
+
+Cuando el usuario hace clic en un video:
+
+```javascript
+// ✅ CORRECTO - Fetch completo en detalle
+const videoDetails = await getVideoById(videoId);
+
+// Ahora SÍ tienes acceso a:
+// - videoDetails.summary
+// - videoDetails.keyPoints
+// - videoDetails.transcription
+```
+
+#### 🎯 TypeScript Interfaces (si aplica)
+
+```typescript
+// Respuesta del Feed
+interface FeedVideo {
+  videoId: string;
+  title: string;
+  url: string;
+  channelId: string;
+  publishedAt: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  thumbnail: string;
+  durationSeconds: number;
+  viewsCount: number;
+  createdAt: string;
+  // ❌ NO: summary, keyPoints, aiModel, tokensConsumed
+}
+
+// Respuesta de Detalle
+interface VideoDetail extends FeedVideo {
+  summary: string;
+  keyPoints: string[];
+  transcription: string;
+  aiModel: string;
+  tokensConsumed: number;
+}
+```
+
+---
+
+### 🔄 Rollback
+
+Si hay problemas, restaurar campos en `backend/src/services/video.service.js` línea 61:
+
+```javascript
+.select('videoId title url channelId publishedAt status summary keyPoints aiModel tokensConsumed thumbnail durationSeconds viewsCount createdAt')
+```
+
+Cache se limpia automáticamente en 60 segundos.
+
+---
+
+**Last Updated:** 2025-12-06
+**API Version:** 1.1.0

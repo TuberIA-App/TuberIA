@@ -138,7 +138,6 @@ Las decisiones técnicas importantes se documentarán en GitHub mediante issues 
 | MongoDB | Contenedor Docker en VPS, 10GB storage dedicado | Self-hosted | Incluido en VPS |
 | Redis | Contenedor Docker en VPS, 512MB memoria | Self-hosted | Incluido en VPS |
 | Nginx | Reverse proxy + SSL. | Self-hosted | Incluido en VPS |
-| Cloudflare | CDN, DNS, protección DDoS, caché estático | Free Tier | $0 |
 | GitHub | Repositorio privado + GitHub Actions CI/CD | Free for Students | $0 |
 | Docker Hub | Registry para imágenes Docker (public) | Free Tier | $0 |
 
@@ -167,7 +166,6 @@ Las decisiones técnicas importantes se documentarán en GitHub mediante issues 
 | YouTube RSS Feeds | Ilimitado | N/A | Gratis | Polling cada 15 min por canal activo |
 | youtube-transcript-plus | Ilimitado | N/A | Gratis | 1-3 requests por vídeo nuevo |
 | OpenRouter API | Limitado | Por uso | Ver tabla abajo | 1 request por vídeo (resumen) |
-| YouTube Data API v3 | 10,000 unidades/día | N/A | Gratis | ~100 unidades por búsqueda de canal |
 
 #### Detalles de APIs:
 
@@ -218,41 +216,17 @@ En caso que algún momento haya problemas de rate limit con esta librería, se p
 
 ● Autenticación: API Key requerida
 
-● Límite gratuito: Existe una IA gratuita que se utilizará a la hora de el development, aunque a veces tiene límites, en tal caso si falla, se cambiaría para esa solicitud a un modelo de reserva de pago.
-
-● Modelos disponibles: Llama, GPT, Claude, Mistral, etc.
+● Límite gratuito: Existe una IA gratuita GML 4.5 que se utilizará a la hora de el development, aunque a veces tiene límites, en tal caso si falla, se cambiaría para esa solicitud a un modelo de reserva de pago.
 
 ● Coste por modelo:
 
 | Modelo | Input (por 1M tokens) | Output (por 1M tokens) | Contexto | Opción gratuita |
 |--------|----------------------|------------------------|----------|-----------------|
 | Z.AI: GLM 4.5 Air | $0.13 | $0.85 | 131,072 | Si |
-| Meta Llama 3.1 70B | $0.35 | $0.40 | 131,072 | No |
-| GPT-4o mini | $0.15 | $0.60 | 128,000 | No |
-| Meta Llama 3.1 8B | $0.02 | $0.02 | 16,384 | No |
+
+- Con opción gratuita (siempre que esté disponible)
 
 **Recomendación para MVP:** Se realizará un análisis y pruebas con prompt engineering para ver cual es el mejor modelo para el MVP, pero se intentará que se seleccione un modelo gratuito el cual tenga su alternativa de pago para asegurar siempre la misma calidad.
-
-**YouTube Data API v3**
-
-● Autenticación: API Key (en proceso de obtención)
-
-● Límite gratuito: 10,000 unidades/día (quota)
-
-● Coste de operaciones:
-  - Búsqueda de canales: ~100 unidades
-  - Obtener info de canal: 1 unidad
-  - Obtener info de vídeo: 1 unidad
-
-● Uso en MVP:
-  - Búsqueda de canales por nombre/handle (~100 operaciones/día máximo)
-  - Obtener Channel ID desde username (backup si web scraping falla)
-
-● Límite práctico: ~100 búsquedas de canales por día
-
-● Coste: $0 (dentro del límite gratuito)
-
-● Alternativa: En caso de no ser aceptados por la API oficial de YouTube Data API v3 para obtener el channel id de cualquier canal de YouTube, se procedería a realizar un web scraping legítimo de páginas públicas de YouTube.
 
 ### Herramientas de desarrollo (Git, IDE, testing, etc.).
 
@@ -261,3 +235,204 @@ En caso que algún momento haya problemas de rate limit con esta librería, se p
 - Los **IDEs** a utilizar es cuestión de preferencias personales, pero vamos a utilizar principalmente Visual Studio Code, debido a que es de lo más flexibles en el desarrollo full-stack. Como vamos a trabajar tanto de frontend como de backend, las extensiones de Visual Studio Code nos permiten integrar "snippets" útiles para todos los ámbitos del desarrollo (React Snippets, HTML Snippets, etc…) que nos facilitarán el desarrollo a parte de su gran uso en el mundo real por la facilidad que presenta.
 
 - Vamos a realizar **tests unitarios** sobre todo en la parte del backend para facilitar un desarrollo seguro, probar las APIs y que efectivamente retornen lo que debería. Esto es esencial al trabajar en equipo, debido a que si algún miembro hace algún cambio notable y falla en los tests unitarios, significa que se ha cambiado algo que está afectando a un endpoint anterior, lo cual es muy útil porque al hacer los tests unitarios tendremos siempre la seguridad de saber si lo que hemos construido se sigue manteniendo para cambios futuros.
+
+---
+
+## 4. Recursos humanos
+
+### Roles rotativos del equipo
+
+Para fomentar el aprendizaje integral y evitar la sobrecarga de responsabilidad en un solo miembro, el equipo de TuberIA implementa un **sistema de rotación de roles** a lo largo de los 6 sprints del proyecto.
+
+#### Roles principales:
+
+1. **Product Owner (PO)**
+   - Responsable de definir y priorizar el Product Backlog
+   - Toma decisiones sobre el alcance de cada sprint
+   - Valida que las funcionalidades cumplan los requisitos de negocio
+   - Punto de contacto con stakeholders (en este caso, profesores/evaluadores)
+
+2. **Scrum Master (SM)**
+   - Facilita las ceremonias Scrum (Sprint Planning, Daily Standups, Sprint Review, Sprint Retrospective)
+   - Elimina impedimentos que bloqueen al equipo
+   - Mantiene actualizado el tablero de GitHub Projects
+   - Asegura que se respete la metodología ágil
+
+3. **Developer (Dev)**
+   - Implementa las funcionalidades asignadas (Frontend, Backend, BD, DevOps)
+   - Realiza code reviews de los Pull Requests
+   - Participa activamente en las estimaciones de tareas
+   - Mantiene la calidad del código y la documentación técnica
+
+#### Distribución de roles por sprint:
+
+| Sprint | Fechas | Product Owner | Scrum Master | Developers |
+|--------|--------|---------------|--------------|------------|
+| Sprint 1 | 31 Oct - 06 Nov 2025 | Natalia | Ezequiel | Alfonso |
+| Sprint 2 | 07 Nov - 13 Nov 2025 | Ezequiel | Alfonso | Natalia |
+| Sprint 3 | 14 Nov - 20 Nov 2025 | Natalia | Alfonso | Ezequiel |
+| Sprint 4 | 21 Nov - 27 Nov 2025 | Alfonso | Natalia | Ezequiel |
+| Sprint 5 | 28 Nov - 04 Dic 2025 | Alfonso | Ezequiel | Natalia |
+| Sprint 6 | 05 Dic - 11 Dic 2025 | Ezequiel | Natalia | Alfonso |
+
+
+#### Beneficios de la rotación:
+
+- **Visión holística**: Todos los miembros experimentan diferentes perspectivas del proyecto
+- **Desarrollo de habilidades blandas**: Liderazgo, facilitación, negociación
+- **Prevención de burnout**: Ningún miembro está permanentemente en un rol de alta presión
+- **Bus factor reducido**: El conocimiento se distribuye, evitando dependencias críticas de una sola persona
+- **Empatía entre roles**: Entender las responsabilidades de cada rol mejora la colaboración
+
+### Herramientas de gestión de tiempo
+
+Para medir con precisión las horas invertidas y mejorar las estimaciones futuras, el equipo utiliza:
+
+#### Toggl Track
+
+- **URL**: https://toggl.com/track/
+- **Propósito**: Registro de tiempo real invertido en cada tarea
+- **Integración**: Vinculado con issues de GitHub mediante tags
+
+**Flujo de trabajo con Toggl Track:**
+
+1. **Inicio de tarea**:
+   - Abrir issue en GitHub Projects
+   - Iniciar timer en Toggl Track con el nombre del issue (ej: `#123 - Implementar autenticación JWT`)
+   - Añadir tag del tipo de tarea
+
+2. **Durante el trabajo**:
+   - Pausar timer al hacer descansos, cambiar de tarea o interrupciones
+   - Añadir comentario en el issue de GitHub explicando el progreso
+
+3. **Fin de tarea**:
+   - Detener timer en Toggl Track
+   - Registrar horas totales en el campo "Horas Reales" del issue en GitHub Projects
+   - Comparar con la estimación inicial
+
+4. **Análisis semanal**:
+   - El Scrum Master exporta el reporte semanal de Toggl Track
+   - Se comparan horas estimadas vs. horas reales por categoría
+   - Se ajustan estimaciones para el siguiente sprint basándose en la velocidad real del equipo
+
+#### GitHub Projects
+
+- **URL**: https://github.com/orgs/TuberIA-App/projects/1
+- **Propósito**: Tablero Kanban para visualizar el estado de todas las tareas
+- **Campos personalizados**:
+  - **Sprint**: Sprint 1, Sprint 2, ..., Sprint 6
+  - **Prioridad**: 1 (máxima) a 3 (baja)
+  - **Estimación (horas)**: Horas estimadas antes de comenzar
+  - **Horas Reales**: Horas realmente invertidas (extraídas de Toggl Track)
+  - **Categoría**: Frontend, Backend, BD, Testing, Documentación
+  - **Estado**: To Do, In Progress, In Review, Done
+  - **Asignado a**: Miembro responsable
+
+### Comunicación del equipo
+
+El equipo mantiene comunicación constante mediante:
+
+- **Discord**: Canal principal para comunicación diaria, dudas rápidas, pair programming
+- **Daily Standup** (15 min, cada mañana):
+  - ¿Qué hice ayer?
+  - ¿Qué haré hoy?
+  - ¿Tengo algún impedimento?
+- **Sprint Planning** (inicio de cada sprint): Planificación del trabajo de la semana
+- **Sprint Review** (final de sprint): Demo de funcionalidades completadas
+- **Sprint Retrospective** (final de sprint): ¿Qué salió bien? ¿Qué mejorar?
+
+---
+
+## 5. Recursos materiales adicionales
+
+Esta sección complementa la información de la **sección 2. Recursos materiales y tecnológicos** con detalles adicionales sobre gestión de credenciales y monitorización.
+
+### Gestión de credenciales y secretos
+
+Para manejar de forma segura las credenciales compartidas del equipo (API keys, contraseñas de bases de datos, tokens de acceso), utilizamos:
+
+#### Bitwarden
+
+**Credenciales almacenadas:**
+
+| Servicio | Credencial | Ubicación en 1Password | Acceso |
+|----------|------------|------------------------|--------|
+| DigitalOcean Droplet | SSH Key + Root Password | `/DevOps/DigitalOcean` | Backend Lead, DevOps |
+| MongoDB | Admin Username/Password | `/Backend/MongoDB` | Backend Lead, Database Manager |
+| Redis | Password (si se configura) | `/Backend/Redis` | Backend Lead |
+| OpenRouter API | API Key | `/Backend/OpenRouter` | Backend Lead |
+| Toggl Track | Team Workspace | `/Team/Toggl` | Todos |
+
+**Buenas prácticas:**
+- ✅ Nunca commitear credenciales en el repositorio (usar `.env` en `.gitignore`)
+- ✅ Rotar credenciales cada 3 meses o al finalizar el proyecto
+- ✅ Usar credenciales diferentes para desarrollo y producción
+- ✅ Acceso basado en roles (principio de mínimo privilegio)
+
+### Variables de entorno
+
+**Desarrollo local** (`.env.example` commiteado al repo):
+```bash
+NODE_ENV=development
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/tuberia_dev
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=your_dev_jwt_secret_here
+OPENROUTER_API_KEY=your_openrouter_key
+YOUTUBE_API_KEY=your_youtube_key
+```
+
+**Producción** (configurado en el servidor VPS):
+```bash
+NODE_ENV=production
+PORT=5000
+MONGODB_URI=mongodb://mongodb:27017/tuberia_prod
+REDIS_URL=redis://redis:6379
+JWT_SECRET=<strong_random_secret_from_1password>
+OPENROUTER_API_KEY=<api_key_from_1password>
+YOUTUBE_API_KEY=<api_key_from_1password>
+```
+
+### Monitorización y logs
+
+#### Backups automáticos
+
+**Redis**:
+✅ **Ya implementado** - Scripts disponibles en `/scripts/`:
+- `backup-redis.sh` / `backup-redis.ps1`
+- `monitor-redis.sh` / `monitor-redis.ps1`
+
+Redis persiste automáticamente en `/var/docker/redis/dump.rdb`
+
+### Límites de recursos del VPS
+
+Monitorización del uso de recursos para evitar saturación:
+
+| Recurso | Límite VPS | Uso estimado MVP | Alerta en | Acción |
+|---------|-----------|------------------|-----------|--------|
+| CPU | 1 vCPU | ~40% promedio | >80% | Optimizar queries, caching |
+| RAM | 1 GB | ~0.9 GB | >1 GB | Analizar memory leaks, reiniciar servicios |
+| Disco |25 GB | ~15 GB (10 GB BD + 5 GB logs/backups) | >10 GB | Limpiar logs antiguos, comprimir backups |
+| Ancho de banda | 1000 GB/mes | ~200 GB/mes | >1800 GB/mes | Optimizar assets, CDN |
+
+**Herramientas de monitorización:**
+- `htop`: Uso de CPU y RAM en tiempo real
+- `df -h`: Uso de disco
+- `docker stats`: Uso de recursos por contenedor
+
+### Costes materiales totales (actualización)
+
+| Categoría | Servicio/Herramienta | Coste mensual | Coste 6 meses (MVP) |
+|-----------|---------------------|---------------|---------------------|
+| **Infraestructura** | DigitalOcean Droplet | $12 | $72 (cubierto por crédito estudiantil) |
+| **Dominio** | Dominio | $1 | $2 (cubierto por crédito estudiantil) |
+| **IA** | OpenRouter (modelos gratuitos siempre que no se supere el limite) | $0-5 | $0-30 |
+| **Total** | | **$13-19/mes** | **$84-114 (6 meses)** |
+
+**Conclusión**: El coste material del proyecto es muy bajo gracias a:
+- Crédito educativo de DigitalOcean ($200)
+- Uso de herramientas open source
+- Modelos de IA gratuitos en fase MVP
+- Self-hosting de todos los servicios
+
+El **coste real** se centra principalmente en las **horas de desarrollo del equipo**, lo cual se detalla en `/docs/presupuesto.md`.

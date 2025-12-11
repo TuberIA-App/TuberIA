@@ -93,7 +93,7 @@
 
 .video-card__info {
   padding: var(--spacing-md, 1rem);
-  height: 9rem;
+  height: 10rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;

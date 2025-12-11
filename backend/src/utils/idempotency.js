@@ -36,8 +36,49 @@ export async function withIdempotency(key, ttl, operation) {
     logger.debug('Idempotency cache miss, executing operation', { key });
     const result = await operation();
 
-    // Cache result
-    await redisClient.setex(cacheKey, ttl, JSON.stringify(result));
+    // Determine if we should cache the result
+    let shouldCache = true; // Default to caching
+
+    // Only skip caching in specific cases
+    if (result !== null && typeof result === 'object') {
+      // Never cache error responses
+      if (result.error) {
+        logger.warn('Result not cached (error response)', {
+          key,
+          error: result.error
+        });
+        shouldCache = false;
+      }
+      // For video summary results from generateVideoSummary, check for unique signature
+      // Real video summaries have: summary + keyPoints + aiModel + transcriptSegments + transcriptLength
+      // This avoids false positives with test objects or other data that happen to have similar properties
+      else if (result.aiModel !== undefined &&
+               result.transcriptSegments !== undefined &&
+               result.transcriptLength !== undefined) {
+        // This is definitely a video summary from our service, validate it strictly
+        if (result.summary !== undefined && result.keyPoints !== undefined) {
+          const isValidSummary = result.summary &&
+                                typeof result.summary === 'string' &&
+                                result.summary.trim().length >= 50;
+
+          if (!isValidSummary) {
+            logger.warn('Result not cached (invalid video summary)', {
+              key,
+              hasSummary: !!result.summary,
+              summaryLength: result.summary?.trim().length || 0
+            });
+            shouldCache = false;
+          }
+        }
+      }
+      // For all other objects (no aiModel = not a video summary), cache them normally
+    }
+    // Cache null, undefined, and primitive values too (for generic caching)
+
+    if (shouldCache) {
+      await redisClient.setex(cacheKey, ttl, JSON.stringify(result));
+      logger.debug('Result cached successfully', { key });
+    }
 
     return result;
 

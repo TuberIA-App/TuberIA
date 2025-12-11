@@ -16,8 +16,10 @@ http://localhost:5000/api/auth
 - [2. Inicio de Sesión](#2-inicio-de-sesión)
 - [3. Refrescar Token](#3-refrescar-token)
 - [4. Obtener Usuario Actual](#4-obtener-usuario-actual)
-- [5. Gestión de Tokens JWT](#5-gestión-de-tokens-jwt)
-- [6. Manejo de Errores](#6-manejo-de-errores)
+- [5. Cerrar Sesión (Logout)](#5-cerrar-sesión-logout)
+- [6. Gestión de Tokens JWT](#6-gestión-de-tokens-jwt)
+- [7. Token Expiration Handling](#7-token-expiration-handling)
+- [8. Manejo de Errores](#8-manejo-de-errores)
 
 ---
 
@@ -439,7 +441,280 @@ if (data.success) {
 
 ---
 
-## 5. Gestión de Tokens JWT
+## 5. Cerrar Sesión (Logout)
+
+Revoca los tokens de autenticación del usuario actual, invalidándolos inmediatamente.
+
+### Endpoint
+
+```
+POST /api/auth/logout
+```
+
+### Headers
+
+```
+Authorization: Bearer {accessToken}
+Content-Type: application/json
+```
+
+### Body (JSON) - Opcional
+
+```json
+{
+  "refreshToken": "string"  // Opcional - Si se proporciona, también se revocará
+}
+```
+
+### Descripción
+
+Este endpoint implementa un sistema de revocación de tokens utilizando Redis blacklist con las siguientes características:
+
+- **Token Revocation**: Los tokens se añaden a una blacklist en Redis y son rechazados inmediatamente
+- **TTL Automático**: Los tokens en blacklist se eliminan automáticamente cuando expiran (limpieza automática)
+- **Revocación Múltiple**: Puedes revocar tanto el access token como el refresh token en una sola llamada
+- **Seguridad**: Los tokens se hashean (SHA-256) antes de almacenarlos en Redis para privacidad
+
+### Respuesta Exitosa (200 OK)
+
+```json
+{
+  "success": true,
+  "message": "Logout successful",
+  "data": {
+    "success": true,
+    "message": "Logout successful"
+  }
+}
+```
+
+### Errores Posibles
+
+**401 Unauthorized** - Token no proporcionado
+```json
+{
+  "success": false,
+  "message": "No token provided"
+}
+```
+
+**401 Unauthorized** - Token inválido
+```json
+{
+  "success": false,
+  "message": "Invalid token"
+}
+```
+
+**401 Unauthorized** - Token expirado
+```json
+{
+  "success": false,
+  "message": "Token expired"
+}
+```
+
+**401 Unauthorized** - Token ya revocado
+```json
+{
+  "success": false,
+  "message": "Token has been revoked"
+}
+```
+
+**500 Internal Server Error** - Error al revocar tokens
+```json
+{
+  "success": false,
+  "message": "Error during logout"
+}
+```
+
+### Ejemplo de uso (JavaScript)
+
+#### Logout básico (solo access token)
+
+```javascript
+const accessToken = localStorage.getItem('accessToken');
+
+const response = await fetch('http://localhost:5000/api/auth/logout', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  }
+});
+
+const data = await response.json();
+
+if (data.success) {
+  // Eliminar tokens del almacenamiento local
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+
+  // Redirigir a login
+  window.location.href = '/login';
+}
+```
+
+#### Logout completo (access + refresh token)
+
+```javascript
+const accessToken = localStorage.getItem('accessToken');
+const refreshToken = localStorage.getItem('refreshToken');
+
+const response = await fetch('http://localhost:5000/api/auth/logout', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    refreshToken: refreshToken
+  })
+});
+
+const data = await response.json();
+
+if (data.success) {
+  // Eliminar todos los tokens
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+
+  // Redirigir a login
+  window.location.href = '/login';
+}
+```
+
+#### Función de logout reutilizable
+
+```javascript
+async function logout() {
+  try {
+    const accessToken = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+
+    // Intentar revocar tokens en el backend
+    await fetch('http://localhost:5000/api/auth/logout', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ refreshToken })
+    });
+  } catch (error) {
+    console.error('Error during logout:', error);
+  } finally {
+    // Siempre limpiar el localStorage, incluso si el backend falla
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+
+    // Redirigir a login
+    window.location.href = '/login';
+  }
+}
+```
+
+### Comportamiento de la Blacklist
+
+1. **Revocación Inmediata**: Los tokens revocados son rechazados inmediatamente en todas las peticiones
+2. **TTL Dinámico**: Cada token en blacklist tiene un TTL igual al tiempo restante hasta su expiración natural
+3. **Limpieza Automática**: Redis elimina automáticamente los tokens cuando expiran (no hay acumulación infinita)
+4. **Fail-Open**: Si Redis falla, el middleware permite el acceso temporalmente (prioriza disponibilidad)
+
+### Escenarios de Uso
+
+#### Logout Normal
+```javascript
+// Usuario hace logout voluntariamente
+await logout();
+```
+
+#### Logout por Seguridad (Token Comprometido)
+```javascript
+// Usuario sospecha que su token fue robado
+// Revoca ambos tokens inmediatamente
+const response = await fetch('http://localhost:5000/api/auth/logout', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ refreshToken })
+});
+
+// El atacante no podrá usar ninguno de los tokens robados
+```
+
+#### Logout desde Múltiples Dispositivos
+```javascript
+// Cuando el usuario hace logout, TODOS sus tokens actuales se invalidan
+// Esto incluye tokens en otros dispositivos si comparten el mismo refresh token
+await logout();
+
+// Para implementar "logout desde todos los dispositivos",
+// el usuario debe hacer logout desde cada dispositivo
+// o se puede implementar un endpoint adicional en el futuro
+```
+
+### Notas Importantes
+
+1. **Siempre Limpiar LocalStorage**: Incluso si el logout en el backend falla, limpia los tokens locales
+2. **Revocar Ambos Tokens**: Para máxima seguridad, siempre envía el refresh token en el body
+3. **Manejo de Errores**: No bloquees el logout si el backend falla, el usuario debe poder limpiar su sesión localmente
+4. **No Reutilizar Tokens**: Después de logout, NUNCA intentes reutilizar los tokens antiguos
+5. **Refresh Token Invalidado**: Una vez revocado el refresh token, no se pueden obtener nuevos access tokens
+
+### Testing con curl
+
+```bash
+# Logout solo con access token
+curl -X POST http://localhost:5000/api/auth/logout \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json"
+
+# Logout con ambos tokens
+curl -X POST http://localhost:5000/api/auth/logout \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"YOUR_REFRESH_TOKEN"}'
+
+# Intentar usar token revocado (debería fallar con 401)
+curl -X GET http://localhost:5000/api/auth/me \
+  -H "Authorization: Bearer YOUR_REVOKED_ACCESS_TOKEN"
+```
+
+### Flujo Completo de Logout
+
+```
+Usuario hace click en "Logout"
+  ↓
+Frontend llama POST /api/auth/logout con access token en header
+  ↓
+Backend verifica que el token es válido (no expirado)
+  ↓
+Backend añade token a Redis blacklist con TTL
+  ↓
+Si se proporcionó refreshToken, también se añade a blacklist
+  ↓
+Backend responde: 200 "Logout successful"
+  ↓
+Frontend elimina todos los tokens de localStorage
+  ↓
+Frontend redirige a /login
+  ↓
+Si atacante intenta usar token revocado
+  ↓
+Backend responde: 401 "Token has been revoked"
+```
+
+---
+
+## 6. Gestión de Tokens JWT
 
 ### Tipos de Tokens
 
@@ -474,13 +749,17 @@ El sistema utiliza dos tipos de tokens JWT:
 
 ### Flujo de Autenticación Recomendado
 
-1. **Login/Registro**: Obtener ambos tokens
+1. **Login/Registro**: Obtener ambos tokens (access + refresh)
 2. **Almacenamiento**: Guardar tokens de forma segura
    - `localStorage` o `sessionStorage` para aplicaciones web
    - Almacenamiento seguro para aplicaciones móviles
 3. **Uso del Access Token**: Incluir en header `Authorization: Bearer {token}`
-4. **Renovación**: Cuando el access token expire (error 401), usar el refresh token
-5. **Logout**: Eliminar tokens del almacenamiento local
+4. **Renovación**: Cuando el access token expire (error 401), usar el refresh token para obtener uno nuevo
+5. **Logout**:
+   - **Paso 1**: Llamar a `POST /api/auth/logout` enviando ambos tokens (access en header, refresh en body)
+   - **Paso 2**: Esperar confirmación del backend (tokens añadidos a blacklist)
+   - **Paso 3**: Eliminar tokens del almacenamiento local
+   - **Paso 4**: Redirigir al usuario a la página de login
 
 ### Ejemplo de Interceptor (Axios)
 
@@ -545,7 +824,253 @@ export default api;
 
 ---
 
-## 6. Manejo de Errores
+## 6. Token Expiration Handling
+
+### Access Token Expiry
+
+- **Duration:** 15 minutes (configurable via `JWT_ACCESS_EXPIRY`)
+- **Behavior:** Returns `401 Unauthorized` immediately when expired
+- **Response Time:** < 100ms (no hanging requests)
+- **Timeout Protection:** All requests have a 30-second timeout to prevent hanging
+
+### Error Responses for JWT Issues
+
+#### Expired Token
+
+When a token has expired, the backend responds immediately:
+
+```http
+GET /api/auth/me
+Authorization: Bearer <expired_token>
+
+HTTP/1.1 401 Unauthorized
+{
+  "success": false,
+  "message": "Token expired"
+}
+```
+
+**Important:** The backend will respond within 100ms, not hang indefinitely.
+
+#### Invalid Token
+
+```http
+GET /api/auth/me
+Authorization: Bearer <invalid_token>
+
+HTTP/1.1 401 Unauthorized
+{
+  "success": false,
+  "message": "Invalid token"
+}
+```
+
+#### Token Not Active Yet
+
+If a token has a `nbf` (not before) claim in the future:
+
+```http
+GET /api/auth/me
+Authorization: Bearer <future_token>
+
+HTTP/1.1 401 Unauthorized
+{
+  "success": false,
+  "message": "Token not active yet"
+}
+```
+
+#### Request Timeout
+
+If a request exceeds the 30-second timeout:
+
+```http
+HTTP/1.1 408 Request Timeout
+{
+  "success": false,
+  "message": "Request timeout",
+  "error": "The server took too long to respond"
+}
+```
+
+### Frontend Implementation Guide
+
+When receiving 401 with "Token expired", implement automatic token refresh:
+
+```javascript
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'http://localhost:5000/api'
+});
+
+// Request interceptor - add token to all requests
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor - automatic token refresh
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Check if error is due to expired token
+    if (
+      error.response?.status === 401 &&
+      error.response?.data?.message === 'Token expired' &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true;
+
+      try {
+        // Attempt to refresh token
+        const refreshToken = localStorage.getItem('refreshToken');
+        const response = await axios.post(
+          'http://localhost:5000/api/auth/refresh',
+          { refreshToken }
+        );
+
+        const { accessToken } = response.data.data;
+        localStorage.setItem('accessToken', accessToken);
+
+        // Retry original request with new token
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return api(originalRequest);
+
+      } catch (refreshError) {
+        // Refresh failed - redirect to login
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
+
+    // For other errors, just reject
+    return Promise.reject(error);
+  }
+);
+
+export default api;
+```
+
+### Best Practices
+
+1. **Client-Side Token Expiry Check**
+   - Decode the JWT on the client to check expiry before making requests
+   - Use a library like `jwt-decode` to read the `exp` claim
+   - Refresh proactively if token expires in < 1 minute
+
+```javascript
+import jwtDecode from 'jwt-decode';
+
+function isTokenExpiringSoon(token) {
+  try {
+    const decoded = jwtDecode(token);
+    const expiryTime = decoded.exp * 1000; // Convert to milliseconds
+    const now = Date.now();
+    const timeUntilExpiry = expiryTime - now;
+
+    // Refresh if expires in less than 1 minute
+    return timeUntilExpiry < 60000;
+  } catch (error) {
+    return true; // If can't decode, assume expired
+  }
+}
+```
+
+2. **Automatic Token Refresh**
+   - Implement interceptors as shown above
+   - Set `_retry` flag to prevent infinite loops
+   - Handle refresh token expiration by redirecting to login
+
+3. **Refresh Token Rotation**
+   - Consider implementing refresh token rotation for enhanced security
+   - Issue a new refresh token each time the access token is refreshed
+
+4. **Logout on Refresh Failure**
+   - Always clear all tokens and redirect to login if refresh fails
+   - This ensures users can't get stuck in an invalid auth state
+
+5. **Silent Authentication**
+   - Refresh tokens in the background without user interaction
+   - Show loading states during token refresh
+
+### Token Lifecycle Flow
+
+```
+User Login/Register
+  ↓
+Receive accessToken (15m) + refreshToken (7d)
+  ↓
+Store tokens in localStorage
+  ↓
+Make API requests with accessToken
+  ↓
+[After ~14 minutes]
+  ↓
+accessToken expires
+  ↓
+Backend responds: 401 "Token expired" (< 100ms)
+  ↓
+Frontend intercepts 401
+  ↓
+Automatically calls /api/auth/refresh with refreshToken
+  ↓
+Receive new accessToken
+  ↓
+Retry failed request with new token
+  ↓
+Continue using app seamlessly
+```
+
+### Debugging Token Issues
+
+If you're experiencing authentication issues:
+
+1. **Check Token Validity**
+```javascript
+const token = localStorage.getItem('accessToken');
+console.log('Token:', token);
+
+try {
+  const decoded = jwtDecode(token);
+  console.log('Decoded:', decoded);
+  console.log('Expires:', new Date(decoded.exp * 1000));
+  console.log('Is expired:', Date.now() > decoded.exp * 1000);
+} catch (error) {
+  console.error('Invalid token:', error);
+}
+```
+
+2. **Monitor Network Requests**
+   - Open browser DevTools → Network tab
+   - Filter by "Auth" or "api/auth"
+   - Check response times (should be < 1 second for 401 errors)
+   - Verify 401 responses contain specific error messages
+
+3. **Check Backend Logs**
+```bash
+docker logs tuberia-backend --tail 100 -f
+```
+
+Look for log entries like:
+```
+Auth middleware error: { errorName: 'TokenExpiredError', errorMessage: 'jwt expired' }
+```
+
+---
+
+## 7. Manejo de Errores
 
 ### Estructura de Respuesta de Error
 
@@ -606,7 +1131,9 @@ RateLimit-Reset: 1700000900
 4. **CORS**: El backend está configurado con CORS, asegúrate de que la URL del frontend esté en `FRONTEND_URL`
 5. **Validación**: Realizar validación tanto en frontend como backend
 6. **Expiración**: Manejar correctamente la expiración de tokens
-7. **Logout**: Limpiar todos los tokens del almacenamiento local
+7. **Logout**: SIEMPRE hacer logout en el backend (POST /api/auth/logout) para revocar tokens, no solo limpiar localStorage
+8. **Token Revocation**: Los tokens revocados se rechazan inmediatamente gracias a la blacklist en Redis
+9. **Compromiso de Tokens**: Si sospechas que un token fue robado, haz logout inmediatamente enviando ambos tokens
 
 ---
 

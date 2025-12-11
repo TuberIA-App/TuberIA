@@ -2,6 +2,7 @@
 .video-detail {
   max-width: 56rem; /* 896px */
   margin: 0 auto;
+  padding: 1rem;
 }
 
 .video-detail__back-link {
@@ -101,27 +102,25 @@
   margin-bottom: 0.5rem;
 }
 
-.feedback-box {
-  background-color: rgba(var(--color-primary-rgb, 239, 68, 68), 0.05);
-  border: 1px solid rgba(var(--color-primary-rgb, 239, 68, 68), 0.2);
-  border-radius: var(--border-radius-md, 12px);
-  padding: 1.5rem;
+/* New styles for Key Points section */
+.video-card-large__key-points {
+  margin-bottom: 1.5rem; /* Space before the summary */
+  border-top: 1px solid var(--secondary-color, #f3f4f6);
+  padding-top: 1.5rem;
 }
 
-.feedback-box__title {
-  font-size: 1.125rem;
-  font-weight: 600;
+.video-card-large__key-points ul {
+  list-style: disc; /* Use disc for bullet points */
+  padding-left: 1.25rem; /* Indent the list */
+  margin-top: 1rem;
   color: var(--text-color, #1f2937);
+}
+
+.video-card-large__key-points li {
   margin-bottom: 0.5rem;
+  line-height: 1.6;
 }
 
-.feedback-box__subtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-bottom: var(--spacing-md, 1rem);
-}
-
-.feedback-box__actions {
-  display: flex;
-  gap: 0.75rem;
+.video-card-large__key-points li:last-child {
+  margin-bottom: 0;
 }

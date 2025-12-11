@@ -14,7 +14,7 @@ const VideoCard = ({
     <article className="video-card" aria-labelledby={`video-title-${id}`}>
       <Link to={`/video/${id}`} className="video-card__link">
         <div className="video-card__thumbnail-wrapper">
-          <img src={thumbnail} alt={title} className="video-card__thumbnail-img" />
+          <img src={thumbnail} alt={title} fetchPriority='high' className="video-card__thumbnail-img" />
           <div className="video-card__thumbnail-overlay" aria-hidden="true">
             <div className="video-card__play-icon-wrapper">
               <PlayIcon size={20} className="video-card__play-icon" />

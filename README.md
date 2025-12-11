@@ -1,169 +1,206 @@
-# TuberIA - Plataforma de Resúmenes Automáticos de YouTube con IA
+# TuberIA
 
-![Status](https://img.shields.io/badge/status-developing-blue)
+![Status](https://img.shields.io/badge/status-production-green)
+![Stack](https://img.shields.io/badge/stack-MERN-blue)
 
-> **Proyecto en fase de planificación** - Documentación completa, desarrollo por comenzar.
-
----
-
-## 🎯 ¿Qué es TuberIA?
-
-TuberIA es una plataforma web que utiliza inteligencia artificial para **automatizar completamente** el seguimiento de canales de YouTube. Los usuarios reciben resúmenes estructurados de los nuevos vídeos sin intervención manual.
-
-**El problema:** Estudiantes y profesionales pierden tiempo consumiendo vídeos largos o abandonan canales de interés por exceso de contenido.
-
-**Nuestra solución:** Detección automática + Transcripción + Resumen con IA = Contenido clave en minutos.
+**Plataforma web de resúmenes automáticos de YouTube con IA**
 
 ---
 
-## 📚 Documentación del Proyecto
+## Descripción
 
-Toda la documentación está organizada en el directorio [`docs/`](docs/):
+**TuberIA** es una plataforma web que utiliza inteligencia artificial para automatizar completamente el seguimiento de canales de YouTube. Los usuarios reciben resúmenes estructurados de los nuevos vídeos sin intervención manual.
 
-### 📋 [Fase 1: Detección del problema](docs/problema.md)
-- Propuesta del proyecto y necesidad detectada
-- Investigación con encuestas y análisis de usuarios
-- Definición de usuarios objetivo
-- Análisis de competencia (Eightify, Notta.ai, Glasp)
-- Casos de uso principales
-
-### 🔧 [Fase 2: Estudio de viabilidad técnica](docs/viabilidad-tecnica.md)
-- Arquitectura del sistema planificada
-- Stack tecnológico seleccionado
-- Pruebas de concepto realizadas
-- Diagramas técnicos
-
-### 🎯 [Fase 3: Definición de objetivos y alcance](docs/objetivos-alcance.md)
-- Objetivos SMART del MVP (45 días)
-- Métricas de éxito (técnicas, funcionales, usuario)
-- Delimitación clara: qué incluye y qué NO incluye el MVP
-- Posibles ampliaciones futuras
-
-### 👥 [Fase 4: Planificación de recursos](docs/recursos.md)
-- Roles del equipo (Website Designer, Frontend Lead, Backend Lead, Database Manager)
-- Responsabilidades por módulos
-- Stack tecnológico detallado (Frontend: React+Vite, Backend: Node.js+Express)
-- APIs y servicios externos (YouTube, OpenRouter, etc.)
-- Infraestructura y costes (DigitalOcean VPS con crédito estudiantil)
+El problema que resolvemos: Estudiantes y profesionales pierden tiempo consumiendo vídeos largos o abandonan canales de interés por exceso de contenido. Nuestra solución combina detección automática de vídeos + transcripción + resumen con IA para entregar contenido clave en minutos.
 
 ---
 
-## 🚀 Alcance del MVP
+## Aplicación Desplegada
 
-**Lo que SÍ incluye el MVP:**
-- ✅ Autenticación de usuarios (JWT)
-- ✅ Seguimiento de canales de YouTube
-- ✅ Detección automática de vídeos nuevos (RSS feeds)
-- ✅ Transcripción (youtube-transcript-plus)
-- ✅ Resumen con IA (OpenRouter API)
-- ✅ Panel de usuario personalizado
-- ✅ Despliegue en VPS con Docker
-
-**Lo que NO incluye el MVP:**
-- ❌ Notificaciones push/Telegram/WhatsApp
-- ❌ Panel de administración avanzado
-- ❌ Sistema de suscripciones de pago
-- ❌ Exportación de resúmenes
-
-📖 Detalles completos en [objetivos-alcance.md](docs/objetivos-alcance.md)
+**URL Producción:** [https://tuberia.app](https://tuberia.app)
 
 ---
 
-## 🏗️ Stack Tecnológico
+## Stack Tecnológico
 
-### Frontend
-- **Framework:** React 18 + Vite
-- **Styling:** Tailwind CSS + shadcn/ui
-- **Estado:** Zustand + TanStack Query
-- **Routing:** React Router DOM
-
-### Backend
-- **Runtime:** Node.js + Express
-- **Base de datos:** MongoDB + Mongoose
-- **Colas:** Redis + Bull
-- **Autenticación:** JWT + bcryptjs
-
-### Infraestructura
-- **Hosting:** DigitalOcean Droplet (cubierto con crédito estudiantil)
-- **Despliegue:** Docker + Docker Compose
-- **Proxy:** Nginx + SSL (Let's Encrypt)
-- **CDN:** Cloudflare (Free Tier)
-
-### APIs Externas
-- YouTube RSS Feeds (gratis, ilimitado)
-- youtube-transcript-plus (gratis, testado hasta 1000 req/min)
-- OpenRouter API (modelo gratuito + fallback de pago)
-- YouTube Data API v3 (10,000 unidades/día gratis)
-
-📖 Especificaciones técnicas completas en [recursos.md](docs/recursos.md) y [viabilidad-tecnica.md](docs/viabilidad-tecnica.md)
+| Capa | Tecnologías |
+|------|-------------|
+| **Frontend** | React 18, Vite, Tailwind CSS, shadcn/ui, Zustand, TanStack Query |
+| **Backend** | Node.js, Express.js, JWT, BullMQ |
+| **Base de datos** | MongoDB, Redis |
+| **Infraestructura** | Docker, Docker Compose, Caddy (reverse proxy), GitHub Actions |
+| **APIs externas** | YouTube RSS Feeds, youtube-transcript-plus, OpenRouter AI |
 
 ---
 
-## 👥 Equipo
+## Capturas de Pantalla
 
-| Rol | Responsabilidades Clave |
-|-----|-------------------------|
-| **Website Designer** | Wireframes, prototipos, UX/UI, coherencia visual |
-| **Frontend Lead** | Componentes React, integración API, rendimiento |
-| **Backend Lead** | API REST, autenticación, procesamiento IA, seguridad |
-| **Database Manager** | Modelos de datos, optimización, backups, escalabilidad |
+<details>
+<summary>Ver mockups del diseño</summary>
 
-**Comunicación:** Discord (diaria) + GitHub Issues/PRs (documentación técnica) + Reuniones semanales
+### Dashboard
+![Dashboard](design/mockups/Dashboard.png)
 
-📖 Distribución detallada de responsabilidades en [recursos.md](docs/recursos.md#1-recursos-humanos)
+### Búsqueda de Canales
+![Búsqueda](design/mockups/Busqueda.png)
 
----
+### Resumen de Vídeo
+![Resumen](design/mockups/Resumen.png)
 
-## 📅 Estado Actual
+### Login
+![Login](design/mockups/Login.png)
 
-### ✅ Fase de Planificación (Completada)
-- [x] Investigación y validación del problema
-- [x] Definición de usuarios objetivo
-- [x] Análisis de competencia
-- [x] Objetivos SMART del MVP
-- [x] Diseño de arquitectura técnica
-- [x] Selección de stack tecnológico
-- [x] Definición de roles del equipo
-- [x] Análisis de costes y recursos
-
-### ⏳ Próximos 45 días (MVP)
-- [ ] Setup inicial del proyecto (repos, Docker, CI/CD)
-- [ ] Desarrollo del backend (API + autenticación)
-- [ ] Desarrollo del frontend (UI + panel)
-- [ ] Integración YouTube + IA
-- [ ] Testing y optimización
-- [ ] Despliegue en VPS
-- [ ] Pruebas con usuarios reales (≥5 usuarios)
+</details>
 
 ---
 
-## 📊 Resultados de Investigación
+## Instalación Local
 
-Encuesta realizada a 8 usuarios (estudiantes y profesionales):
-- **62.5%** desea resúmenes automáticos de vídeos
-- **50%** deja vídeos a medias por falta de tiempo
-- **75%** pagaría por el servicio (dependiendo del precio)
-- **62.5%** valora más la **precisión** de los resúmenes
+### Requisitos previos
+- Docker y Docker Compose instalados
+- Git
 
-Evidencia adicional: Análisis de comunidades en Reddit confirmó usuarios usando IA manualmente para resumir vídeos.
+### Pasos
 
-📖 Análisis completo en [problema.md](docs/problema.md#2-definición-de-usuarios-objetivo)
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/TuberIA-App/TuberIA.git
+cd TuberIA
+
+# 2. Copiar el archivo de variables de entorno
+cp .env.example .env
+# Editar .env con tus credenciales (JWT secrets, OpenRouter API key, etc.)
+
+# 3. Levantar los contenedores
+docker compose up -d
+
+# 4. Acceder a la aplicación
+# Frontend: http://localhost:5173
+# Backend API: http://localhost:5000
+```
+
+### Desarrollo
+
+```bash
+# Frontend (hot-reload)
+cd frontend && npm install && npm run dev
+
+# Backend (hot-reload)
+cd backend && npm install && npm run dev
+```
 
 ---
 
-## 🆚 Ventaja Competitiva
+## Equipo
 
-| Competidor | Su Limitación | Nuestra Ventaja |
-|------------|---------------|-----------------|
-| Eightify | Requiere acción manual por vídeo | 100% automatizado |
-| Notta.ai | Enfocado en archivos locales | Integración directa con YouTube |
-| Glasp | Sin IA propia para resúmenes | IA + API de YouTube integradas |
+| Miembro | GitHub | Rol Principal |
+|---------|--------|---------------|
+| **Ezequiel** | [@obezeq](https://github.com/obezeq) | Backend Lead |
+| **Natalia** | [@Naleper90](https://github.com/Naleper90) | Frontend Lead |
+| **Alfonso** | [@acasmor0802](https://github.com/acasmor0802) | Database Manager |
 
-**Propuesta única:** Conexión directa con YouTube (API + RSS) + IA integrada + Automatización completa
-
-📖 Análisis detallado en [problema.md](docs/problema.md#3-análisis-de-competencia)
+**Rotación de roles Scrum**: Cada miembro ha rotado entre Product Owner, Scrum Master y Developer durante los 6 sprints.
 
 ---
 
-**TuberIA** | Proyecto en fase de planificación | 2025 | Equipo 1 | 2ºDAW
+## Documentación
 
+### Wiki del Proyecto
+
+La wiki contiene toda la documentación de gestión del proyecto según metodología SCRUM:
+
+| Sección | Descripción |
+|---------|-------------|
+| [**HOME - Wiki**](wiki/INDEX.md) | Índice principal con navegación a todas las secciones |
+| [**Metodología y Organización**](wiki/organizacion.md) | Criterios de priorización, flujo de trabajo, columnas GitHub Projects |
+| [**Planificación de Sprints**](wiki/objetivos/objetivos.md) | 6 sprints con fechas, objetivos y entregables |
+| [**Gestión de Recursos y Tiempos**](wiki/gestion-de-recursos-y-tiempo.md) | GitHub Projects, Toggl Track, ceremonias Scrum |
+
+### Documentación del Proyecto (`/docs`)
+
+| Criterio | Documento | Descripción |
+|----------|-----------|-------------|
+| **1a** | [analisis-competencia.md](docs/analisis-competencia.md) | Clasificación de 5+ empresas del sector |
+| **1b** | [estructura-organizativa.md](docs/estructura-organizativa.md) | Organigrama y departamentos |
+| **2f** | [presupuesto.md](docs/presupuesto.md) | Presupuesto económico con Toggl Track |
+| **2g** | [financiacion.md](docs/financiacion.md) | Necesidades y fuentes de financiación |
+| **3c** | [legislacion.md](docs/legislacion.md) | RGPD, cookies, términos de servicio, WCAG |
+| **3f** | [recursos.md](docs/recursos.md) | Recursos humanos, materiales y tecnológicos |
+
+### Documentación Técnica (`/docs/dev`)
+
+| Documento | Descripción |
+|-----------|-------------|
+| [README.md](docs/dev/README.md) | Guía de desarrollo |
+| [api-auth.md](docs/dev/api-auth.md) | API de autenticación (login, registro, logout, refresh) |
+| [api-videos.md](docs/dev/api-videos.md) | API de vídeos y resúmenes |
+| [api-channels.md](docs/dev/api-channels.md) | API de canales |
+| [api-users.md](docs/dev/api-users.md) | API de usuarios |
+| [DEPLOYMENT.md](docs/dev/DEPLOYMENT.md) | Guía de despliegue |
+| [README-DOCKER.md](docs/dev/README-DOCKER.md) | Configuración Docker |
+| [README-REDIS.md](docs/dev/README-REDIS.md) | Configuración Redis y BullMQ |
+
+### Propuesta Formal Inicial
+
+La propuesta formal original del proyecto (Fases 1-4) se encuentra en:
+- [**docs/propuesta_formal.md**](docs/propuesta_formal.md)
+
+---
+
+## GitHub Projects
+
+**Tablero del proyecto:** [https://github.com/orgs/TuberIA-App/projects/1](https://github.com/orgs/TuberIA-App/projects/1)
+
+### Campos configurados
+- Sprint (1-6)
+- Prioridad (1-3)
+- Estimación (horas)
+- Horas Reales
+- Categoría (Frontend, Backend, BD, DevOps, Testing, Docs)
+- Estado (To Do, In Progress, In Review, Done)
+- Assignee
+
+---
+
+## Estructura del Repositorio
+
+```
+TuberIA/
+├── frontend/              # Aplicación React + Vite
+├── backend/               # API Node.js + Express
+├── docs/                  # Documentación del proyecto
+│   ├── analisis-competencia.md
+│   ├── estructura-organizativa.md
+│   ├── presupuesto.md
+│   ├── financiacion.md
+│   ├── legislacion.md
+│   ├── recursos.md
+│   ├── propuesta_formal.md
+│   └── dev/               # Documentación técnica
+├── wiki/                  # Wiki del proyecto (SCRUM, sprints, actas)
+│   ├── INDEX.md
+│   ├── organizacion.md
+│   ├── gestion-de-recursos-y-tiempo.md
+│   └── objetivos/         # Planificación por sprint
+├── design/                # Wireframes y mockups
+│   ├── wireframes/
+│   ├── mockups/
+│   └── styles/
+├── .github/workflows/     # CI/CD con GitHub Actions
+├── docker-compose.yml
+└── README.md
+```
+
+---
+
+## CI/CD
+
+El proyecto utiliza **GitHub Actions** para integración y despliegue continuo:
+
+- **Build automático** en cada push a `develop` y `main`
+- **Tests automáticos** del backend
+- **Despliegue automático** a producción en merge a `main`
+
+---
+
+**TuberIA** | 2025 | Equipo 1 | 2ºDAW - IES Rafael Alberti

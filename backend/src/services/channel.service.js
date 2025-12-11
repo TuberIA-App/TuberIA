@@ -2,6 +2,7 @@ import Channel from '../model/Channel.js';
 import UserChannel from '../model/UserChannel.js';
 import logger from '../utils/logger.js';
 import mongoose from 'mongoose';
+import { pollChannelNow } from './youtube/rssPoller.service.js';
 
 /**
  * Find or create a channel by YouTube channelId
@@ -103,17 +104,28 @@ export const followChannel = async (userId, channelId, channelData = null) => {
       subscribedAt: new Date()
     });
 
-    // Increment followersCount
-    await Channel.findByIdAndUpdate(
+    // Increment followersCount and reactivate channel
+    const updatedChannel = await Channel.findByIdAndUpdate(
       channel._id,
-      { $inc: { followersCount: 1 } }
+      {
+        $inc: { followersCount: 1 },
+        $set: { isActive: true }  // Reactivate channel if it was inactive
+      },
+      { new: true }
     );
 
     logger.info('User followed channel', {
       userId,
       channelId: channel.channelId,
-      channelName: channel.name
+      channelName: channel.name,
+      newFollowersCount: updatedChannel.followersCount,
+      isActive: true
     });
+
+    // Trigger immediate RSS poll for the latest video (don't await - runs in background)
+    pollChannelNow(channel.channelId, 'new_follow')
+      .then(() => logger.info('Immediate poll triggered for new channel follow', { channelId: channel.channelId }))
+      .catch(err => logger.error('Failed to trigger immediate poll', { channelId: channel.channelId, error: err.message }));
 
     return {
       success: true,
@@ -123,7 +135,7 @@ export const followChannel = async (userId, channelId, channelData = null) => {
         name: channel.name,
         username: channel.username,
         thumbnail: channel.thumbnail,
-        followersCount: channel.followersCount + 1
+        followersCount: updatedChannel.followersCount
       }
     };
 
@@ -182,18 +194,33 @@ export const unfollowChannel = async (userId, channelId) => {
     // Delete UserChannel relationship
     await UserChannel.deleteOne({ userId, channelId });
 
-    // Decrement followersCount (but not below 0)
-    const updatedChannel = await Channel.findById(channelId);
-    const newCount = Math.max(0, updatedChannel.followersCount - 1);
-    await Channel.findByIdAndUpdate(
+    // Decrement followersCount atomically and update isActive
+    // Uses MongoDB aggregation pipeline for complete atomicity (no race conditions)
+    const updatedChannel = await Channel.findByIdAndUpdate(
       channelId,
-      { followersCount: newCount }
+      [
+        {
+          $set: {
+            followersCount: {
+              $max: [0, { $subtract: ["$followersCount", 1] }]
+            }
+          }
+        },
+        {
+          $set: {
+            isActive: { $gt: ["$followersCount", 0] }
+          }
+        }
+      ],
+      { new: true }
     );
 
     logger.info('User unfollowed channel', {
       userId,
       channelId: channel.channelId,
-      channelName: channel.name
+      channelName: channel.name,
+      newFollowersCount: updatedChannel.followersCount,
+      isActive: updatedChannel.isActive
     });
 
     return {

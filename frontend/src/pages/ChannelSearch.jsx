@@ -3,12 +3,16 @@ import SearchBar from '../components/SearchBar/SearchBar';
 import ChannelItem from '../components/ChannelItem/ChannelItem';
 import { UsersIcon, StarIcon, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useUserData } from '../context/UserDataContext';
+import { useNavigate } from 'react-router-dom';
 import channelService from '../services/channel.service';
 import './ChannelSearch.css';
 
 const ChannelSearch = () => {
   const { isAuthenticated } = useAuth();
-  
+  const { incrementChannelsCount, decrementChannelsCount } = useUserData();
+  const navigate = useNavigate();
+
   // State management
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResult, setSearchResult] = useState(null);
@@ -58,8 +62,17 @@ const ChannelSearch = () => {
     try {
       setSearchLoading(true);
       setSearchError(null);
-      const channel = await channelService.searchChannel(query);
-      setSearchResult(channel);
+      
+      // Search returns MongoDB _id, but we need to get full details with isFollowing
+      const searchData = await channelService.searchChannel(query);
+      
+      // Now get full details including isFollowing status
+      if (searchData.channelId) {
+        const fullChannel = await channelService.getChannelDetails(searchData.channelId);
+        setSearchResult(fullChannel);
+      } else {
+        setSearchResult(searchData);
+      }
     } catch (error) {
       console.error('Error searching channel:', error);
       setSearchError(error.message);
@@ -76,20 +89,40 @@ const ChannelSearch = () => {
       return;
     }
 
-    const isCurrentlyFollowing = channelService.isFollowing(mongoId, followedChannels);
+    const isCurrentlyFollowing = searchResult && searchResult.id === mongoId 
+      ? searchResult.isFollowing 
+      : channelService.isFollowing(mongoId, followedChannels);
 
     try {
       setFollowLoading(prev => ({ ...prev, [mongoId]: true }));
       
       if (isCurrentlyFollowing) {
+        // Optimistic update for search result
+        if (searchResult && searchResult.id === mongoId) {
+          setSearchResult(prev => ({ ...prev, isFollowing: false }));
+        }
+        
         // Unfollow using MongoDB _id
         await channelService.unfollowChannel(mongoId);
-        // Reload followed channels to ensure sync
+        
+        // Update global counter
+        decrementChannelsCount();
+        
+        // Reload followed channels
         await loadFollowedChannels();
       } else {
-        // Follow using MongoDB _id (backend already created channel during search)
+        // Optimistic update for search result
+        if (searchResult && searchResult.id === mongoId) {
+          setSearchResult(prev => ({ ...prev, isFollowing: true }));
+        }
+        
+        // Follow using MongoDB _id
         await channelService.followChannel(mongoId);
-        // Reload followed channels to ensure sync
+        
+        // Update global counter
+        incrementChannelsCount();
+        
+        // Reload followed channels
         await loadFollowedChannels();
       }
       
@@ -98,6 +131,11 @@ const ChannelSearch = () => {
     } catch (error) {
       console.error('Error toggling follow:', error);
       setSearchError(error.message);
+      
+      // Revert optimistic update on error
+      if (searchResult && searchResult.id === mongoId) {
+        setSearchResult(prev => ({ ...prev, isFollowing: isCurrentlyFollowing }));
+      }
     } finally {
       setFollowLoading(prev => ({ ...prev, [mongoId]: false }));
     }
@@ -144,15 +182,15 @@ const ChannelSearch = () => {
           <ul className="channel-search__list">
             <li>
               <ChannelItem
-                id={searchResult._id}
+                id={searchResult.id || searchResult._id}
                 channelId={searchResult.channelId}
                 name={searchResult.name}
                 username={searchResult.username}
                 description={searchResult.description}
-                thumbnail={searchResult.thumbnail}
+                thumbnail={searchResult.avatar || searchResult.thumbnail}
                 followersCount={searchResult.followersCount}
-                isFollowing={channelService.isFollowing(searchResult._id, followedChannels)}
-                isLoading={followLoading[searchResult._id]}
+                isFollowing={searchResult.isFollowing}
+                isLoading={followLoading[searchResult.id || searchResult._id]}
                 onFollowToggle={handleFollowToggle}
               />
             </li>
@@ -222,6 +260,7 @@ const ChannelSearch = () => {
                     showVisitButton={true}
                     isLoading={followLoading[channel.id || channel._id]}
                     onFollowToggle={handleFollowToggle}
+                    onChannelClick={() => navigate('/home')}
                   />
                 </li>
               ))}

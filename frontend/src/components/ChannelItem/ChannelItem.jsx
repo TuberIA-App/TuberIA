@@ -15,7 +15,8 @@ const ChannelItem = ({
   isFollowing, 
   showVisitButton, 
   isLoading,
-  onFollowToggle 
+  onFollowToggle,
+  onChannelClick, 
 }) => {
   const handleFollowToggle = () => {
     if (!isLoading && id) {
@@ -36,7 +37,17 @@ const ChannelItem = ({
   const channelAvatar = thumbnail || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=ef4444&color=fff&size=200`;
 
   return (
-    <div className="channel-item">
+      <div
+        className="channel-item"
+        onClick={onChannelClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && onChannelClick) {
+            onChannelClick();
+          }
+        }}
+      >
       <img 
         src={channelAvatar} 
         alt={`${name} avatar`} 

@@ -21,58 +21,78 @@ async function processChannelVideos(channel) {
     // Extract videos from feed
     const entries = feed.entry || [];
     const videos = Array.isArray(entries) ? entries : [entries];
-    let newVideosCount = 0;
 
-    for (const entry of videos) {
-      const videoData = {
-        videoId: entry['yt:videoId'],
-        title: entry.title,
-        publishedAt: new Date(entry.published),
-        channelId: entry['yt:channelId'],
-        url: `https://www.youtube.com/watch?v=${entry['yt:videoId']}`
-      };
+    // Only process the latest (most recent) video - best practice for RSS feeds
+    // RSS is for NEW content detection, not historical backfilling
+    const latestVideo = videos[0];
 
-      // Check if video already exists (deduplication)
-      const existingVideo = await Video.findOne({
-        videoId: videoData.videoId
+    if (!latestVideo) {
+      logger.warn('No videos found in RSS feed', { channelId: channel.channelId });
+      await Channel.updateOne(
+        { channelId: channel.channelId },
+        { lastChecked: new Date() }
+      );
+      return;
+    }
+
+    // Extract thumbnail URL from media:group.media:thumbnail
+    const thumbnail = latestVideo['media:group']?.['media:thumbnail']?.url || null;
+
+    const videoData = {
+      videoId: latestVideo['yt:videoId'],
+      title: latestVideo.title,
+      publishedAt: new Date(latestVideo.published),
+      channelId: latestVideo['yt:channelId'],
+      url: `https://www.youtube.com/watch?v=${latestVideo['yt:videoId']}`,
+      thumbnail
+    };
+
+    // Check if video already exists (deduplication)
+    const existingVideo = await Video.findOne({
+      videoId: videoData.videoId
+    });
+
+    if (!existingVideo) {
+      // Create video document
+      await Video.create({
+        videoId: videoData.videoId,
+        title: videoData.title,
+        url: videoData.url,
+        channelId: channel._id,
+        publishedAt: videoData.publishedAt,
+        thumbnail: videoData.thumbnail,
+        status: 'pending',
+        createdAt: new Date()
       });
 
-      if (!existingVideo) {
-        // Create video document
-        await Video.create({
+      // Enqueue transcription job
+      await transcriptionQueue.add(
+        'transcribe',
+        {
           videoId: videoData.videoId,
-          title: videoData.title,
-          url: videoData.url,
-          channelId: channel._id,
-          publishedAt: videoData.publishedAt,
-          status: 'pending',
-          createdAt: new Date()
-        });
-
-        // Enqueue transcription job
-        await transcriptionQueue.add(
-          'transcribe',
-          {
-            videoId: videoData.videoId,
-            channelId: channel.channelId,
-            title: videoData.title
-          },
-          {
-            jobId: `transcribe-${videoData.videoId}`,
-            attempts: 3,
-            backoff: {
-              type: 'exponential',
-              delay: 2000
-            }
-          }
-        );
-
-        newVideosCount++;
-        logger.info('New video detected', {
-          videoId: videoData.videoId,
+          channelId: channel.channelId,
           title: videoData.title
-        });
-      }
+        },
+        {
+          jobId: `transcribe-${videoData.videoId}`,
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 2000
+          }
+        }
+      );
+
+      logger.info('New video detected and queued', {
+        videoId: videoData.videoId,
+        title: videoData.title,
+        channelId: channel.channelId
+      });
+    } else {
+      logger.debug('Latest video already processed', {
+        videoId: videoData.videoId,
+        channelId: channel.channelId
+      });
     }
 
     // Update channel last checked timestamp
@@ -82,14 +102,6 @@ async function processChannelVideos(channel) {
         lastChecked: new Date()
       }
     );
-
-    if (newVideosCount > 0) {
-      logger.info('RSS poll completed', {
-        channelId: channel.channelId,
-        newVideos: newVideosCount,
-        totalVideos: videos.length
-      });
-    }
 
   } catch (error) {
     logger.error('RSS polling error', {
@@ -184,8 +196,12 @@ export function stopRSSPolling() {
 
 /**
  * Manually trigger RSS check for a channel (immediate)
+ * @param {string} channelId - YouTube channel ID
+ * @param {string} reason - Reason for polling (manual, new_follow, etc.)
  */
-export async function pollChannelNow(channelId) {
+export async function pollChannelNow(channelId, reason = 'manual') {
+  logger.info('Immediate poll requested', { channelId, reason });
+
   const channel = await Channel.findOne({ channelId });
 
   if (!channel) {
