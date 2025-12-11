@@ -196,8 +196,12 @@ export function stopRSSPolling() {
 
 /**
  * Manually trigger RSS check for a channel (immediate)
+ * @param {string} channelId - YouTube channel ID
+ * @param {string} reason - Reason for polling (manual, new_follow, etc.)
  */
-export async function pollChannelNow(channelId) {
+export async function pollChannelNow(channelId, reason = 'manual') {
+  logger.info('Immediate poll requested', { channelId, reason });
+
   const channel = await Channel.findOne({ channelId });
 
   if (!channel) {

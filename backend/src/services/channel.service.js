@@ -2,6 +2,7 @@ import Channel from '../model/Channel.js';
 import UserChannel from '../model/UserChannel.js';
 import logger from '../utils/logger.js';
 import mongoose from 'mongoose';
+import { pollChannelNow } from './youtube/rssPoller.service.js';
 
 /**
  * Find or create a channel by YouTube channelId
@@ -120,6 +121,11 @@ export const followChannel = async (userId, channelId, channelData = null) => {
       newFollowersCount: updatedChannel.followersCount,
       isActive: true
     });
+
+    // Trigger immediate RSS poll for the latest video (don't await - runs in background)
+    pollChannelNow(channel.channelId, 'new_follow')
+      .then(() => logger.info('Immediate poll triggered for new channel follow', { channelId: channel.channelId }))
+      .catch(err => logger.error('Failed to trigger immediate poll', { channelId: channel.channelId, error: err.message }));
 
     return {
       success: true,
