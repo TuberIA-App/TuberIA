@@ -20,8 +20,10 @@ const Auth = ({ isRegister = false }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-    React.useEffect(() => {
+  React.useEffect(() => {
     setIsLogin(!isRegister);
+    setError('');
+    setFormData({ name: '', email: '', password: '' });
   }, [isRegister]);
 
 const handleSubmit = async (e) => {
