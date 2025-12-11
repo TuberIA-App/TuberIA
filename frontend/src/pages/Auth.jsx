@@ -24,36 +24,59 @@ const Auth = ({ isRegister = false }) => {
     setIsLogin(!isRegister);
   }, [isRegister]);
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
       if (isLogin) {
-        // LOGIN
-        const response = await authService.login(
-          formData.email,
-          formData.password
-        );
-        
-        login(response.data.user, response.data.accessToken, response.data.refreshToken); 
-        navigate('/dashboard');  
+        // Validación sencilla en frontend
+        if (!formData.email || !formData.password) {
+          setError('Introduce correo y contraseña');
+          return;
+        }
+        if (formData.password.length < 4) {
+          setError('Contraseña demasiado corta');
+          return;
+        }
+
+        let response;
+        try {
+          response = await authService.login(
+            formData.email,
+            formData.password
+          );
+        } catch (apiError) {
+          console.log('ERROR authService.login >>>', apiError);
+          setError(apiError.message || 'Correo o contraseña incorrectos');
+          return;
+        }
+
+        login(response.data.user, response.data.accessToken, response.data.refreshToken);
+        navigate('/dashboard');
       } else {
-        // REGISTRO
-        const response = await authService.register({
-          username: formData.name.replace(/\s+/g, '').toLowerCase(),
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        });
-        
-        login(response.data.user, response.data.accessToken, response.data.refreshToken); 
-        navigate('/dashboard');  
+        // REGISTRO 
+        let response;
+        try {
+          response = await authService.register({
+            username: formData.name.replace(/\s+/g, '').toLowerCase(),
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+          });
+        } catch (apiError) {
+          console.log('ERROR authService.register >>>', apiError);
+          setError(apiError.message || 'Error en el registro');
+          return;
+        }
+
+        login(response.data.user, response.data.accessToken, response.data.refreshToken);
+        navigate('/dashboard');
       }
     } catch (err) {
-      setError(err.message || 'Error en la autenticación');
-      console.error('Error:', err);
+      console.log('ERROR LOGIN/REGISTER OUTER >>>', err);
+      setError('Error inesperado en la autenticación');
     } finally {
       setLoading(false);
     }
