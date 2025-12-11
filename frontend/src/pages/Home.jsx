@@ -16,6 +16,7 @@ const Home = () => {
   const [demoError, setDemoError] = useState('');
   const modalRef = useRef(null);
   const navigate = useNavigate();
+  const [previewChannel, setPreviewChannel] = useState(null);
 
   // Datos de ejemplo
   const featuredVideos = [
@@ -39,7 +40,10 @@ const Home = () => {
   ];
 
   const handleTryNow = () => setShowTryModal(true);
-  const handleCloseModal = () => setShowTryModal(false);
+  const handleCloseModal = () => {
+    setShowTryModal(false);
+    setPreviewChannel(null);
+  };
 
     const handleRegister = () => {
     navigate('/signup', { state: { isLogin: false } });
@@ -194,34 +198,30 @@ const Home = () => {
             {demoChannel && (
               <div className="try-it__result">
                 <div className="try-it__result-header">
-                  {demoChannel.thumbnail ? (
+                  {demoChannel.thumbnail && (
                     <img
                       src={demoChannel.thumbnail}
                       alt={demoChannel.name}
                       className="try-it__result-thumbnail"
                     />
-                  ) : (
-                    <div className="try-it__result-thumbnail try-it__result-thumbnail--placeholder">
-                      Sin imagen
-                    </div>
                   )}
                   <div>
                     <h3 className="try-it__result-name">{demoChannel.name}</h3>
                     <p className="try-it__result-username">
                       {demoChannel.username || 'Username no disponible'}
                     </p>
-                    <p className="try-it__result-id">ID: {demoChannel.channelId}</p>
+                    <p className="try-it__result-id"> ID del canal: <span>{demoChannel.channelId}</span></p>
                   </div>
                 </div>
                 <Button
                   variant="primary"
                   fullWidth
                   onClick={() => {
-                    alert('Para empezar a monitorizar este canal necesitas registrarte.');
-                    navigate('/singup', { state: { isLogin: false } });
+                    setPreviewChannel(demoChannel);
+                    setShowTryModal(true);
                   }}
                 >
-                  Empezar a monitorizar este canal
+                  Probar TuberIA con este canal
                 </Button>
               </div>
             )}
@@ -415,7 +415,11 @@ const Home = () => {
               <div className="modal__icon-wrapper">
                 <SparklesIcon size={40} aria-hidden="true" />
               </div>
-              <h3 id="modal-title" className="modal__title">¡Empieza a seguir canales!</h3>
+              <h3 id="modal-title" className="modal__title">
+                {previewChannel
+                  ? `Empieza a seguir a ${previewChannel.name}`
+                  : '¡Empieza a seguir canales!'}
+              </h3>
               <p className="modal__subtitle">Regístrate gratis para seguir tus canales favoritos y acceder a sus resúmenes.</p>
             </header>
             <ul className="modal__features-list" aria-label="Beneficios de registrarse">

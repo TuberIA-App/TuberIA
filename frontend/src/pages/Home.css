@@ -74,6 +74,13 @@
 .try-it__prompt { margin-top: var(--spacing-md); padding: var(--spacing-md); background-color: rgba(252, 252, 252, 0.9); border: 1px solid rgba(0, 0, 0, 0.03); border-radius: var(--border-radius-md); text-align: center; }
 .try-it__prompt-title { font-weight: 600; margin-bottom: var(--spacing-xs); color: var(--text-color); }
 .try-it__prompt-text { font-size: 0.875rem; margin: 0; color: var(--text-secondary-color); }
+.try-it__result { background: #f9fafb; padding: 1.5rem 1.75rem; border-radius: 0.75rem; margin-top: 1.5rem; text-align: center; }
+.try-it__result-header { display: flex; gap: 0.25rem; align-items: center; flex-direction: column;}
+.try-it__result-id { margin-top: 0.1rem; margin-bottom: 2rem; font-size: 0.8rem; color: #6b7280; }
+.try-it__result-id span { font-family: monospace; background: #f3f4f6; padding: 0.1rem 0.3rem; border-radius: 0.25rem; }
+.try-it__result-thumbnail { width: 56px; height: 56px; border-radius: 999px; object-fit: cover; }
+.try-it__result-thumbnail--placeholder { display: flex; align-items: center; justify-content: center; background: #f3f4f6; color: #6b7280; font-size: 0.75rem; }
+.try-it__result button { margin-top: 1.5rem; }
 
 /* Features Section */
 .features { padding: var(--spacing-xl) var(--spacing-md); background-color: var(--background-body); }
@@ -123,7 +130,7 @@
 .benefits__testimonials-content { position: relative; background-color: var(--background-body); padding: var(--spacing-lg); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-xl); border: 1px solid var(--border-color); }
 .benefits__testimonials-header { display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); }
 .benefits__testimonials-icon-wrapper { width: 4rem; height: 4rem; display: flex; align-items: center; justify-content: center; background-color: var(--primary-color); color: #fff; border-radius: var(--border-radius-md); }
-.benefits__testimonials-count { font-size: 1.75rem; font-weight: 700; color: var(--text-color); }
+.benefits__testimonials-count { font-size: 1.75rem; font-weight: 700; color: var(--text-color); margin: 0; }
 .benefits__testimonials-label { margin: 0; color: var(--text-secondary-color); }
 .benefits__testimonials-list { display: flex; flex-direction: column; gap: var(--spacing-md); list-style: none; padding: 0; }
 .testimonial-card { background-color: var(--secondary-color); padding: var(--spacing-md); border-radius: var(--border-radius-md); }
