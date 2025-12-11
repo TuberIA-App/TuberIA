@@ -37,11 +37,17 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Si el error es 401 y no hemos intentado refrescar
+    // 1. Detectar si el error es 401
     if (error.response?.status === 401 && !originalRequest._retry) {
       
+      if (originalRequest.url.includes('/auth/refresh')) {
+        authService.logout(); 
+        window.location.href = '/login'; 
+        return Promise.reject(error);
+      }
+
+      // 3. Lógica de cola (queue) para peticiones concurrentes
       if (isRefreshing) {
-        // Si ya estamos refrescando, añadir a la cola
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         }).then(token => {
@@ -56,18 +62,21 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        // Intentamos obtener nuevo token
         const newToken = await authService.refreshToken();
+        
+        // Si funciona, procesamos la cola
         processQueue(null, newToken);
         
+        // Y reintentamos la petición original
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
+
       } catch (refreshError) {
+        // Si el refresh falla matamos sesión
         processQueue(refreshError, null);
-        
-        // Redirigir a login
         authService.logout();
         window.location.href = '/login';
-        
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
