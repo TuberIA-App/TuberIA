@@ -1,12 +1,12 @@
 # (2c) Identificación de fases del proyecto
 
 ## Definición de objetivos y entregables específicos y medibles por cada Sprint
-- [Sprint 1](./objetivos/sprint-1-objetivos.md)
-- [Sprint 2](./objetivos/sprint-2-objetivos.md)
-- [Sprint 3](./objetivos/sprint-3-objetivos.md)
-- [Sprint 4](./objetivos/sprint-4-objetivos.md)
-- [Sprint 5](./objetivos/sprint-5-objetivos.md)
-- [Sprint 6](./objetivos/sprint-6-objetivos.md)
+- [Sprint 1](./sprint-1-objetivos.md)
+- [Sprint 2](./sprint-2-objetivos.md)
+- [Sprint 3](./sprint-3-objetivos.md)
+- [Sprint 4](./sprint-4-objetivos.md)
+- [Sprint 5](./sprint-5-objetivos.md)
+- [Sprint 6](./sprint-6-objetivos.md)
 
 ## Planificación de Sprints
 
