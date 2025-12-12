@@ -2,9 +2,13 @@
 
 ## TL;DR
 
-El servicio de transcripción **SIEMPRE usa user agents rotativos**. El proxy es **opcional**.
+El servicio de transcripción incluye:
+- ✅ **User agents rotativos** (SIEMPRE activos - cada request usa un user agent diferente)
+- ✅ **Sistema de reintentos** (3 intentos por defecto, cada uno con **nuevo user agent**)
+- ✅ **Exponential backoff** (espera progresiva: 1s, 2s, 4s entre reintentos)
+- ✅ **Proxy opcional** (configurable)
 
-### Sin Proxy (Solo User Agents)
+### Sin Proxy (User Agents Rotativos + Reintentos)
 ```bash
 # En tu .env (dev o prod)
 YOUTUBE_PROXY_URL=
@@ -14,6 +18,15 @@ YOUTUBE_PROXY_URL=
 ```bash
 # En tu .env (dev o prod)
 YOUTUBE_PROXY_URL=http://USERNAME:PASSWORD@IP:PORT
+```
+
+### Configurar Reintentos (Opcional)
+```bash
+# Número de intentos (default: 3)
+YOUTUBE_TRANSCRIPT_MAX_RETRIES=3
+# Delay inicial entre intentos en ms (default: 1000)
+# Se usa exponential backoff: 1s, 2s, 4s, 8s...
+YOUTUBE_TRANSCRIPT_RETRY_DELAY=1000
 ```
 
 ---
@@ -82,19 +95,44 @@ systemctl restart your-app
 
 ## ¿Cómo funciona?
 
+### Sistema de Reintentos con Rotación de User Agents
+
+**Cada intento usa un USER AGENT DIFERENTE:**
+
+```
+Intento 1 → User Agent A → [Falla con error de red]
+   ↓ Espera 1s (exponential backoff)
+Intento 2 → User Agent B → [Falla con rate limit 429]
+   ↓ Espera 2s (exponential backoff)
+Intento 3 → User Agent C → ✅ Éxito
+```
+
+**Errores que activan reintentos:**
+- ❌ Network errors (ECONNRESET, ETIMEDOUT)
+- ❌ Timeouts
+- ❌ Rate limits (429)
+- ❌ Server errors (500, 502, 503, 504)
+
+**Errores que NO activan reintentos (fallan inmediatamente):**
+- ❌ Video no existe
+- ❌ Transcripción deshabilitada
+- ❌ Transcripción no disponible
+
 ### Sin Proxy Configurado
 ```
-Tu App → User Agent Aleatorio → YouTube API
+Tu App → User Agent Aleatorio (rotativo) → YouTube API
 ```
 - ✅ User agents rotativos activos
+- ✅ Reintentos con rotación de user agent
 - ❌ Sin proxy
 - Conexión directa a YouTube
 
 ### Con Proxy Configurado
 ```
-Tu App → User Agent Aleatorio → Proxy Server → YouTube API
+Tu App → User Agent Aleatorio (rotativo) → Proxy Server → YouTube API
 ```
 - ✅ User agents rotativos activos
+- ✅ Reintentos con rotación de user agent
 - ✅ Proxy activo
 - Todas las peticiones van por el proxy
 
@@ -105,12 +143,25 @@ Tu App → User Agent Aleatorio → Proxy Server → YouTube API
 ### Logs sin proxy:
 ```
 [info]: No YouTube proxy configured, using direct connection with rotative user agent
+[debug]: Fetching transcript for video: dQw4w9WgXcQ (attempt 1/3)
+[info]: Successfully fetched transcript for video: dQw4w9WgXcQ on attempt 1
 ```
 
 ### Logs con proxy:
 ```
 [info]: YouTube proxy configured
 { "proxy": "http://***:***@IP:PORT" }
+[debug]: Fetching transcript for video: dQw4w9WgXcQ (attempt 1/3)
+[info]: Successfully fetched transcript for video: dQw4w9WgXcQ on attempt 1
+```
+
+### Logs con reintentos (si falla el primer intento):
+```
+[debug]: Fetching transcript for video: dQw4w9WgXcQ (attempt 1/3)
+[warn]: Retryable error on attempt 1/3 for video dQw4w9WgXcQ: { error: "network timeout", willRetry: true }
+[debug]: Waiting 1000ms before retry 2...
+[debug]: Fetching transcript for video: dQw4w9WgXcQ (attempt 2/3)
+[info]: Successfully fetched transcript for video: dQw4w9WgXcQ on attempt 2
 ```
 
 ---
