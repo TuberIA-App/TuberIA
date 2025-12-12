@@ -1,6 +1,7 @@
 import { fetchTranscript } from 'youtube-transcript-plus';
 import { BadRequestError, NotFoundError, InternalServerError } from '../../utils/errorClasses.util.js';
 import logger from '../../utils/logger.js';
+import { createYoutubeTranscriptConfig } from '../../utils/youtubeProxyConfig.util.js';
 
 /**
  * Fetches the transcript for a YouTube video
@@ -22,7 +23,11 @@ const getTranscript = async (videoId) => {
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
         logger.debug(`Fetching transcript for video: ${videoId}`);
 
-        const transcript = await fetchTranscript(videoUrl);
+        // Create config with rotative user agents and optional proxy
+        const config = createYoutubeTranscriptConfig();
+
+        // Fetch transcript with custom configuration
+        const transcript = await fetchTranscript(videoUrl, config);
 
         // Validate that we actually got a transcript
         if (!transcript || !Array.isArray(transcript) || transcript.length === 0) {
