@@ -1,9 +1,50 @@
+/**
+ * @fileoverview Summarization worker for AI-powered video summary generation.
+ * Consumes jobs from the summarization queue and generates summaries using AI models.
+ * @module workers/summarization
+ */
+
 import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
 import { generateVideoSummary } from '../services/ai/summary.service.js';
 import Video from '../model/Video.js';
 import logger from '../utils/logger.js';
 
+/**
+ * @typedef {Object} TranscriptSegment
+ * @property {string} text - Transcript segment text
+ * @property {number} [start] - Start time in seconds
+ * @property {number} [duration] - Duration in seconds
+ */
+
+/**
+ * @typedef {Object} SummarizationJobData
+ * @property {string} videoId - YouTube video ID
+ * @property {TranscriptSegment[]} transcriptArray - Array of transcript segments
+ * @property {string} title - Video title for context
+ */
+
+/**
+ * @typedef {Object} SummarizationJobResult
+ * @property {boolean} success - Whether summarization completed successfully
+ * @property {string} videoId - The processed video ID
+ */
+
+/**
+ * BullMQ worker for processing summarization jobs.
+ * Generates AI-powered summaries and key points from video transcripts.
+ *
+ * Worker configuration:
+ * - Concurrency: Configurable via WORKER_CONCURRENCY env var (default: 2)
+ * - Rate limit: 5 jobs per minute (conservative for AI API)
+ * - Lock duration: 3 minutes per job (AI can be slow)
+ *
+ * Validation checks:
+ * - Summary must be a non-empty string with minimum 50 characters
+ * - Key points must be a non-empty array without fallback messages
+ *
+ * @type {Worker<SummarizationJobData, SummarizationJobResult>}
+ */
 const summarizationWorker = new Worker(
   'summarization',
   async (job) => {
@@ -148,6 +189,9 @@ const summarizationWorker = new Worker(
   }
 );
 
+/**
+ * Worker event handlers for monitoring and logging.
+ */
 summarizationWorker.on('ready', () => {
   logger.info('Summarization worker ready');
 });

@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Transcription worker for processing YouTube video transcriptions.
+ * Consumes jobs from the transcription queue, fetches transcripts, and enqueues summarization.
+ * @module workers/transcription
+ */
+
 import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
 import { getTranscript } from '../services/youtube/videoTranscription.js';
@@ -5,6 +11,31 @@ import { summarizationQueue } from '../queues/videoProcessing.queue.js';
 import Video from '../model/Video.js';
 import logger from '../utils/logger.js';
 
+/**
+ * @typedef {Object} TranscriptionJobData
+ * @property {string} videoId - YouTube video ID to transcribe
+ * @property {string} channelId - MongoDB Channel ID reference
+ * @property {string} title - Video title for logging/reference
+ */
+
+/**
+ * @typedef {Object} TranscriptionJobResult
+ * @property {boolean} success - Whether transcription completed successfully
+ * @property {string} videoId - The processed video ID
+ * @property {number} transcriptLength - Number of transcript segments
+ */
+
+/**
+ * BullMQ worker for processing transcription jobs.
+ * Fetches YouTube transcripts and enqueues summarization jobs on success.
+ *
+ * Worker configuration:
+ * - Concurrency: Configurable via WORKER_CONCURRENCY env var (default: 2)
+ * - Rate limit: 10 jobs per minute
+ * - Lock duration: 2 minutes per job
+ *
+ * @type {Worker<TranscriptionJobData, TranscriptionJobResult>}
+ */
 const transcriptionWorker = new Worker(
   'transcription',
   async (job) => {
@@ -97,7 +128,9 @@ const transcriptionWorker = new Worker(
   }
 );
 
-// Worker event handlers
+/**
+ * Worker event handlers for monitoring and logging.
+ */
 transcriptionWorker.on('ready', () => {
   logger.info('Transcription worker ready');
 });

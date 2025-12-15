@@ -1,12 +1,35 @@
+/**
+ * @fileoverview YouTube transcript fetching configuration with proxy and user agent rotation.
+ * Provides configurable fetch functions for bypassing rate limits and IP blocks.
+ * @module utils/youtubeProxyConfig
+ */
+
 import UserAgent from 'user-agents';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import logger from './logger.js';
 
 /**
- * Creates a configuration object for youtube-transcript-plus with rotative user agents
- * and optional proxy support
+ * @typedef {Object} YoutubeTranscriptConfig
+ * @property {string} userAgent - Rotated browser user agent string
+ * @property {Function} [videoFetch] - Custom fetch for video page requests (if proxy enabled)
+ * @property {Function} [playerFetch] - Custom fetch for YouTube Innertube API (if proxy enabled)
+ * @property {Function} [transcriptFetch] - Custom fetch for transcript data (if proxy enabled)
+ */
+
+/**
+ * Creates a configuration object for youtube-transcript-plus library.
+ * Includes a fresh random user agent for each call and optional proxy support.
  *
- * @returns {Object} Configuration object with userAgent and custom fetch functions
+ * When YOUTUBE_PROXY_URL environment variable is set, all requests are routed
+ * through the proxy with custom fetch functions for video, player, and transcript requests.
+ *
+ * @returns {YoutubeTranscriptConfig} Configuration object for fetchTranscript
+ * @example
+ * import { createYoutubeTranscriptConfig } from './utils/youtubeProxyConfig.util.js';
+ * import { fetchTranscript } from 'youtube-transcript-plus';
+ *
+ * const config = createYoutubeTranscriptConfig();
+ * const transcript = await fetchTranscript(videoId, config);
  */
 export const createYoutubeTranscriptConfig = () => {
     // Always create a fresh random user agent for each transcript request
@@ -96,10 +119,16 @@ export const createYoutubeTranscriptConfig = () => {
 };
 
 /**
- * Validates proxy URL format
+ * Validates that a proxy URL has a valid format.
+ * Checks for http/https protocol and valid hostname.
  *
  * @param {string} proxyUrl - The proxy URL to validate
- * @returns {boolean} True if valid, false otherwise
+ * @returns {boolean} True if valid URL with http/https protocol, false otherwise
+ * @example
+ * validateProxyUrl('http://proxy.example.com:8080'); // true
+ * validateProxyUrl('http://user:pass@proxy.com:8080'); // true
+ * validateProxyUrl('invalid-url'); // false
+ * validateProxyUrl('ftp://proxy.com'); // false (not http/https)
  */
 export const validateProxyUrl = (proxyUrl) => {
     if (!proxyUrl || typeof proxyUrl !== 'string') {

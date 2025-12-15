@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Channel service for managing YouTube channel subscriptions.
+ * Handles channel creation, following/unfollowing, and retrieval operations.
+ * @module services/channel
+ */
+
 import Channel from '../model/Channel.js';
 import UserChannel from '../model/UserChannel.js';
 import logger from '../utils/logger.js';
@@ -5,7 +11,7 @@ import mongoose from 'mongoose';
 import { pollChannelNow } from './youtube/rssPoller.service.js';
 
 /**
- * Find or create a channel by YouTube channelId
+ * Finds an existing channel or creates a new one by YouTube channel ID
  * @param {Object} channelData - Channel information from YouTube
  * @returns {Promise<Object>} Channel document
  */

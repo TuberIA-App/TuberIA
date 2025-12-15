@@ -1,6 +1,35 @@
+/**
+ * @fileoverview Reusable input component with validation and accessibility.
+ * @module components/common/Input
+ */
+
 import React, { useState } from 'react';
 import './Input.css';
 
+/**
+ * Input component with label, validation, and icon support.
+ * Supports both text inputs and textareas via multiline prop.
+ * @component
+ * @param {Object} props - Component props
+ * @param {string} [props.label] - Input label text
+ * @param {string} [props.type='text'] - HTML input type
+ * @param {string} props.value - Controlled input value
+ * @param {function} props.onChange - Change handler
+ * @param {string} [props.placeholder] - Placeholder text
+ * @param {boolean} [props.required=false] - Whether input is required
+ * @param {boolean} [props.disabled=false] - Whether input is disabled
+ * @param {string} [props.error] - Error message to display
+ * @param {string} [props.helperText] - Helper text below input
+ * @param {React.ReactNode} [props.icon] - Icon element
+ * @param {'left'|'right'} [props.iconPosition='left'] - Icon position
+ * @param {'small'|'medium'|'large'} [props.size='medium'] - Input size
+ * @param {boolean} [props.multiline=false] - Whether to render as textarea
+ * @param {number} [props.rows=3] - Textarea rows (when multiline)
+ * @param {string} [props.id] - HTML id attribute
+ * @param {string} [props.name] - HTML name attribute
+ * @param {string} [props.className=''] - Additional CSS classes
+ * @returns {JSX.Element} Input wrapper with label and validation
+ */
 const Input = ({
   label,
   type = 'text',

@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Video detail page showing full summary and key points.
+ * Displays AI-generated summary with markdown rendering.
+ * @module pages/VideoDetail
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
@@ -6,6 +12,12 @@ import videoService from '../services/video.service';
 import { format, parseISO } from 'date-fns';
 import './VideoDetail.css';
 
+/**
+ * Video detail page component.
+ * Fetches and displays full video summary with key points.
+ * @component
+ * @returns {JSX.Element} Video detail view with summary and metadata
+ */
 const VideoDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();

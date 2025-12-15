@@ -1,8 +1,25 @@
+/**
+ * @fileoverview Video card component for displaying video previews.
+ * @module components/common/VideoCard
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { PlayIcon } from 'lucide-react';
 import './VideoCard.css';
 
+/**
+ * Video card component displaying video thumbnail and metadata.
+ * Links to video detail page.
+ * @component
+ * @param {Object} props - Component props
+ * @param {string} props.id - Video ID for navigation
+ * @param {string} props.title - Video title
+ * @param {string} props.channelName - Channel name
+ * @param {string} props.thumbnail - Thumbnail image URL
+ * @param {string} [props.duration='12:34'] - Formatted video duration
+ * @returns {JSX.Element} Video card article element
+ */
 const VideoCard = ({
   id,
   title,

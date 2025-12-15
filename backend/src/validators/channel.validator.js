@@ -1,8 +1,15 @@
+/**
+ * @fileoverview Express-validator validation rules for channel endpoints.
+ * Defines validation chains for channel search, follow/unfollow, and retrieval.
+ * @module validators/channel
+ */
+
 import { query, param } from 'express-validator';
 
 /**
- * Validator para el endpoint de búsqueda de canales
- * Valida el query parameter 'q' (username o URL del canal)
+ * Validation rules for channel search endpoint (GET /api/channels/search).
+ * Validates the 'q' query parameter (channel username or URL).
+ * @type {import('express-validator').ValidationChain[]}
  */
 export const searchChannelValidator = [
     query('q')
@@ -16,8 +23,9 @@ export const searchChannelValidator = [
 ];
 
 /**
- * Validator for follow channel endpoint
- * Validates channelId parameter is a valid MongoDB ObjectId
+ * Validation rules for follow channel endpoint (POST /api/channels/:channelId/follow).
+ * Validates channelId parameter is a valid MongoDB ObjectId.
+ * @type {import('express-validator').ValidationChain[]}
  */
 export const followChannelValidator = [
     param('channelId')
@@ -29,8 +37,9 @@ export const followChannelValidator = [
 ];
 
 /**
- * Validator for unfollow channel endpoint
- * Validates channelId parameter is a valid MongoDB ObjectId
+ * Validation rules for unfollow channel endpoint (DELETE /api/channels/:channelId/unfollow).
+ * Validates channelId parameter is a valid MongoDB ObjectId.
+ * @type {import('express-validator').ValidationChain[]}
  */
 export const unfollowChannelValidator = [
     param('channelId')
@@ -42,8 +51,9 @@ export const unfollowChannelValidator = [
 ];
 
 /**
- * Validator for get channel by ID endpoint
- * Validates id parameter (YouTube channel ID format: UCxxxxxx)
+ * Validation rules for get channel by ID endpoint (GET /api/channels/:id).
+ * Validates YouTube channel ID format (UCxxxxxx pattern).
+ * @type {import('express-validator').ValidationChain[]}
  */
 export const getChannelByIdValidator = [
     param('id')

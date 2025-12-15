@@ -1,3 +1,14 @@
+/**
+ * @fileoverview Video routes configuration.
+ * Defines routes for video feed and individual video retrieval.
+ * @module routes/video
+ *
+ * @description
+ * Available routes:
+ * - GET /api/users/me/videos - Get personalized video feed (protected)
+ * - GET /api/videos/:videoId - Get video details (protected)
+ */
+
 import express from 'express';
 import {
     getMyVideos,
@@ -10,6 +21,10 @@ import {
 import { validate } from '../middlewares/validate.middleware.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
 
+/**
+ * Express router for video endpoints.
+ * @type {import('express').Router}
+ */
 const router = express.Router();
 
 /**

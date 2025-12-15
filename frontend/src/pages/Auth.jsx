@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Authentication page component for login and registration.
+ * Handles user authentication flows and form validation.
+ * @module pages/Auth
+ */
+
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { SparklesIcon, MailIcon, LockIcon, UserIcon } from 'lucide-react';
@@ -7,7 +13,14 @@ import { useAuth } from '../context/AuthContext';
 import authService from '../services/auth.service';
 import './Auth.css';
 
-
+/**
+ * Authentication page component for login and registration.
+ * Toggles between login and registration forms based on route.
+ * @component
+ * @param {Object} props - Component props
+ * @param {boolean} [props.isRegister=false] - Whether to show registration form
+ * @returns {JSX.Element} Authentication form page
+ */
 const Auth = ({ isRegister = false }) => {
   const location = useLocation();
   const navigate = useNavigate();

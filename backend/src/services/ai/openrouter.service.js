@@ -1,9 +1,17 @@
+/**
+ * @fileoverview OpenRouter API integration for AI model access.
+ * Provides a unified interface to various AI models through OpenRouter.
+ * @module services/ai/openrouter
+ */
+
 import axios from 'axios';
 import { BadRequestError, InternalServerError } from '../../utils/errorClasses.util.js';
 import logger from '../../utils/logger.js';
 
 /**
- * OpenRouter API client configuration
+ * Pre-configured Axios client for OpenRouter API.
+ * @private
+ * @type {import('axios').AxiosInstance}
  */
 const openRouterClient = axios.create({
     baseURL: 'https://openrouter.ai/api/v1',
@@ -175,9 +183,14 @@ export const generateCompletion = async ({
 };
 
 /**
- * Validates OpenRouter API connection and credentials
- * 
- * @returns {Promise<boolean>} True if connection is valid
+ * Validates OpenRouter API connection and credentials.
+ * Makes a test request to the /models endpoint.
+ * @returns {Promise<boolean>} True if connection is valid and API key is correct
+ * @example
+ * const isValid = await validateConnection();
+ * if (!isValid) {
+ *   console.error('OpenRouter API is not configured correctly');
+ * }
  */
 export const validateConnection = async () => {
     try {

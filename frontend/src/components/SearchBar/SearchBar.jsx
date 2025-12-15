@@ -1,6 +1,21 @@
+/**
+ * @fileoverview Search bar component with debounced input.
+ * @module components/SearchBar
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import './SearchBar.css';
 
+/**
+ * Search bar component with built-in debouncing.
+ * Delays onChange callback to reduce API calls during typing.
+ * @component
+ * @param {Object} props - Component props
+ * @param {string} [props.placeholder] - Input placeholder text
+ * @param {function} props.onChange - Callback with debounced search value
+ * @param {number} [props.debounceMs=600] - Debounce delay in milliseconds
+ * @returns {JSX.Element} Search input with debouncing
+ */
 const SearchBar = ({ placeholder, onChange, debounceMs = 600 }) => {
   const [inputValue, setInputValue] = useState('');
   const debounceTimerRef = useRef(null);

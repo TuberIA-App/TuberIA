@@ -1,7 +1,17 @@
+/**
+ * @fileoverview Express-validator validation rules for authentication endpoints.
+ * Defines validation chains for registration, login, and token refresh.
+ * @module validators/auth
+ */
+
 import { body } from 'express-validator';
 
 /**
- * Validation rules for user registration
+ * Validation rules for user registration endpoint (POST /api/auth/register).
+ * Validates username, name, email, and password fields.
+ * @type {import('express-validator').ValidationChain[]}
+ * @example
+ * router.post('/register', registerValidator, validate, registerController);
  */
 export const registerValidator = [
     body('username')
@@ -37,7 +47,9 @@ export const registerValidator = [
 ];
 
 /**
- * Validation rules for user login
+ * Validation rules for user login endpoint (POST /api/auth/login).
+ * Validates email and password fields.
+ * @type {import('express-validator').ValidationChain[]}
  */
 export const loginValidator = [
     body('email')
@@ -54,7 +66,9 @@ export const loginValidator = [
 ];
 
 /**
- * Validation rules for refresh token
+ * Validation rules for token refresh endpoint (POST /api/auth/refresh).
+ * Validates that refreshToken is present and is a valid JWT format.
+ * @type {import('express-validator').ValidationChain[]}
  */
 export const refreshTokenValidator = [
     body('refreshToken')

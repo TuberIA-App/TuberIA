@@ -1,8 +1,33 @@
+/**
+ * @fileoverview User model definition with authentication methods.
+ * Handles user data storage, password hashing, and JWT token generation.
+ * @module model/User
+ */
+
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { PASSWORD_SALT_ROUNDS } from '../config/constants.js';
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt.util.js';
 
+/**
+ * @typedef {Object} UserDocument
+ * @property {mongoose.Types.ObjectId} _id - MongoDB document ID
+ * @property {string} id - Virtual hex string ID
+ * @property {string} username - Unique username
+ * @property {string} [name] - Display name
+ * @property {string} email - Unique email address (lowercase)
+ * @property {string} password - Hashed password (excluded from queries by default)
+ * @property {Date} [lastLogin] - Last login timestamp
+ * @property {Date} createdAt - Document creation timestamp
+ * @property {Date} updatedAt - Document last update timestamp
+ * @property {function(string): Promise<boolean>} comparePassword - Compare password method
+ * @property {function(): {accessToken: string, refreshToken: string}} generateAuthTokens - Generate JWT tokens
+ */
+
+/**
+ * Mongoose schema for User documents.
+ * @type {mongoose.Schema<UserDocument>}
+ */
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
@@ -62,7 +87,11 @@ userSchema.set('toJSON', {
     }
 });
 
-// PRE-SAVE HOOK => Hash password before saving
+/**
+ * Pre-save hook to hash password before saving.
+ * Only hashes if password field has been modified.
+ * @private
+ */
 userSchema.pre('save', async function(next) {
     // We will only hash the password if it has been modified or if it's new
     if (!this.isModified('password')) {
@@ -79,7 +108,15 @@ userSchema.pre('save', async function(next) {
     }
 });
 
-// CCOMPARE the password with hashed password
+/**
+ * Compares a candidate password with the stored hashed password.
+ * @param {string} candidatePassword - Plain text password to compare
+ * @returns {Promise<boolean>} True if passwords match, false otherwise
+ * @throws {Error} If bcrypt comparison fails
+ * @example
+ * const user = await User.findById(id).select('+password');
+ * const isValid = await user.comparePassword('userPassword123');
+ */
 userSchema.methods.comparePassword = async function(candidatePassword) {
     try {
         return await bcrypt.compare(candidatePassword, this.password);
@@ -88,7 +125,13 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
     }
 };
 
-// GENERATE the JWT tokens
+/**
+ * Generates JWT access and refresh tokens for the user.
+ * @returns {{accessToken: string, refreshToken: string}} Object containing both tokens
+ * @example
+ * const user = await User.findById(id);
+ * const { accessToken, refreshToken } = user.generateAuthTokens();
+ */
 userSchema.methods.generateAuthTokens = function() {
     const accessToken = generateAccessToken({
         userId: this._id.toString(),

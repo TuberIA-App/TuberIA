@@ -1,27 +1,34 @@
+/**
+ * @fileoverview Token blacklist service for JWT token revocation.
+ * Uses Redis with automatic TTL-based cleanup for secure token invalidation.
+ * Tokens are stored as SHA-256 hashes for security.
+ * @module services/tokenBlacklist
+ */
+
 import crypto from 'crypto';
 import { redisClient } from '../config/redis.js';
 import logger from '../utils/logger.js';
 
 /**
- * Token Blacklist Service
- * Manages token revocation using Redis with automatic TTL-based cleanup
- */
-
-/**
- * Generates a SHA-256 hash of a token for privacy
- * Tokens are hashed before storage to avoid storing sensitive data in plain text
+ * Generates a SHA-256 hash of a token for secure storage.
+ * Tokens are hashed before storage to avoid storing sensitive data in plain text.
+ * @private
  * @param {string} token - JWT token to hash
- * @returns {string} - Hexadecimal hash of the token
+ * @returns {string} Hexadecimal SHA-256 hash of the token
  */
 const hashToken = (token) => {
   return crypto.createHash('sha256').update(token).digest('hex');
 };
 
 /**
- * Adds a token to the Redis blacklist with automatic expiration
+ * Adds a token to the Redis blacklist with automatic expiration.
+ * Token is stored as a SHA-256 hash with TTL matching token expiry.
  * @param {string} token - JWT token to blacklist
- * @param {number} ttlSeconds - Time-to-live in seconds (should match token expiry)
- * @returns {Promise<boolean>} - True if successful, false otherwise
+ * @param {number} ttlSeconds - Time-to-live in seconds (should match remaining token expiry)
+ * @returns {Promise<boolean>} True if successfully added, false on failure
+ * @example
+ * const ttl = decodedToken.exp - Math.floor(Date.now() / 1000);
+ * await addToBlacklist(token, ttl);
  */
 const addToBlacklist = async (token, ttlSeconds) => {
   try {
@@ -47,9 +54,14 @@ const addToBlacklist = async (token, ttlSeconds) => {
 };
 
 /**
- * Checks if a token is in the blacklist
+ * Checks if a token is in the blacklist (has been revoked).
+ * Uses fail-open strategy: if Redis is unavailable, allows access to prioritize availability.
  * @param {string} token - JWT token to check
- * @returns {Promise<boolean>} - True if token is blacklisted, false otherwise
+ * @returns {Promise<boolean>} True if token is blacklisted, false otherwise
+ * @example
+ * if (await isBlacklisted(token)) {
+ *   throw new UnauthorizedError('Token has been revoked');
+ * }
  */
 const isBlacklisted = async (token) => {
   try {
@@ -70,11 +82,11 @@ const isBlacklisted = async (token) => {
 };
 
 /**
- * Removes all blacklisted tokens for a specific user (optional feature)
- * This can be used for "logout from all devices" functionality
- * Note: Requires storing userId mapping, which is not implemented in v1
- * @param {string} userId - User ID whose tokens should be invalidated
- * @returns {Promise<number>} - Number of tokens removed
+ * Removes all blacklisted tokens for a specific user.
+ * Enables "logout from all devices" functionality.
+ * @todo Implement userId -> tokens mapping in Redis for full functionality
+ * @param {string} userId - MongoDB ObjectId of the user
+ * @returns {Promise<number>} Number of tokens removed (currently always 0 - not implemented)
  */
 const removeUserTokens = async (userId) => {
   try {

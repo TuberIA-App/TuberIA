@@ -1,9 +1,15 @@
+/**
+ * @fileoverview Video service for managing user video feeds and video retrieval.
+ * Provides personalized video feed functionality based on followed channels.
+ * @module services/video
+ */
+
 import Video from '../model/Video.js';
 import UserChannel from '../model/UserChannel.js';
 import logger from '../utils/logger.js';
 
 /**
- * Get personalized video feed for a user
+ * Gets a personalized video feed for a user based on their followed channels
  * @param {string} userId - MongoDB ObjectId of the user
  * @param {object} options - Query options
  * @param {number} options.page - Page number (default: 1)

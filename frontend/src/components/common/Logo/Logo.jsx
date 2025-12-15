@@ -1,7 +1,23 @@
+/**
+ * @fileoverview Application logo component with SVG icon.
+ * @module components/common/Logo
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './Logo.css';
 
+/**
+ * Logo component displaying the TuberIA brand.
+ * Includes SVG icon and optional text, wrapped in a navigation link.
+ * @component
+ * @param {Object} props - Component props
+ * @param {'sm'|'md'|'lg'} [props.size='md'] - Logo size
+ * @param {string} [props.to='/'] - Navigation link target
+ * @param {string} [props.className=''] - Additional CSS classes
+ * @param {boolean} [props.showText=true] - Whether to show "TuberIA" text
+ * @returns {JSX.Element} Logo link with SVG and optional text
+ */
 const Logo = ({
   size = 'md',
   to = '/',

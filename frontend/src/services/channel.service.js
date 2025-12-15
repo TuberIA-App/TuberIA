@@ -1,4 +1,9 @@
-// src/services/channel.service.js
+/**
+ * @fileoverview Channel service for YouTube channel operations.
+ * Provides methods for searching, following, and retrieving channel data.
+ * @module services/channel
+ */
+
 import api from './api';
 
 /**
@@ -224,6 +229,10 @@ const isFollowing = (channelId, followedChannels) => {
   );
 };
 
+/**
+ * Channel service object containing all channel-related API methods.
+ * @type {Object}
+ */
 const channelService = {
   searchChannel,
   followChannel,

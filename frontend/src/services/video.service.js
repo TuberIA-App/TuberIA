@@ -1,4 +1,9 @@
-// src/services/video.service.js
+/**
+ * @fileoverview Video service for video feed and detail operations.
+ * Provides methods for retrieving personalized video feeds and individual videos.
+ * @module services/video
+ */
+
 import api from './api';
 
 /**
@@ -88,6 +93,10 @@ const getVideoById = async (videoId) => {
   }
 };
 
+/**
+ * Video service object containing all video-related API methods.
+ * @type {Object}
+ */
 const videoService = {
   getMyVideos,
   getVideoById

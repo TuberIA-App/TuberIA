@@ -1,8 +1,15 @@
+/**
+ * @fileoverview Express-validator validation rules for video endpoints.
+ * Defines validation chains for video feed and individual video retrieval.
+ * @module validators/video
+ */
+
 import { query, param } from 'express-validator';
 
 /**
- * Validator for GET /api/users/me/videos
- * Validates pagination and filter query parameters
+ * Validation rules for video feed endpoint (GET /api/users/me/videos).
+ * Validates optional pagination and filter query parameters.
+ * @type {import('express-validator').ValidationChain[]}
  */
 export const getMyVideosValidator = [
   query('page')
@@ -24,8 +31,9 @@ export const getMyVideosValidator = [
 ];
 
 /**
- * Validator for GET /api/videos/:videoId
- * Validates videoId parameter
+ * Validation rules for get video by ID endpoint (GET /api/videos/:videoId).
+ * Validates YouTube video ID format (exactly 11 characters).
+ * @type {import('express-validator').ValidationChain[]}
  */
 export const getVideoByIdValidator = [
   param('videoId')

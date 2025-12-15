@@ -1,3 +1,9 @@
+/**
+ * @fileoverview JWT authentication middleware for protected routes.
+ * Verifies access tokens, checks blacklist, and attaches user to request.
+ * @module middlewares/auth
+ */
+
 import User from "../model/User.js";
 import { UnauthorizedError } from "../utils/errorClasses.util.js";
 import { verifyAccessToken } from "../utils/jwt.util.js";
@@ -6,7 +12,19 @@ import logger from "../utils/logger.js";
 import { isBlacklisted } from "../services/tokenBlacklist.service.js";
 
 /**
- * Middleware to verify JWT tokens and authenticate the user
+ * Middleware that verifies JWT access tokens and authenticates requests.
+ * Extracts token from Authorization header, verifies signature and expiration,
+ * checks if token is blacklisted, and attaches user to req.user.
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @param {import('express').NextFunction} next - Express next function
+ * @returns {Promise<void>}
+ * @throws {UnauthorizedError} 401 - If no token provided
+ * @throws {UnauthorizedError} 401 - If token is invalid, expired, or blacklisted
+ * @throws {UnauthorizedError} 401 - If user not found in database
+ * @example
+ * // Usage in routes
+ * router.get('/protected', authMiddleware, protectedHandler);
  */
 export const authMiddleware = asyncHandler(async (req, res, next) => {
     // Get token from Authorization header
