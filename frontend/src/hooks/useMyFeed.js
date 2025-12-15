@@ -1,13 +1,46 @@
-// src/hooks/useMyFeed.js
+/**
+ * @fileoverview Custom hook for managing video feed with infinite scroll.
+ * Handles pagination, loading states, and duplicate prevention.
+ * @module hooks/useMyFeed
+ */
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import videoService from '../services/video.service';
 
 /**
- * Custom hook para manejar el feed de videos con infinite scroll
- * @param {Object} options - Opciones de configuración
- * @param {string} options.status - Filtro de estado (completed|processing|failed|all)
- * @param {number} options.pageSize - Número de videos por página
- * @returns {Object} Estado y funciones del feed
+ * @typedef {Object} Video
+ * @property {string} _id - Video MongoDB ID
+ * @property {string} videoId - YouTube video ID
+ * @property {string} title - Video title
+ * @property {string} [thumbnail] - Thumbnail URL
+ * @property {string} status - Processing status
+ * @property {string} [summary] - AI-generated summary
+ * @property {string[]} [keyPoints] - AI-generated key points
+ */
+
+/**
+ * @typedef {Object} UseMyFeedReturn
+ * @property {Video[]} videos - Array of loaded videos
+ * @property {boolean} loading - Whether initial load is in progress
+ * @property {boolean} loadingMore - Whether loading more videos
+ * @property {string|null} error - Error message if any
+ * @property {boolean} hasMore - Whether more videos are available
+ * @property {function(): void} loadMore - Function to load next page
+ * @property {function(): void} reload - Function to reload feed from start
+ */
+
+/**
+ * Custom hook for managing video feed with infinite scroll functionality.
+ * Handles pagination, prevents duplicate loading, and manages loading states.
+ * @param {Object} [options={}] - Configuration options
+ * @param {string} [options.status='completed'] - Filter by status (completed|processing|failed|all)
+ * @param {number} [options.pageSize=10] - Number of videos per page
+ * @returns {UseMyFeedReturn} Feed state and control functions
+ * @example
+ * const { videos, loading, hasMore, loadMore } = useMyFeed({
+ *   status: 'completed',
+ *   pageSize: 20
+ * });
  */
 export const useMyFeed = ({ status = 'completed', pageSize = 10 } = {}) => {
   const [videos, setVideos] = useState([]);
@@ -17,12 +50,30 @@ export const useMyFeed = ({ status = 'completed', pageSize = 10 } = {}) => {
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   
-  // Cache de páginas ya cargadas para evitar duplicados
+  /**
+   * Cache of already loaded page numbers to prevent duplicate requests.
+   * @type {React.MutableRefObject<Set<number>>}
+   * @private
+   */
   const loadedPagesRef = useRef(new Set());
+
+  /**
+   * Ref to track loading state without causing re-renders.
+   * @type {React.MutableRefObject<boolean>}
+   * @private
+   */
   const loadingRef = useRef(false);
+
+  /**
+   * Ref to track current status filter value.
+   * @type {React.MutableRefObject<string>}
+   * @private
+   */
   const statusRef = useRef(status);
 
-  // Reset cuando cambia el filtro
+  /**
+   * Effect: Reset state when status filter changes.
+   */
   useEffect(() => {
     if (statusRef.current !== status) {
       statusRef.current = status;
@@ -35,7 +86,12 @@ export const useMyFeed = ({ status = 'completed', pageSize = 10 } = {}) => {
     }
   }, [status]);
 
-  // Función para cargar videos
+  /**
+   * Loads videos for a specific page.
+   * Prevents duplicate loading and handles pagination.
+   * @param {number} page - Page number to load
+   * @private
+   */
   const loadVideos = useCallback(async (page) => {
     // Prevenir carga duplicada
     if (loadingRef.current || loadedPagesRef.current.has(page)) {
@@ -97,12 +153,17 @@ export const useMyFeed = ({ status = 'completed', pageSize = 10 } = {}) => {
     }
   }, [status, pageSize]);
 
-  // Cargar primera página
+  /**
+   * Effect: Load first page on mount or when loadVideos changes.
+   */
   useEffect(() => {
     loadVideos(1);
   }, [loadVideos]);
 
-  // Función para cargar más (siguiente página)
+  /**
+   * Loads the next page of videos.
+   * Only triggers if not already loading and more videos exist.
+   */
   const loadMore = useCallback(() => {
     if (!loadingRef.current && hasMore && !loading && !loadingMore) {
       const nextPage = currentPage + 1;
@@ -111,7 +172,10 @@ export const useMyFeed = ({ status = 'completed', pageSize = 10 } = {}) => {
     }
   }, [currentPage, hasMore, loading, loadingMore, loadVideos]);
 
-  // Función para recargar el feed
+  /**
+   * Reloads the entire feed from the first page.
+   * Clears all cached data and resets state.
+   */
   const reload = useCallback(() => {
     setVideos([]);
     setCurrentPage(1);

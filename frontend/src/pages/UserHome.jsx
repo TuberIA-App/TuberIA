@@ -1,3 +1,9 @@
+/**
+ * @fileoverview User home/dashboard page showing stats and recent videos.
+ * Provides overview of user activity and quick access to content.
+ * @module pages/UserHome
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import VideoCard from '../components/common/VideoCard/VideoCard';
@@ -6,6 +12,12 @@ import userService from '../services/user.service';
 import videoService from '../services/video.service';
 import './UserHome.css';
 
+/**
+ * User home dashboard component.
+ * Displays user statistics, recent video summaries, and navigation.
+ * @component
+ * @returns {JSX.Element} Dashboard with stats and recent content
+ */
 const UserHome = () => {
   const [stats, setStats] = useState({
     summariesRead: 0,

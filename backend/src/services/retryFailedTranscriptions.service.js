@@ -1,14 +1,34 @@
+/**
+ * @fileoverview Failed transcription retry scheduler.
+ * Automatically retries failed transcriptions after a configurable threshold.
+ * @module services/retryFailedTranscriptions
+ */
+
 import cron from 'node-cron';
 import Video from '../model/Video.js';
 import { transcriptionQueue } from '../queues/videoProcessing.queue.js';
 import logger from '../utils/logger.js';
 
+/**
+ * Flag to prevent concurrent retry cycles.
+ * @private
+ * @type {boolean}
+ */
 let isRetrying = false;
+
+/**
+ * Reference to the current cron job for graceful shutdown.
+ * @private
+ * @type {import('node-cron').ScheduledTask|null}
+ */
 let retryCronJob = null;
 
 /**
- * Retry failed transcriptions that are older than the threshold
- * @param {number} hoursThreshold - Minimum hours since failure to retry (default 12)
+ * Retries failed transcriptions that are older than the threshold.
+ * Resets video status to pending and re-queues for transcription.
+ * @private
+ * @param {number} [hoursThreshold=12] - Minimum hours since failure to retry
+ * @returns {Promise<{retriedCount: number}>} Number of videos re-queued
  */
 async function retryFailedTranscriptions(hoursThreshold = 12) {
   try {
@@ -84,8 +104,16 @@ async function retryFailedTranscriptions(hoursThreshold = 12) {
 }
 
 /**
- * Start automatic retry cron job (runs every 12 hours by default)
- * Retries transcriptions that failed more than 12 hours ago
+ * Starts the automatic retry scheduler.
+ * Runs at configured interval (default: every 12 hours).
+ * Retries transcriptions that failed more than threshold hours ago.
+ *
+ * Configurable via environment variables:
+ * - RETRY_INTERVAL_HOURS: How often to run (default: 12)
+ * - RETRY_THRESHOLD_HOURS: How old failures must be to retry (default: 12)
+ * @example
+ * import { startTranscriptionRetryScheduler } from './retryFailedTranscriptions.service.js';
+ * startTranscriptionRetryScheduler();
  */
 export function startTranscriptionRetryScheduler() {
   const retryInterval = parseInt(process.env.RETRY_INTERVAL_HOURS) || 12;
@@ -122,7 +150,9 @@ export function startTranscriptionRetryScheduler() {
 }
 
 /**
- * Stop retry scheduler (graceful shutdown)
+ * Stops the retry scheduler gracefully.
+ * Waits for current retry cycle to complete (max 30 seconds).
+ * @returns {Promise<void>} Resolves when scheduler has stopped
  */
 export function stopTranscriptionRetryScheduler() {
   if (retryCronJob) {
@@ -148,7 +178,13 @@ export function stopTranscriptionRetryScheduler() {
 }
 
 /**
- * Manually trigger retry for failed transcriptions (immediate)
+ * Manually triggers an immediate retry for failed transcriptions.
+ * Useful for manual intervention or testing.
+ * @param {number} [hoursThreshold=12] - Minimum hours since failure to retry
+ * @returns {Promise<{retriedCount: number}>} Number of videos re-queued
+ * @example
+ * const result = await retryFailedTranscriptionsNow(6); // Retry failures older than 6 hours
+ * console.log(`Re-queued ${result.retriedCount} videos`);
  */
 export async function retryFailedTranscriptionsNow(hoursThreshold = 12) {
   return await retryFailedTranscriptions(hoursThreshold);

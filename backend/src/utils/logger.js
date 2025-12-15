@@ -1,8 +1,24 @@
+/**
+ * @fileoverview Winston logger configuration for application-wide logging.
+ * Provides structured logging with timestamps, colors, and file rotation.
+ * @module utils/logger
+ */
+
 import winston from 'winston';
 
 const { combine, timestamp, printf, colorize, errors } = winston.format;
 
-// Defining the custom format for logging
+/**
+ * Custom log format function for Winston.
+ * Formats log messages with timestamp, level, message, stack trace, and metadata.
+ * @private
+ * @param {Object} info - Log info object from Winston
+ * @param {string} info.level - Log level (error, warn, info, debug)
+ * @param {string} info.message - Log message
+ * @param {string} info.timestamp - Formatted timestamp
+ * @param {string} [info.stack] - Error stack trace if present
+ * @returns {string} Formatted log string
+ */
 const logFormat = printf(({ level, message, timestamp, stack, ...metadata }) => {
   let msg = `${timestamp} [${level}]: ${message}`;
   
@@ -19,7 +35,23 @@ const logFormat = printf(({ level, message, timestamp, stack, ...metadata }) => 
   return msg;
 });
 
-// Creating the logger instance
+/**
+ * Configured Winston logger instance.
+ * Provides structured logging with multiple transports:
+ * - Console: Colorized output for development
+ * - File (error.log): Error-level logs only, 5MB max, 5 files rotation
+ * - File (combined.log): All log levels, 5MB max, 5 files rotation
+ *
+ * Log level is controlled by LOG_LEVEL environment variable (default: 'info').
+ *
+ * @type {import('winston').Logger}
+ * @example
+ * import logger from './utils/logger.js';
+ *
+ * logger.info('User logged in', { userId: '123', email: 'user@example.com' });
+ * logger.error('Database connection failed', { error: err.message });
+ * logger.debug('Processing request', { endpoint: '/api/videos' });
+ */
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: combine(

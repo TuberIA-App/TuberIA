@@ -1,4 +1,9 @@
-// src/services/user.service.js
+/**
+ * @fileoverview User service for user-specific data operations.
+ * Provides methods for retrieving user statistics and followed channels.
+ * @module services/user
+ */
+
 import api from './api';
 
 /**
@@ -68,6 +73,10 @@ const getMyChannels = async () => {
   }
 };
 
+/**
+ * User service object containing all user-related API methods.
+ * @type {Object}
+ */
 const userService = {
   getStats,
   getMyChannels

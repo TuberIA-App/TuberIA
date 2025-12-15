@@ -1,12 +1,25 @@
+/**
+ * @fileoverview User controller handling HTTP requests for user-specific operations.
+ * Provides dashboard statistics and user data endpoints.
+ * @module controllers/user
+ */
+
 import { asyncHandler } from '../middlewares/asyncHandler.middleware.js';
 import UserChannel from '../model/UserChannel.js';
 import Video from '../model/Video.js';
 import { successResponse } from '../utils/response.util.js';
 
 /**
- * @desc    Get user statistics for dashboard
- * @route   GET /api/users/me/stats
- * @access  Private
+ * Gets dashboard statistics for the authenticated user.
+ * Returns summaries read count, time saved estimate, and followed channels count.
+ * @route GET /api/users/me/stats
+ * @access Private
+ * @param {import('express').Request} req - Express request
+ * @param {Object} req.user - Authenticated user (from authMiddleware)
+ * @param {import('express').Response} res - Express response
+ * @returns {Promise<void>} JSON response with stats object
+ * @example
+ * // Response: { summariesRead: 42, timeSaved: "5h 36m", followedChannels: 3 }
  */
 export const getUserStats = asyncHandler(async (req, res) => {
     const userId = req.user.id;

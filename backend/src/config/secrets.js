@@ -1,6 +1,12 @@
 /**
- * Unified Secrets Management
- *
+ * @fileoverview Unified secrets management with environment-aware loading.
+ * Handles sensitive configuration from environment variables (development)
+ * or Docker secrets (production) with validation.
+ * @module config/secrets
+ */
+
+/**
+ * @description
  * Handles loading sensitive configuration from:
  * - Development: .env file via process.env
  * - Production: Docker secrets from /run/secrets/
@@ -101,8 +107,18 @@ try {
 }
 
 /**
- * Exported secrets object
- * Use this instead of directly accessing process.env
+ * Exported secrets object containing all application secrets.
+ * Use this instead of directly accessing process.env for security-sensitive values.
+ * Object is frozen to prevent accidental modification.
+ *
+ * @constant {Object}
+ * @property {string} jwtSecret - Secret key for signing JWT access tokens
+ * @property {string} jwtRefreshSecret - Secret key for signing JWT refresh tokens
+ * @property {string|null} openRouterApiKey - API key for OpenRouter AI service (optional)
+ * @example
+ * import { secrets } from './config/secrets.js';
+ *
+ * jwt.sign(payload, secrets.jwtSecret, { expiresIn: '15m' });
  */
 export const secrets = {
   /** JWT access token secret key */
@@ -116,7 +132,13 @@ export const secrets = {
 };
 
 /**
- * Get expiry times from environment variables (non-sensitive config)
+ * JWT token expiration configuration from environment variables.
+ * Uses defaults if not specified: 15 minutes for access, 7 days for refresh.
+ * Object is frozen to prevent accidental modification.
+ *
+ * @constant {Object}
+ * @property {string} accessExpiry - Access token expiration time (default: '15m')
+ * @property {string} refreshExpiry - Refresh token expiration time (default: '7d')
  */
 export const jwtConfig = {
   accessExpiry: process.env.JWT_ACCESS_EXPIRY || '15m',

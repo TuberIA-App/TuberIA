@@ -1,3 +1,10 @@
+/**
+ * @fileoverview AI video summarization service using OpenRouter API.
+ * Generates comprehensive summaries and key points from video transcripts.
+ * Includes model fallback chain for reliability.
+ * @module services/ai/summary
+ */
+
 import { generateCompletion } from './openrouter.service.js';
 import { processTranscript, validateTranscript } from './transcriptionProcessor.js';
 import { SUMMARY_PROMPT, KEY_POINTS_PROMPT } from './prompts.js';
@@ -6,8 +13,16 @@ import { SUMMARIZATION_MODELS } from './modelConfig.js';
 import logger from '../../utils/logger.js';
 
 /**
- * Attempt summary generation with a specific model (private helper)
+ * Attempts summary generation with a specific AI model.
+ * Generates both summary and key points in sequence.
  * @private
+ * @param {string} model - OpenRouter model identifier
+ * @param {string} transcriptText - Full transcript text
+ * @param {string} truncatedTranscript - Transcript truncated to MAX_TRANSCRIPT_LENGTH
+ * @param {string} videoTitle - Video title for context
+ * @param {Array} transcriptArray - Original transcript array for metadata
+ * @returns {Promise<Object>} Summary result with summary, keyPoints, and metadata
+ * @throws {Error} If summary or key points generation fails
  */
 const attemptSummaryWithModel = async (model, transcriptText, truncatedTranscript, videoTitle, transcriptArray) => {
     // Step 1: Generate summary
@@ -216,10 +231,12 @@ export const generateVideoSummary = async ({
 };
 
 /**
- * Parses key points from AI-generated text
- * 
- * @param {string} text - Text containing bullet points
- * @returns {Array<string>} Array of key points
+ * Parses key points from AI-generated bullet point text.
+ * Supports various bullet formats: -, •, *, or numbered (1., 2., etc.)
+ * @private
+ * @param {string} text - AI-generated text containing bullet points
+ * @returns {Array<string>} Array of extracted key points (max 10)
+ * @throws {Error} If no key points can be parsed from the text
  */
 const parseKeyPoints = (text) => {
     try {

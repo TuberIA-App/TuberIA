@@ -1,11 +1,22 @@
+/**
+ * @fileoverview Request timeout middleware to prevent hanging connections.
+ * Automatically responds with 408 if request takes too long.
+ * @module middlewares/timeout
+ */
+
 import logger from '../utils/logger.js';
 
 /**
- * Timeout middleware to prevent requests from hanging indefinitely
+ * Creates a timeout middleware to prevent requests from hanging indefinitely.
+ * Returns 408 Request Timeout if the request exceeds the specified duration.
+ * @param {number} [timeoutMs=30000] - Timeout in milliseconds (default: 30 seconds)
+ * @returns {Function} Express middleware function
+ * @example
+ * // Global timeout of 30 seconds
+ * app.use(timeoutMiddleware());
  *
- * Best Practice: Always set request timeouts to avoid hanging connections
- *
- * @param {number} timeoutMs - Timeout in milliseconds (default: 30 seconds)
+ * // Route-specific timeout of 60 seconds
+ * router.post('/upload', timeoutMiddleware(60000), uploadHandler);
  */
 export const timeoutMiddleware = (timeoutMs = 30000) => {
   return (req, res, next) => {

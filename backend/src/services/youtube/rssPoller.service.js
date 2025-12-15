@@ -1,3 +1,9 @@
+/**
+ * @fileoverview RSS polling scheduler for discovering new YouTube videos.
+ * Periodically checks followed channels' RSS feeds for new videos and queues them for processing.
+ * @module services/youtube/rssPoller
+ */
+
 import cron from 'node-cron';
 import { channelFeedExtractor } from './channelFeedExtractor.js';
 import { transcriptionQueue } from '../../queues/videoProcessing.queue.js';
@@ -5,11 +11,28 @@ import Channel from '../../model/Channel.js';
 import Video from '../../model/Video.js';
 import logger from '../../utils/logger.js';
 
+/**
+ * Flag to prevent concurrent polling cycles.
+ * @private
+ * @type {boolean}
+ */
 let isPolling = false;
+
+/**
+ * Reference to the current cron job for graceful shutdown.
+ * @private
+ * @type {import('node-cron').ScheduledTask|null}
+ */
 let currentCronJob = null;
 
 /**
- * Process new videos from a channel's RSS feed
+ * Processes new videos from a channel's RSS feed.
+ * Checks only the latest video for new content (RSS best practice).
+ * @private
+ * @param {Object} channel - Channel document from MongoDB
+ * @param {string} channel.channelId - YouTube channel ID
+ * @param {import('mongoose').Types.ObjectId} channel._id - MongoDB ObjectId
+ * @returns {Promise<void>}
  */
 async function processChannelVideos(channel) {
   try {
@@ -120,7 +143,12 @@ async function processChannelVideos(channel) {
 }
 
 /**
- * Start RSS polling cron job (every 30 minutes)
+ * Starts the RSS polling cron job.
+ * Polls all active channels with followers at configured interval.
+ * Interval configurable via RSS_POLL_INTERVAL env variable (default: 30 minutes).
+ * @example
+ * import { startRSSPolling } from './rssPoller.service.js';
+ * startRSSPolling(); // Starts polling every 30 minutes
  */
 export function startRSSPolling() {
   const interval = parseInt(process.env.RSS_POLL_INTERVAL) || 30;
@@ -169,7 +197,9 @@ export function startRSSPolling() {
 }
 
 /**
- * Stop RSS polling (graceful shutdown)
+ * Stops the RSS polling scheduler gracefully.
+ * Waits for current polling cycle to complete (max 30 seconds).
+ * @returns {Promise<void>} Resolves when polling has stopped
  */
 export function stopRSSPolling() {
   if (currentCronJob) {
@@ -195,9 +225,14 @@ export function stopRSSPolling() {
 }
 
 /**
- * Manually trigger RSS check for a channel (immediate)
- * @param {string} channelId - YouTube channel ID
- * @param {string} reason - Reason for polling (manual, new_follow, etc.)
+ * Manually triggers an immediate RSS check for a specific channel.
+ * Useful for checking new follows or manual refresh requests.
+ * @param {string} channelId - YouTube channel ID (UCxxxxxx format)
+ * @param {string} [reason='manual'] - Reason for polling (for logging)
+ * @returns {Promise<{success: boolean, channelId: string}>} Result object
+ * @throws {Error} If channel is not found in database
+ * @example
+ * await pollChannelNow('UCxxxxxxx', 'new_follow');
  */
 export async function pollChannelNow(channelId, reason = 'manual') {
   logger.info('Immediate poll requested', { channelId, reason });

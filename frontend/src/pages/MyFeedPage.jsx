@@ -1,4 +1,9 @@
-// src/pages/MyFeedPage.jsx
+/**
+ * @fileoverview Personal video feed page with infinite scroll.
+ * Displays summarized videos from followed channels with filtering.
+ * @module pages/MyFeedPage
+ */
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { SparklesIcon, Loader2Icon, AlertCircleIcon, FilterIcon, SearchIcon } from 'lucide-react';
@@ -7,6 +12,10 @@ import VideoCardSkeleton from '../components/common/VideoCardSkeleton/VideoCardS
 import useMyFeed from '../hooks/useMyFeed';
 import './MyFeedPage.css';
 
+/**
+ * Video status filter options for the dropdown.
+ * @type {Array<{value: string, label: string}>}
+ */
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Todos' },
   { value: 'completed', label: 'Completados' },
@@ -14,6 +23,13 @@ const STATUS_OPTIONS = [
   { value: 'failed', label: 'Fallidos' }
 ];
 
+/**
+ * Personal video feed page component with infinite scroll.
+ * Displays videos from followed channels with status filtering.
+ * Implements IntersectionObserver for automatic loading.
+ * @component
+ * @returns {JSX.Element} Video feed with filters and infinite scroll
+ */
 const MyFeedPage = () => {
   const [statusFilter, setStatusFilter] = useState('completed');
   const [showFilterMenu, setShowFilterMenu] = useState(false);

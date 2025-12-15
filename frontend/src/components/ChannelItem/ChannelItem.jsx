@@ -1,22 +1,47 @@
+/**
+ * @fileoverview Channel item component for displaying YouTube channel info.
+ * @module components/ChannelItem
+ */
+
 import React from 'react';
 import { PlusIcon, CheckIcon, ExternalLinkIcon, Users, Loader2 } from 'lucide-react';
 import './ChannelItem.css';
 import Button from '../common/Button/Button';
 
-const ChannelItem = ({ 
-  id, 
+/**
+ * Channel item component displaying channel info with follow/unfollow actions.
+ * Used in channel search results and followed channels lists.
+ * @component
+ * @param {Object} props - Component props
+ * @param {string} props.id - MongoDB ObjectId of the channel
+ * @param {string} [props.channelId] - YouTube channel ID (UCxxxxxx format)
+ * @param {string} props.name - Channel display name
+ * @param {string} [props.username] - Channel username/handle
+ * @param {string} [props.description] - Channel description
+ * @param {string} [props.thumbnail] - Channel avatar URL
+ * @param {number} [props.followersCount] - Number of followers in TuberIA
+ * @param {string} [props.subscribedAt] - Date user followed the channel
+ * @param {boolean} [props.isFollowing] - Whether current user follows channel
+ * @param {boolean} [props.showVisitButton] - Whether to show YouTube link button
+ * @param {boolean} [props.isLoading] - Whether follow action is in progress
+ * @param {function} [props.onFollowToggle] - Handler for follow/unfollow action
+ * @param {function} [props.onChannelClick] - Handler for channel card click
+ * @returns {JSX.Element} Channel item card
+ */
+const ChannelItem = ({
+  id,
   channelId,
-  name, 
+  name,
   username,
-  description, 
+  description,
   thumbnail,
   followersCount,
   subscribedAt,
-  isFollowing, 
-  showVisitButton, 
+  isFollowing,
+  showVisitButton,
   isLoading,
   onFollowToggle,
-  onChannelClick, 
+  onChannelClick,
 }) => {
   const handleFollowToggle = () => {
     if (!isLoading && id) {

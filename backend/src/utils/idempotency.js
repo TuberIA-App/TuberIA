@@ -1,13 +1,37 @@
+/**
+ * @fileoverview Idempotency utility for preventing duplicate operations.
+ * Uses Redis to cache operation results and ensure operations are only executed once
+ * within a specified time window.
+ * @module utils/idempotency
+ */
+
 import crypto from 'crypto';
 import { redisClient } from '../config/redis.js';
 import logger from './logger.js';
 
 /**
- * Execute operation with idempotency guarantee
- * @param {string} key - Unique key for operation
- * @param {number} ttl - TTL in seconds
- * @param {Function} operation - Async function to execute
- * @returns {Promise<any>} Result of operation (cached or fresh)
+ * Executes an operation with idempotency guarantee using Redis caching.
+ * The operation result is cached using a SHA-256 hash of the key.
+ * Subsequent calls with the same key within TTL return the cached result.
+ *
+ * Special handling for video summary results: validates summary quality before caching.
+ * Error results are never cached to allow retries.
+ *
+ * @template T
+ * @param {string} key - Unique identifier for the operation (e.g., 'summarize:videoId')
+ * @param {number} ttl - Time-to-live for the cached result in seconds
+ * @param {() => Promise<T>} operation - Async function to execute if not cached
+ * @returns {Promise<T>} Operation result (with `fromCache: true` property if from cache)
+ * @throws {Error} If the operation fails and is not cached
+ * @example
+ * const summary = await withIdempotency('summarize:abc123', 86400, async () => {
+ *   return await generateVideoSummary(videoId);
+ * });
+ *
+ * // Check if result was cached
+ * if (summary.fromCache) {
+ *   console.log('Result retrieved from cache');
+ * }
  */
 export async function withIdempotency(key, ttl, operation) {
   // Generate idempotency key hash

@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Dashboard page displaying followed channels and their videos.
+ * Shows video summaries organized by channel.
+ * @module pages/Dashboard
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { TrendingUpIcon, Loader2Icon, AlertCircleIcon, SearchIcon, Trash2Icon } from 'lucide-react';
@@ -8,6 +14,12 @@ import channelService from '../services/channel.service';
 import videoService from '../services/video.service';
 import './Dashboard.css';
 
+/**
+ * Dashboard page component showing followed channels with video summaries.
+ * Groups videos by channel and allows unfollowing channels.
+ * @component
+ * @returns {JSX.Element} Dashboard with channels and video grids
+ */
 const Dashboard = () => {
   const { decrementChannelsCount } = useUserData();
   const [channelsWithVideos, setChannelsWithVideos] = useState([]);

@@ -1,6 +1,24 @@
+/**
+ * @fileoverview Accessible modal dialog component with focus trap.
+ * @module components/common/Modal
+ */
+
 import React, { useEffect, useRef } from 'react';
 import './Modal.css';
 
+/**
+ * Modal dialog component with accessibility features.
+ * Implements focus trap, Escape key handling, and body scroll lock.
+ * @component
+ * @param {Object} props - Component props
+ * @param {boolean} props.isOpen - Whether modal is visible
+ * @param {function} props.onClose - Close handler function
+ * @param {string} [props.title] - Modal title text
+ * @param {string} [props.subtitle] - Modal subtitle text
+ * @param {React.ReactNode} props.children - Modal body content
+ * @param {React.ReactNode} [props.footer] - Modal footer content
+ * @returns {JSX.Element|null} Modal dialog or null when closed
+ */
 const Modal = ({
   isOpen,
   onClose,

@@ -1,10 +1,22 @@
+/**
+ * @fileoverview Transcript processing utilities for AI summarization.
+ * Transforms raw transcript arrays into clean text suitable for AI consumption.
+ * @module services/ai/transcriptionProcessor
+ */
+
 import logger from '../../utils/logger.js';
 
 /**
- * Processes transcript array into clean text format
- * 
- * @param {Array} transcriptArray - Array of transcript objects from youtube-transcript-plus
- * @returns {string} Formatted transcript text
+ * Processes a transcript array into clean, concatenated text.
+ * Extracts text from each segment, normalizes whitespace, and joins.
+ * @param {Array<{text: string, start?: number, duration?: number}>} transcriptArray - Transcript segments from youtube-transcript-plus
+ * @returns {string} Cleaned and concatenated transcript text, or empty string on error
+ * @example
+ * const text = processTranscript([
+ *   { text: 'Hello ', start: 0 },
+ *   { text: 'world!', start: 1 }
+ * ]);
+ * // Returns: 'Hello world!'
  */
 export const processTranscript = (transcriptArray) => {
     if (!Array.isArray(transcriptArray) || transcriptArray.length === 0) {
@@ -38,10 +50,14 @@ export const processTranscript = (transcriptArray) => {
 };
 
 /**
- * Validates transcript array structure
- * 
- * @param {Array} transcriptArray - Transcript array to validate
- * @returns {boolean} True if valid
+ * Validates that a transcript array has the expected structure.
+ * Checks that input is a non-empty array with objects containing text properties.
+ * @param {*} transcriptArray - Value to validate
+ * @returns {boolean} True if array has valid transcript structure
+ * @example
+ * validateTranscript([{ text: 'Hello' }]); // true
+ * validateTranscript([]); // false
+ * validateTranscript('not an array'); // false
  */
 export const validateTranscript = (transcriptArray) => {
     if (!Array.isArray(transcriptArray)) {

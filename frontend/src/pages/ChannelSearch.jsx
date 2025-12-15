@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Channel search page for discovering and following YouTube channels.
+ * Provides search functionality and displays followed channels.
+ * @module pages/ChannelSearch
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import SearchBar from '../components/SearchBar/SearchBar';
 import ChannelItem from '../components/ChannelItem/ChannelItem';
@@ -8,6 +14,12 @@ import { useNavigate } from 'react-router-dom';
 import channelService from '../services/channel.service';
 import './ChannelSearch.css';
 
+/**
+ * Channel search page component.
+ * Allows users to search for YouTube channels and manage followed channels.
+ * @component
+ * @returns {JSX.Element} Channel search and management interface
+ */
 const ChannelSearch = () => {
   const { isAuthenticated } = useAuth();
   const { incrementChannelsCount, decrementChannelsCount } = useUserData();

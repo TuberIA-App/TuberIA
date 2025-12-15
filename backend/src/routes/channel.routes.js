@@ -1,3 +1,17 @@
+/**
+ * @fileoverview Channel routes configuration.
+ * Defines routes for channel search, follow/unfollow, and retrieval.
+ * @module routes/channel
+ *
+ * @description
+ * Available routes:
+ * - GET /api/channels/user/followed - Get followed channels (protected)
+ * - POST /api/channels/:channelId/follow - Follow a channel (protected)
+ * - DELETE /api/channels/:channelId/unfollow - Unfollow a channel (protected)
+ * - GET /api/channels/search?q= - Search for channels (public)
+ * - GET /api/channels/:id - Get channel by ID (public, optional auth)
+ */
+
 import express from 'express';
 import {
     searchChannel,
@@ -16,6 +30,10 @@ import { validate } from '../middlewares/validate.middleware.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
 import { optionalAuthMiddleware } from '../middlewares/optionalAuth.middleware.js';
 
+/**
+ * Express router for channel endpoints.
+ * @type {import('express').Router}
+ */
 const router = express.Router();
 
 /**

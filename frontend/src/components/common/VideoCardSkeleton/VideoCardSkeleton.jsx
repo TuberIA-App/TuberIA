@@ -1,7 +1,17 @@
-// src/components/common/VideoCardSkeleton/VideoCardSkeleton.jsx
+/**
+ * @fileoverview Video card skeleton component for loading states.
+ * @module components/common/VideoCardSkeleton
+ */
+
 import React from 'react';
 import './VideoCardSkeleton.css';
 
+/**
+ * Skeleton placeholder component for video cards.
+ * Displays animated loading placeholder matching VideoCard layout.
+ * @component
+ * @returns {JSX.Element} Skeleton loading placeholder
+ */
 const VideoCardSkeleton = () => {
   return (
     <div className="video-card-skeleton">
