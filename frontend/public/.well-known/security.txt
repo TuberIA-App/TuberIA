@@ -1,0 +1,20 @@
+# TuberIA Security Contact Information
+# RFC 9116: https://www.rfc-editor.org/rfc/rfc9116
+
+# Security policy
+Policy: https://github.com/TuberIA-App/TuberIA/blob/main/SECURITY.md
+
+# Canonical URL for this file
+Canonical: https://tuberia.app/.well-known/security.txt
+
+# Preferred languages for security reports
+Preferred-Languages: en, es
+
+# Our acknowledgments page
+Acknowledgments: https://github.com/TuberIA-App/TuberIA/blob/main/SECURITY.md#acknowledgments
+
+# Expiration date (1 year from creation - UPDATE THIS ANNUALLY)
+Expires: 2027-01-18T23:59:59.000Z
+
+# Note: Email contact will be added once available
+# Contact: mailto:security@tuberia.app
