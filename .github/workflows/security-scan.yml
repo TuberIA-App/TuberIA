@@ -42,14 +42,14 @@ jobs:
           ignore-unfixed: true
 
       - name: Upload Backend results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-backend.sarif'
           category: 'trivy-backend'
 
       - name: Upload Frontend results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-frontend.sarif'
