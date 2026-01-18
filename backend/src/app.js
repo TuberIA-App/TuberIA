@@ -16,12 +16,19 @@ import { notFound } from './middlewares/notFound.middleware.js';
 import { timeoutMiddleware } from './middlewares/timeout.middleware.js';
 import logger from './utils/logger.js';
 import { RATE_LIMIT } from './config/constants.js';
+import { initSentry, sentryErrorHandler } from './config/sentry.js';
 
 /**
  * Express application instance.
  * @type {import('express').Express}
  */
 const app = express();
+
+/**
+ * Initialize Sentry error tracking (must be first).
+ * Only activates when SENTRY_DSN environment variable is set.
+ */
+initSentry(app);
 
 /**
  * Proxy trust configuration for accurate client IP detection behind reverse proxy.
@@ -125,6 +132,12 @@ app.use('/api', routes);
  * Must be placed after all route definitions.
  */
 app.use(notFound);
+
+/**
+ * Sentry error handler.
+ * Captures errors and sends them to Sentry. Must be before custom error handler.
+ */
+app.use(sentryErrorHandler);
 
 /**
  * Global error handler.
