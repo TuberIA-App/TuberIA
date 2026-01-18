@@ -42,13 +42,19 @@ app.use(helmet());
 
 /**
  * CORS configuration.
- * Currently allows all origins for development; should be restricted in production.
+ * Restricts origins based on environment: specific URLs in production, localhost in development.
+ * @see https://www.npmjs.com/package/cors
  */
+const corsOrigins = process.env.NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL
+    : ['http://localhost:5173', 'http://localhost:3000'];
+
 app.use(cors({
-    origin: '*',
-    credentials: false,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    origin: corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400 // 24 hours - reduces preflight requests
 }));
 
 /**
@@ -65,6 +71,21 @@ const limiter = rateLimit({
 });
 
 app.use('/api', limiter);
+
+/**
+ * Stricter rate limiter for authentication endpoints.
+ * Prevents brute force attacks on login/register endpoints.
+ * @type {import('express-rate-limit').RateLimitRequestHandler}
+ */
+const authLimiter = rateLimit({
+    windowMs: RATE_LIMIT.AUTH.WINDOW_MS,
+    max: RATE_LIMIT.AUTH.MAX_REQUESTS,
+    message: 'Too many authentication attempts, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+app.use('/api/auth', authLimiter);
 
 /**
  * Body parsing middleware.
