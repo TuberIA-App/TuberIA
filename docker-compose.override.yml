@@ -1,4 +1,8 @@
-## Archivo override vacío. Usar solo para cambios locales puntuales.
+## Local development overrides. This file is gitignored.
+## Uncomment/modify sections as needed for local development.
+
+services:
+  backend:
     restart: unless-stopped
 
     # Explicitly run dev command (nodemon)

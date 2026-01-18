@@ -48,10 +48,15 @@ export const PASSWORD_SALT_ROUNDS = 10;
  * @constant {Object}
  * @property {number} WINDOW_MS - Time window in milliseconds (15 minutes)
  * @property {number} MAX_REQUESTS - Maximum requests allowed per window
+ * @property {Object} AUTH - Stricter rate limits for authentication endpoints
  */
 export const RATE_LIMIT = {
     WINDOW_MS: 15 * 60 * 1000, // 15 minutes
-    MAX_REQUESTS: 1000
+    MAX_REQUESTS: 1000,
+    AUTH: {
+        WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+        MAX_REQUESTS: 10 // Only 10 auth attempts per window
+    }
 }
 
 /**
