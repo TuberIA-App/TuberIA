@@ -1,0 +1,40 @@
+# TuberIA
+
+> AI-powered YouTube video summarization platform. Subscribe to YouTube channels and receive automatic AI-generated summaries of new videos without manual intervention.
+
+TuberIA is a full-stack web application that helps users stay up-to-date with their favorite YouTube channels by automatically generating concise summaries of new videos using AI.
+
+## Tech Stack
+
+- [Frontend](/frontend): React 18, Vite, Tailwind CSS, Zustand, TanStack Query
+- [Backend](/backend): Node.js 20, Express 5.1, JWT authentication, BullMQ job queues
+- [Database](/docker-compose.yml): MongoDB 8, Redis 7
+- [Infrastructure](/Caddyfile): Docker, Docker Compose, Caddy reverse proxy
+
+## Project Structure
+
+- [Frontend Source](/frontend/src): React components, pages, hooks, and services
+- [Backend Source](/backend/src): Express controllers, routes, middlewares, and services
+- [API Routes](/backend/src/routes): REST API endpoint definitions
+- [Models](/backend/src/model): Mongoose database schemas
+
+## Key Files
+
+- [Backend App](/backend/src/app.js): Express application setup and middleware configuration
+- [Backend Entry](/backend/src/index.js): Server entry point and bootstrap
+- [Frontend App](/frontend/src/App.jsx): React application entry and routing
+- [Docker Config](/docker-compose.yml): Container orchestration
+
+## API Endpoints
+
+- POST /api/auth/login: User authentication
+- POST /api/auth/register: User registration
+- GET /api/channels: List subscribed channels
+- GET /api/videos: List videos with summaries
+- POST /api/channels/subscribe: Subscribe to a YouTube channel
+
+## Optional
+
+- [Documentation](/docs): Additional project documentation
+- [Deployment Guide](/DEPLOYMENT.md): Production deployment instructions
+- [Security Policy](/SECURITY.md): Security vulnerability reporting guidelines
