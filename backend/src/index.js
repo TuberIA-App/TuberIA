@@ -20,6 +20,7 @@ dotenv.config();
 import './config/secrets.js';
 
 import mongoose from 'mongoose';
+import * as Sentry from '@sentry/node';
 import app from './app.js';
 import logger from './utils/logger.js';
 import { validateEnv } from './config/env.js';
@@ -155,24 +156,44 @@ mongoose.connect(MONGODB_URI, mongoOptions)
 
 /**
  * Handle unhandled promise rejections.
- * Logs the error and exits the process to prevent undefined behavior.
+ * Logs the error, captures to Sentry, and exits to prevent undefined behavior.
  */
-process.on('unhandledRejection', (err) => {
+process.on('unhandledRejection', (reason, promise) => {
     logger.error('UNHANDLED REJECTION! - Shutting down...', {
-        error: err.message,
-        stack: err.stack
+        error: reason?.message || String(reason),
+        stack: reason?.stack
     });
-    process.exit(1);
+
+    // Capture to Sentry with context
+    Sentry.captureException(reason, {
+        tags: { type: 'unhandled_rejection' },
+        extra: { promise: String(promise) }
+    });
+
+    // Flush Sentry events before exit
+    Sentry.close(2000).then(() => {
+        process.exit(1);
+    });
 });
 
 /**
  * Handle uncaught exceptions.
- * Logs the error and exits the process to prevent undefined behavior.
+ * Logs the error, captures to Sentry, and exits to prevent undefined behavior.
  */
 process.on('uncaughtException', (err) => {
     logger.error('UNCAUGHT EXCEPTION! - Shutting down...', {
         error: err.message,
         stack: err.stack
     });
-    process.exit(1);
+
+    // Capture to Sentry as fatal
+    Sentry.captureException(err, {
+        tags: { type: 'uncaught_exception' },
+        level: 'fatal'
+    });
+
+    // Flush Sentry events before exit
+    Sentry.close(2000).then(() => {
+        process.exit(1);
+    });
 });

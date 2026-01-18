@@ -6,6 +6,7 @@
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import authService from '../services/auth.service';
+import { identifyUser } from '../config/sentry';
 
 /**
  * @typedef {Object} User
@@ -52,21 +53,29 @@ export const AuthProvider = ({ children }) => {
     console.log('[AuthProvider] currentUser', currentUser, 'isAuth?', authService.isAuthenticated());
     if (currentUser && authService.isAuthenticated()) {
       setUser(currentUser);
+      // Identify user in Sentry for error tracking
+      identifyUser(currentUser);
     }
     setLoading(false);
   }, []);
 
   const login = (userData, accessToken, refreshToken) => {
     setUser(userData);
+    // Identify user in Sentry for error tracking
+    identifyUser(userData);
   };
 
   const register = (userData, accessToken, refreshToken) => {
     setUser(userData);
+    // Identify user in Sentry for error tracking
+    identifyUser(userData);
   };
 
   const logout = () => {
     authService.logout();
     setUser(null);
+    // Clear user from Sentry
+    identifyUser(null);
   };
 
   const value = {

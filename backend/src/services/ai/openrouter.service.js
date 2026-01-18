@@ -1,12 +1,18 @@
 /**
  * @fileoverview OpenRouter API integration for AI model access.
  * Provides a unified interface to various AI models through OpenRouter.
+ * Includes Sentry integration for AI/LLM monitoring with token tracking.
  * @module services/ai/openrouter
  */
 
 import axios from 'axios';
+import * as Sentry from '@sentry/node';
 import { BadRequestError, InternalServerError } from '../../utils/errorClasses.util.js';
+import { recordTokenUsage, captureAIError, addAIBreadcrumb, captureRateLimitEvent, captureSlowResponse } from '../../utils/sentryHelpers.js';
 import logger from '../../utils/logger.js';
+
+/** Threshold for slow API response warnings (25 seconds) */
+const SLOW_RESPONSE_THRESHOLD_MS = 25000;
 
 /**
  * Pre-configured Axios client for OpenRouter API.
@@ -24,8 +30,9 @@ const openRouterClient = axios.create({
 });
 
 /**
- * Generates AI completion using OpenRouter API
- * 
+ * Generates AI completion using OpenRouter API with Sentry monitoring.
+ * Creates a span for the LLM call with token tracking and performance metrics.
+ *
  * @param {Object} params - Generation parameters
  * @param {string} params.model - Model identifier (e.g., 'z-ai/glm-4.5')
  * @param {Array} params.messages - Array of message objects with role and content
@@ -58,128 +65,214 @@ export const generateCompletion = async ({
         throw new InternalServerError('AI service is not properly configured');
     }
 
-    try {
-        logger.debug('Calling OpenRouter API', {
+    // Create Sentry span for this LLM call
+    return await Sentry.startSpan({
+        name: `chat ${model}`,
+        op: 'gen_ai.chat',
+        attributes: {
+            'gen_ai.system': 'openrouter',
+            'gen_ai.request.model': model,
+            'gen_ai.request.max_tokens': maxTokens,
+            'gen_ai.request.temperature': temperature,
+            'gen_ai.request.message_count': messages.length,
+        }
+    }, async (span) => {
+        const startTime = Date.now();
+
+        addAIBreadcrumb('Starting OpenRouter API call', {
             model,
-            messageCount: messages.length,
-            maxTokens
+            maxTokens,
+            messageCount: messages.length
         });
 
-        const response = await openRouterClient.post('/chat/completions', {
-            model,
-            messages,
-            max_tokens: maxTokens,
-            temperature
-        });
-
-        // Check response status
-        if (response.status !== 200) {
-            logger.error('OpenRouter API returned non-200 status', {
-                status: response.status,
-                data: response.data
+        try {
+            logger.debug('Calling OpenRouter API', {
+                model,
+                messageCount: messages.length,
+                maxTokens
             });
-            throw new InternalServerError(`OpenRouter API error: ${response.status}`);
-        }
 
-        // Validate response structure
-        if (!response.data.choices || response.data.choices.length === 0) {
-            logger.error('OpenRouter API returned invalid response structure', {
-                data: response.data
+            const response = await openRouterClient.post('/chat/completions', {
+                model,
+                messages,
+                max_tokens: maxTokens,
+                temperature
             });
-            throw new InternalServerError('Invalid response from AI service');
-        }
 
-        const content = response.data.choices[0].message?.content;
+            const duration = Date.now() - startTime;
 
-        // First check: content exists
-        if (!content) {
-            logger.error('OpenRouter API returned null/undefined content');
-            throw new InternalServerError('AI service returned empty response');
-        }
+            // Check response status
+            if (response.status !== 200) {
+                logger.error('OpenRouter API returned non-200 status', {
+                    status: response.status,
+                    data: response.data
+                });
+                throw new InternalServerError(`OpenRouter API error: ${response.status}`);
+            }
 
-        // Trim whitespace and validate
-        const trimmedContent = content.trim();
+            // Validate response structure
+            if (!response.data.choices || response.data.choices.length === 0) {
+                logger.error('OpenRouter API returned invalid response structure', {
+                    data: response.data
+                });
+                throw new InternalServerError('Invalid response from AI service');
+            }
 
-        // Second check: content is not empty after trimming
-        if (trimmedContent.length === 0) {
-            logger.error('OpenRouter API returned whitespace-only content', {
-                originalLength: content.length
+            const content = response.data.choices[0].message?.content;
+
+            // First check: content exists
+            if (!content) {
+                logger.error('OpenRouter API returned null/undefined content');
+                throw new InternalServerError('AI service returned empty response');
+            }
+
+            // Trim whitespace and validate
+            const trimmedContent = content.trim();
+
+            // Second check: content is not empty after trimming
+            if (trimmedContent.length === 0) {
+                logger.error('OpenRouter API returned whitespace-only content', {
+                    originalLength: content.length
+                });
+                throw new InternalServerError('AI service returned empty response');
+            }
+
+            // Third check: minimum content length (10 chars ensures it's not just noise)
+            if (trimmedContent.length < 10) {
+                logger.error('OpenRouter API returned suspiciously short content', {
+                    contentLength: trimmedContent.length,
+                    content: trimmedContent
+                });
+                throw new InternalServerError('AI service returned insufficient content');
+            }
+
+            // Extract token usage
+            const inputTokens = response.data.usage?.prompt_tokens || 0;
+            const outputTokens = response.data.usage?.completion_tokens || 0;
+            const tokensUsed = response.data.usage?.total_tokens || (inputTokens + outputTokens);
+
+            // Record token metrics on the span
+            recordTokenUsage(span, inputTokens, outputTokens);
+            span.setAttribute('gen_ai.response.duration_ms', duration);
+            span.setAttribute('gen_ai.response.content_length', trimmedContent.length);
+
+            // Alert on slow responses
+            if (duration > SLOW_RESPONSE_THRESHOLD_MS) {
+                captureSlowResponse(model, duration, SLOW_RESPONSE_THRESHOLD_MS);
+                logger.warn('Slow OpenRouter API response', { duration, model, maxTokens });
+            }
+
+            addAIBreadcrumb('OpenRouter API call completed', {
+                model: response.data.model || model,
+                tokensUsed,
+                duration,
+                contentLength: trimmedContent.length
             });
-            throw new InternalServerError('AI service returned empty response');
-        }
 
-        // Third check: minimum content length (10 chars ensures it's not just noise)
-        if (trimmedContent.length < 10) {
-            logger.error('OpenRouter API returned suspiciously short content', {
+            logger.info('OpenRouter completion successful', {
+                model: response.data.model || model,
+                tokensUsed,
                 contentLength: trimmedContent.length,
-                content: trimmedContent
+                duration
             });
-            throw new InternalServerError('AI service returned insufficient content');
-        }
 
-        const tokensUsed = response.data.usage?.total_tokens || 0;
+            return {
+                content: trimmedContent,
+                tokensUsed,
+                inputTokens,
+                outputTokens,
+                model: response.data.model || model
+            };
 
-        logger.info('OpenRouter completion successful', {
-            model: response.data.model || model,
-            tokensUsed,
-            contentLength: trimmedContent.length
-        });
+        } catch (error) {
+            const duration = Date.now() - startTime;
+            span.setAttribute('gen_ai.response.duration_ms', duration);
+            span.setAttribute('gen_ai.error', true);
 
-        return {
-            content: trimmedContent,
-            tokensUsed,
-            model: response.data.model || model
-        };
+            // Re-throw operational errors
+            if (error.isOperational) {
+                throw error;
+            }
 
-    } catch (error) {
-        // Re-throw operational errors
-        if (error.isOperational) {
-            throw error;
-        }
+            // Handle specific error cases
+            if (error.code === 'ECONNABORTED') {
+                logger.error('OpenRouter API timeout', { model, duration });
+                captureAIError(error, {
+                    model,
+                    maxTokens,
+                    operation: 'chat',
+                    errorType: 'timeout',
+                    duration
+                });
+                throw new InternalServerError('AI service timeout. Please try again.');
+            }
 
-        // Handle specific error cases
-        if (error.code === 'ECONNABORTED') {
-            logger.error('OpenRouter API timeout', { model });
-            throw new InternalServerError('AI service timeout. Please try again.');
-        }
+            if (error.response) {
+                const status = error.response.status;
+                const errorData = error.response.data;
 
-        if (error.response) {
-            const status = error.response.status;
-            const errorData = error.response.data;
+                logger.error('OpenRouter API error response', {
+                    status,
+                    error: errorData,
+                    model
+                });
 
-            logger.error('OpenRouter API error response', {
-                status,
-                error: errorData,
+                // Handle specific HTTP errors
+                if (status === 401) {
+                    captureAIError(error, {
+                        model,
+                        operation: 'chat',
+                        httpStatus: status,
+                        errorType: 'authentication'
+                    });
+                    throw new InternalServerError('AI service authentication failed');
+                }
+
+                if (status === 429) {
+                    const retryAfter = error.response.headers?.['retry-after'];
+                    captureRateLimitEvent(model, retryAfter);
+                    throw new InternalServerError('AI service rate limit exceeded. Please try again later.');
+                }
+
+                if (status === 402) {
+                    captureAIError(error, {
+                        model,
+                        operation: 'chat',
+                        httpStatus: status,
+                        errorType: 'credits_exhausted'
+                    });
+                    throw new InternalServerError('AI service credits exhausted');
+                }
+
+                if (status >= 500) {
+                    captureAIError(error, {
+                        model,
+                        operation: 'chat',
+                        httpStatus: status,
+                        errorType: 'service_unavailable'
+                    });
+                    throw new InternalServerError('AI service is temporarily unavailable');
+                }
+            }
+
+            // Generic error logging and capture
+            logger.error('Unexpected error calling OpenRouter API', {
+                error: error.message,
+                stack: error.stack,
                 model
             });
 
-            // Handle specific HTTP errors
-            if (status === 401) {
-                throw new InternalServerError('AI service authentication failed');
-            }
+            captureAIError(error, {
+                model,
+                maxTokens,
+                operation: 'chat',
+                errorCode: error.code,
+                errorMessage: error.message
+            });
 
-            if (status === 429) {
-                throw new InternalServerError('AI service rate limit exceeded. Please try again later.');
-            }
-
-            if (status === 402) {
-                throw new InternalServerError('AI service credits exhausted');
-            }
-
-            if (status >= 500) {
-                throw new InternalServerError('AI service is temporarily unavailable');
-            }
+            throw new InternalServerError('Failed to generate AI completion');
         }
-
-        // Generic error logging
-        logger.error('Unexpected error calling OpenRouter API', {
-            error: error.message,
-            stack: error.stack,
-            model
-        });
-
-        throw new InternalServerError('Failed to generate AI completion');
-    }
+    });
 };
 
 /**
