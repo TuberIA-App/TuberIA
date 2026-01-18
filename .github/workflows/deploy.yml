@@ -16,7 +16,7 @@ jobs:
 
       # Preparamos el SSH con la clave privada
       - name: webfactory/ssh-agent
-        uses: webfactory/ssh-agent@v0.9.0
+        uses: webfactory/ssh-agent@v0.9.1
         with:
           ssh-private-key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
 
