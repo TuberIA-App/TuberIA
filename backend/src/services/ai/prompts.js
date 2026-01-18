@@ -1,7 +1,15 @@
 /**
- * AI Prompt templates for video summarization
+ * @fileoverview AI prompt templates for video summarization.
+ * Contains system prompts for summary generation and key point extraction.
+ * Prompts are designed to work with multilingual content (Spanish/English).
+ * @module services/ai/prompts
  */
 
+/**
+ * System prompt for generating video summaries.
+ * Instructs the AI to create comprehensive summaries from transcripts.
+ * @constant {string}
+ */
 export const SUMMARY_PROMPT = `Eres un experto en crear resúmenes de videos de YouTube. 
 Tu tarea es analizar la transcripción proporcionada y crear un resumen conciso, bien estructurado y coherente.
 
@@ -16,6 +24,11 @@ INSTRUCCIONES:
 
 Crea un resumen que capture la esencia del video de forma efectiva.`;
 
+/**
+ * System prompt for extracting key points from summaries.
+ * Instructs the AI to extract 3-7 concise, unique key points.
+ * @constant {string}
+ */
 export const KEY_POINTS_PROMPT = `Analiza el siguiente resumen y extrae los puntos clave más importantes.
 
 INSTRUCCIONES:

@@ -1,8 +1,29 @@
+/**
+ * @fileoverview Environment variable validation for application startup.
+ * Ensures all required configuration is present before the app runs.
+ * @module config/env
+ */
+
 import logger from '../utils/logger.js';
 
 /**
- * Validate enviroment variables
- * @throws {Error} If critical env variables are missing
+ * Validates that all required environment variables are set and meet minimum requirements.
+ * Should be called during application startup before any other initialization.
+ *
+ * Required variables:
+ * - MONGODB_URI: MongoDB connection string
+ * - JWT_SECRET: Secret for signing access tokens (min 32 chars)
+ * - JWT_REFRESH_SECRET: Secret for signing refresh tokens (min 32 chars)
+ * - OPENROUTER_API_KEY: API key for OpenRouter AI service
+ *
+ * @throws {Error} If any required environment variable is missing
+ * @throws {Error} If JWT secrets are less than 32 characters
+ * @example
+ * import { validateEnv } from './config/env.js';
+ *
+ * // Call at startup
+ * validateEnv();
+ * // If validation passes, continue with app initialization
  */
 export const validateEnv = () => {
 

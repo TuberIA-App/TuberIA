@@ -1,10 +1,44 @@
-// src/context/UserDataContext.jsx
+/**
+ * @fileoverview User data context provider for managing user statistics and channel data.
+ * Provides cached user data and update methods throughout the application.
+ * @module context/UserDataContext
+ */
+
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import userService from '../services/user.service';
 
+/**
+ * @typedef {Object} UserStats
+ * @property {number} summariesRead - Number of summaries read by user
+ * @property {string} timeSaved - Formatted time saved string (e.g., "2h 30m")
+ * @property {number} followedChannels - Number of channels user follows
+ */
+
+/**
+ * @typedef {Object} UserDataContextValue
+ * @property {UserStats} stats - User statistics object
+ * @property {number} channelsCount - Number of followed channels
+ * @property {boolean} loading - Whether stats are being loaded
+ * @property {function(): void} incrementChannelsCount - Increment channel count by 1
+ * @property {function(): void} decrementChannelsCount - Decrement channel count by 1
+ * @property {function(): Promise<void>} refreshStats - Reload stats from server
+ */
+
+/**
+ * React context for user data state.
+ * @type {React.Context<UserDataContextValue|undefined>}
+ */
 const UserDataContext = createContext();
 
+/**
+ * Custom hook to access user data context.
+ * Must be used within a UserDataProvider component.
+ * @returns {UserDataContextValue} User data context value
+ * @throws {Error} If used outside of UserDataProvider
+ * @example
+ * const { stats, channelsCount, refreshStats } = useUserData();
+ */
 export const useUserData = () => {
   const context = useContext(UserDataContext);
   if (!context) {
@@ -13,6 +47,18 @@ export const useUserData = () => {
   return context;
 };
 
+/**
+ * User data provider component.
+ * Manages user statistics and channel counts with automatic refresh.
+ * @component
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components
+ * @returns {JSX.Element} Provider component wrapping children
+ * @example
+ * <UserDataProvider>
+ *   <Dashboard />
+ * </UserDataProvider>
+ */
 export const UserDataProvider = ({ children }) => {
   const { isAuthenticated } = useAuth();
   const [stats, setStats] = useState({
@@ -23,7 +69,11 @@ export const UserDataProvider = ({ children }) => {
   const [channelsCount, setChannelsCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // Load stats when user is authenticated
+  /**
+   * Loads user statistics from the server.
+   * Resets stats to defaults if user is not authenticated.
+   * @private
+   */
   const loadStats = useCallback(async () => {
     if (!isAuthenticated) {
       setStats({
@@ -47,12 +97,19 @@ export const UserDataProvider = ({ children }) => {
     }
   }, [isAuthenticated]);
 
-  // Load stats on mount and when auth changes
+  /**
+   * Effect: Load stats on mount and when authentication changes.
+   */
   useEffect(() => {
     loadStats();
   }, [loadStats]);
 
-  // Increment/decrement channels count
+  /**
+   * Updates channel count by a given delta.
+   * Ensures count never goes below zero.
+   * @param {number} delta - Amount to change count by (positive or negative)
+   * @private
+   */
   const updateChannelsCount = useCallback((delta) => {
     setChannelsCount(prev => Math.max(0, prev + delta));
     setStats(prev => ({
@@ -61,17 +118,24 @@ export const UserDataProvider = ({ children }) => {
     }));
   }, []);
 
-  // Increment channels count (when following)
+  /**
+   * Increments channel count by 1 (when user follows a channel).
+   */
   const incrementChannelsCount = useCallback(() => {
     updateChannelsCount(1);
   }, [updateChannelsCount]);
 
-  // Decrement channels count (when unfollowing)
+  /**
+   * Decrements channel count by 1 (when user unfollows a channel).
+   */
   const decrementChannelsCount = useCallback(() => {
     updateChannelsCount(-1);
   }, [updateChannelsCount]);
 
-  // Refresh stats from server
+  /**
+   * Refreshes stats from server.
+   * @returns {Promise<void>}
+   */
   const refreshStats = useCallback(() => {
     return loadStats();
   }, [loadStats]);

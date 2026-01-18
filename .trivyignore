@@ -1,0 +1,3 @@
+# Trivy ignore file for accepted risks
+# Format: CVE-XXXX-XXXXX or vulnerability ID
+# Add CVE IDs here if you need to ignore specific vulnerabilities

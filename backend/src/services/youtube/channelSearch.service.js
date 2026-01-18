@@ -1,3 +1,9 @@
+/**
+ * @fileoverview YouTube channel search service.
+ * Searches for channels by username or URL and saves them to the database.
+ * @module services/youtube/channelSearch
+ */
+
 import { channelId as extractChannelId } from './channelIdExtractor.js';
 import { channelFeedExtractor } from './channelFeedExtractor.js';
 import { BadRequestError } from '../../utils/errorClasses.util.js';
@@ -5,9 +11,12 @@ import logger from '../../utils/logger.js';
 import { findOrCreateChannel } from '../channel.service.js';
 
 /**
- * Determina si el input es una URL de YouTube o un username
- * @param {string} input - Username (@vegetta777) o URL completa
- * @returns {Object} - { type: 'url' | 'username', value: string }
+ * Parses input to determine if it's a YouTube URL or username.
+ * Adds @ prefix to usernames if missing.
+ * @private
+ * @param {string} input - Username (@vegetta777) or full YouTube URL
+ * @returns {{type: 'url'|'username', value: string}} Parsed input type and normalized value
+ * @throws {BadRequestError} If input is invalid or empty
  */
 const parseInput = (input) => {
     if (!input || typeof input !== 'string') {
@@ -31,20 +40,33 @@ const parseInput = (input) => {
 };
 
 /**
- * Construye la URL del canal a partir del username
- * @param {string} username - Username con @ (ej: @vegetta777)
- * @returns {string} - URL completa del canal
+ * Constructs the full YouTube channel URL from a username.
+ * @private
+ * @param {string} username - Username with @ prefix (e.g., @vegetta777)
+ * @returns {string} Full YouTube channel URL
  */
 const buildChannelUrl = (username) => {
     return `https://www.youtube.com/${username}`;
 };
 
 /**
- * Busca un canal de YouTube y retorna su información
- * @param {string} query - Username (@vegetta777) o URL completa del canal
- * @returns {Promise<Object>} - Información del canal
- * @throws {BadRequestError} - Si el input es inválido
- * @throws {NotFoundError} - Si el canal no existe
+ * Searches for a YouTube channel and returns its information.
+ * Extracts channel ID, fetches RSS feed, and saves to database.
+ * @param {string} query - Username (@vegetta777, vegetta777) or full YouTube channel URL
+ * @returns {Promise<Object>} Channel information with database _id
+ * @returns {string} result._id - MongoDB ObjectId as string
+ * @returns {string} result.channelId - YouTube channel ID (UCxxxxxx format)
+ * @returns {string} result.name - Channel display name
+ * @returns {string|null} result.username - Channel username with @ prefix
+ * @returns {string|null} result.thumbnail - Channel/video thumbnail URL
+ * @returns {string|null} result.description - Channel description
+ * @returns {number} result.followersCount - Number of app users following this channel
+ * @throws {BadRequestError} If the input is invalid
+ * @throws {NotFoundError} If the channel does not exist
+ * @example
+ * const channel = await searchChannel('@mkbhd');
+ * // or
+ * const channel = await searchChannel('https://www.youtube.com/@mkbhd');
  */
 export const searchChannel = async (query) => {
     try {

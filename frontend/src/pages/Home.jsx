@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Public landing page component.
+ * Displays features, how it works, and channel search demo.
+ * @module pages/Home
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRightIcon, SparklesIcon, ClockIcon, TrendingUpIcon, ZapIcon, CheckCircleIcon, UsersIcon, PlayCircleIcon, BookOpenIcon, XIcon, SearchIcon } from 'lucide-react';
@@ -9,6 +15,12 @@ import PublicHeader from '../components/Layout/PublicHeader';
 import channelService from '../services/channel.service';
 import './Home.css';
 
+/**
+ * Public landing page component.
+ * Showcases app features, testimonials, and allows channel search demo.
+ * @component
+ * @returns {JSX.Element} Landing page with hero, features, and CTA sections
+ */
 const Home = () => {
   const [showTryModal, setShowTryModal] = useState(false);
   const [demoUrl, setDemoUrl] = useState('');

@@ -1,6 +1,18 @@
+/**
+ * @fileoverview Public header component for unauthenticated pages.
+ * Shows only authentication actions (login/register).
+ * @module components/Layout/PublicHeader
+ */
+
 import { useNavigate } from 'react-router-dom';
 import './Header.css';
 
+/**
+ * Public header component displayed on unauthenticated pages.
+ * Provides login and register navigation buttons.
+ * @component
+ * @returns {JSX.Element} Header with auth action buttons
+ */
 const PublicHeader = () => {
   const navigate = useNavigate();
 

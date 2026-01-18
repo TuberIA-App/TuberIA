@@ -1,11 +1,26 @@
+/**
+ * @fileoverview YouTube channel RSS feed extractor.
+ * Fetches and parses YouTube channel RSS feeds to get video listings.
+ * @module services/youtube/channelFeedExtractor
+ */
+
 import axios from 'axios';
 import UserAgent from 'user-agents';
 import { XMLParser } from 'fast-xml-parser';
 import { BadRequestError, NotFoundError, InternalServerError } from '../../utils/errorClasses.util.js';
 import logger from '../../utils/logger.js';
 
+/**
+ * Random user agent for requests.
+ * @private
+ */
 const userAgent = new UserAgent();
 
+/**
+ * Axios instance configured for RSS feed fetching.
+ * @private
+ * @type {import('axios').AxiosInstance}
+ */
 const axiosInstance = axios.create({
     headers: { 'User-Agent': userAgent.toString() },
     timeout: 15000, // 15 seconds timeout

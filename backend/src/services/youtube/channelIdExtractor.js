@@ -1,11 +1,26 @@
+/**
+ * @fileoverview YouTube ID extraction utilities using web scraping.
+ * Extracts channel and video IDs from YouTube page metadata.
+ * @module services/youtube/channelIdExtractor
+ */
+
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import UserAgent from 'user-agents';
 import { BadRequestError, NotFoundError, InternalServerError } from '../../utils/errorClasses.util.js';
 import logger from '../../utils/logger.js';
 
+/**
+ * Random user agent for requests.
+ * @private
+ */
 const userAgent = new UserAgent();
 
+/**
+ * Axios instance configured for YouTube page scraping.
+ * @private
+ * @type {import('axios').AxiosInstance}
+ */
 const axiosInstance = axios.create({
     headers: {
         'User-Agent': userAgent.toString()
@@ -17,10 +32,10 @@ const axiosInstance = axios.create({
 });
 
 /**
- * Check YouTube Url
- *
- * @param {string} url
- * @returns {boolean}
+ * Checks if a URL is a valid YouTube URL.
+ * @private
+ * @param {string} url - URL to check
+ * @returns {boolean} True if URL contains youtube.com or youtu.be
  */
 const checkUrl = (url) => url.indexOf('youtube.com') !== -1 || url.indexOf('youtu.be') !== -1;
 

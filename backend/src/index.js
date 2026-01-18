@@ -1,12 +1,26 @@
+/**
+ * @fileoverview Application entry point and server bootstrap.
+ * Handles environment setup, database connections, worker initialization,
+ * and graceful shutdown procedures.
+ * @module index
+ */
+
 import dotenv from 'dotenv';
 
-// Load environment variables FIRST (before any other imports that use them)
+/**
+ * Load environment variables from .env file.
+ * Must be called before any imports that use environment variables.
+ */
 dotenv.config();
 
-// Import secrets (this validates secrets are loaded correctly)
+/**
+ * Validate secrets configuration.
+ * Ensures all required secrets are properly loaded.
+ */
 import './config/secrets.js';
 
 import mongoose from 'mongoose';
+import * as Sentry from '@sentry/node';
 import app from './app.js';
 import logger from './utils/logger.js';
 import { validateEnv } from './config/env.js';
@@ -16,11 +30,17 @@ import summarizationWorker from './workers/summarization.worker.js';
 import { startRSSPolling, stopRSSPolling } from './services/youtube/rssPoller.service.js';
 import { startTranscriptionRetryScheduler, stopTranscriptionRetryScheduler } from './services/retryFailedTranscriptions.service.js';
 
-// Make Redis clients globally available
+/**
+ * Make Redis clients globally available for access throughout the application.
+ * @global
+ */
 global.redisConnection = redisConnection;
 global.redisClient = redisClient;
 
-// Validate environment variables
+/**
+ * Validate all required environment variables on startup.
+ * Exits process with code 1 if validation fails.
+ */
 try {
     validateEnv();
     logger.info('Environment variables validated successfully :)');
@@ -29,10 +49,22 @@ try {
     process.exit(1);
 }
 
+/**
+ * Server port from environment or default.
+ * @type {number}
+ */
 const PORT = process.env.PORT || 5000;
+
+/**
+ * MongoDB connection URI from environment.
+ * @type {string}
+ */
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// MongoDB connection options
+/**
+ * MongoDB connection options.
+ * @type {mongoose.ConnectOptions}
+ */
 const mongoOptions = {
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
@@ -66,7 +98,11 @@ mongoose.connect(MONGODB_URI, mongoOptions)
         // Start automatic retry scheduler for failed transcriptions
         startTranscriptionRetryScheduler();
 
-        // Graceful shutdown
+        /**
+         * Graceful shutdown handler.
+         * Closes all connections and services in proper order.
+         * @param {string} signal - The signal that triggered shutdown (SIGTERM/SIGINT)
+         */
         const gracefulShutdown = async (signal) => {
             logger.info(`${signal} signal received: closing HTTP server`);
 
@@ -118,20 +154,46 @@ mongoose.connect(MONGODB_URI, mongoOptions)
         process.exit(1);
     })
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
+/**
+ * Handle unhandled promise rejections.
+ * Logs the error, captures to Sentry, and exits to prevent undefined behavior.
+ */
+process.on('unhandledRejection', (reason, promise) => {
     logger.error('UNHANDLED REJECTION! - Shutting down...', {
-        error: err.message,
-        stack: err.stack
+        error: reason?.message || String(reason),
+        stack: reason?.stack
     });
-    process.exit(1);
+
+    // Capture to Sentry with context
+    Sentry.captureException(reason, {
+        tags: { type: 'unhandled_rejection' },
+        extra: { promise: String(promise) }
+    });
+
+    // Flush Sentry events before exit
+    Sentry.close(2000).then(() => {
+        process.exit(1);
+    });
 });
 
-// Handle uncaught exceptions
+/**
+ * Handle uncaught exceptions.
+ * Logs the error, captures to Sentry, and exits to prevent undefined behavior.
+ */
 process.on('uncaughtException', (err) => {
     logger.error('UNCAUGHT EXCEPTION! - Shutting down...', {
         error: err.message,
         stack: err.stack
     });
-    process.exit(1);
+
+    // Capture to Sentry as fatal
+    Sentry.captureException(err, {
+        tags: { type: 'uncaught_exception' },
+        level: 'fatal'
+    });
+
+    // Flush Sentry events before exit
+    Sentry.close(2000).then(() => {
+        process.exit(1);
+    });
 });

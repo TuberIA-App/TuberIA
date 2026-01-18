@@ -1,21 +1,43 @@
+/**
+ * @fileoverview YouTube video transcript fetching service with retry mechanism.
+ * Fetches transcripts using youtube-transcript-plus with user agent rotation
+ * and optional proxy support.
+ * @module services/youtube/videoTranscription
+ */
+
 import { fetchTranscript } from 'youtube-transcript-plus';
 import { BadRequestError, NotFoundError, InternalServerError } from '../../utils/errorClasses.util.js';
 import logger from '../../utils/logger.js';
 import { createYoutubeTranscriptConfig } from '../../utils/youtubeProxyConfig.util.js';
 
-// Get retry settings from environment or use defaults
+/**
+ * Maximum number of retry attempts for transcript fetching.
+ * Configurable via YOUTUBE_TRANSCRIPT_MAX_RETRIES env variable.
+ * @private
+ * @constant {number}
+ */
 const MAX_RETRIES = parseInt(process.env.YOUTUBE_TRANSCRIPT_MAX_RETRIES || '3', 10);
+
+/**
+ * Base delay in milliseconds between retry attempts (exponential backoff applied).
+ * Configurable via YOUTUBE_TRANSCRIPT_RETRY_DELAY env variable.
+ * @private
+ * @constant {number}
+ */
 const RETRY_DELAY = parseInt(process.env.YOUTUBE_TRANSCRIPT_RETRY_DELAY || '1000', 10);
 
 /**
- * Sleep for a specified number of milliseconds
+ * Pauses execution for specified duration.
+ * @private
  * @param {number} ms - Milliseconds to sleep
  * @returns {Promise<void>}
  */
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * Determines if an error is retryable (network/timeout issues)
+ * Determines if an error is retryable (network/timeout issues).
+ * Retryable errors include network failures, timeouts, and HTTP 5xx errors.
+ * @private
  * @param {Error} error - The error to check
  * @returns {boolean} True if the error should trigger a retry
  */

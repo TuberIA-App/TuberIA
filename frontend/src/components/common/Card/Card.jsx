@@ -1,6 +1,31 @@
+/**
+ * @fileoverview Reusable card component for content containers.
+ * @module components/common/Card
+ */
+
 import React from 'react';
 import './Card.css';
 
+/**
+ * Card component for displaying content in a contained format.
+ * Supports images, headers, footers, and interactive states.
+ * @component
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Card body content
+ * @param {'default'|'elevated'|'outlined'} [props.variant='default'] - Visual style variant
+ * @param {boolean} [props.hoverable=false] - Whether card has hover effect
+ * @param {boolean} [props.interactive=false] - Whether card acts as a button
+ * @param {'normal'|'compact'|'padded'} [props.padding='normal'] - Padding size
+ * @param {React.ReactNode} [props.header] - Custom header content
+ * @param {string} [props.title] - Card title text
+ * @param {string} [props.subtitle] - Card subtitle text
+ * @param {React.ReactNode} [props.footer] - Footer content
+ * @param {string} [props.image] - Image URL
+ * @param {string} [props.imageAlt=''] - Image alt text
+ * @param {function} [props.onClick] - Click handler
+ * @param {string} [props.className=''] - Additional CSS classes
+ * @returns {JSX.Element} Card container element
+ */
 const Card = ({
   children,
   variant = 'default',

@@ -1,12 +1,30 @@
+/**
+ * @fileoverview Global error handling middleware for Express.
+ * Catches and formats all errors into consistent JSON responses.
+ * @module middlewares/errorHandler
+ */
+
 import mongoose from 'mongoose';
 import logger from '../utils/logger.js';
 import { AppError } from '../utils/errorClasses.util.js';
 import { errorResponse } from '../utils/response.util.js';
 
 /**
- * Global error handling middleware
+ * Global error handling middleware for Express.
+ * Handles operational errors (AppError), Mongoose errors, JWT errors,
+ * and unknown errors with appropriate HTTP status codes and messages.
+ *
+ * In production, internal error messages are hidden for security.
+ *
+ * @param {Error} err - Error object
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @param {import('express').NextFunction} next - Express next function (required for error middleware signature)
+ * @returns {void}
+ * @example
+ * // Usage in app.js (must be last middleware)
+ * app.use(errorHandler);
  */
-
 export const errorHandler = (err, req, res, next) => {
     // Log error
     logger.error('Error occurred', {

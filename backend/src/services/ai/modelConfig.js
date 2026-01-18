@@ -1,13 +1,19 @@
 /**
- * AI Model configuration for summarization fallback chain
- *
- * Models are tried in order until one succeeds:
- * 1. z-ai/glm-4.5 - Fast, reliable for most content
- * 2. amazon/nova-2-lite-v1:free - 1M context, free tier
- * 3. amazon/nova-2-lite-v1 - 1M context, paid (more reliable)
- * 4. x-ai/grok-4-fast - 2M context, expensive but powerful
+ * @fileoverview AI model configuration for summarization with fallback chain.
+ * Defines ordered list of models to try for summarization tasks.
+ * @module services/ai/modelConfig
  */
 
+/**
+ * Ordered list of AI models for video summarization.
+ * Models are tried in sequence until one succeeds.
+ * Order prioritizes reliability and cost-effectiveness:
+ * 1. amazon/nova-2-lite-v1:free - 1M context, free tier
+ * 2. amazon/nova-2-lite-v1 - 1M context, paid (more reliable)
+ * 3. x-ai/grok-4-fast - 2M context, expensive but powerful
+ * 4. z-ai/glm-4.5 - Fast, fallback option
+ * @constant {string[]}
+ */
 export const SUMMARIZATION_MODELS = [
   'amazon/nova-2-lite-v1:free',
   'amazon/nova-2-lite-v1',

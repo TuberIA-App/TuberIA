@@ -1,9 +1,25 @@
+/**
+ * @fileoverview Lightweight YouTube channel RSS feed extractor for polling.
+ * Similar to channelFeedExtractor but returns error objects instead of throwing.
+ * Used by the RSS polling scheduler for background video discovery.
+ * @module services/youtube/channelFeedPoller
+ */
+
 import axios from 'axios';
 import UserAgent from 'user-agents';
 import { XMLParser } from 'fast-xml-parser';
 
+/**
+ * Random user agent for requests.
+ * @private
+ */
 const userAgent = new UserAgent();
 
+/**
+ * Axios instance configured for RSS feed fetching.
+ * @private
+ * @type {import('axios').AxiosInstance}
+ */
 const axiosInstance = axios.create({
     headers: { 'User-Agent': userAgent.toString() },
     validateStatus: () => true
@@ -15,10 +31,17 @@ const parser = new XMLParser({
 });
 
 /**
- * Extracts the RSS feed for a YouTube channel
- *
- * @param {string} channelId - The YouTube channel ID
- * @return {Promise<Object>} JSON feed if successful, or error object { error: 'fetch failed', message: string }
+ * Extracts the RSS feed for a YouTube channel (non-throwing version).
+ * Returns error object instead of throwing for graceful error handling in polling.
+ * @param {string} channelId - YouTube channel ID (UCxxxxxx format)
+ * @returns {Promise<Object>} Feed object with entries, or error object { error: 'fetch failed', message: string }
+ * @example
+ * const feed = await channelFeedExtractor('UCxxxxxxx');
+ * if (feed.error) {
+ *   console.error('Feed fetch failed:', feed.message);
+ * } else {
+ *   const videos = feed.entry || [];
+ * }
  */
 const channelFeedExtractor = async (channelId) => {
     try {

@@ -1,13 +1,30 @@
+/**
+ * @fileoverview AI video summarization service using OpenRouter API.
+ * Generates comprehensive summaries and key points from video transcripts.
+ * Includes model fallback chain for reliability and Sentry monitoring.
+ * @module services/ai/summary
+ */
+
+import * as Sentry from '@sentry/node';
 import { generateCompletion } from './openrouter.service.js';
 import { processTranscript, validateTranscript } from './transcriptionProcessor.js';
 import { SUMMARY_PROMPT, KEY_POINTS_PROMPT } from './prompts.js';
 import { withIdempotency } from '../../utils/idempotency.js';
 import { SUMMARIZATION_MODELS } from './modelConfig.js';
+import { addAIBreadcrumb, captureAllModelsExhausted } from '../../utils/sentryHelpers.js';
 import logger from '../../utils/logger.js';
 
 /**
- * Attempt summary generation with a specific model (private helper)
+ * Attempts summary generation with a specific AI model.
+ * Generates both summary and key points in sequence.
  * @private
+ * @param {string} model - OpenRouter model identifier
+ * @param {string} transcriptText - Full transcript text
+ * @param {string} truncatedTranscript - Transcript truncated to MAX_TRANSCRIPT_LENGTH
+ * @param {string} videoTitle - Video title for context
+ * @param {Array} transcriptArray - Original transcript array for metadata
+ * @returns {Promise<Object>} Summary result with summary, keyPoints, and metadata
+ * @throws {Error} If summary or key points generation fails
  */
 const attemptSummaryWithModel = async (model, transcriptText, truncatedTranscript, videoTitle, transcriptArray) => {
     // Step 1: Generate summary
@@ -75,7 +92,8 @@ const attemptSummaryWithModel = async (model, transcriptText, truncatedTranscrip
 };
 
 /**
- * Generates a comprehensive summary of a YouTube video from its transcript
+ * Generates a comprehensive summary of a YouTube video from its transcript.
+ * Uses a model fallback chain for reliability with Sentry span tracking.
  *
  * @param {Object} params - Summary generation parameters
  * @param {Array} params.transcriptArray - Transcript array from youtube-transcript-plus
@@ -96,130 +114,196 @@ export const generateVideoSummary = async ({
         uniqueKey,
         7 * 24 * 3600, // 7 days in seconds (604800)
         async () => {
-            try {
-                // Validation: Check transcript array
-                if (!validateTranscript(transcriptArray)) {
-                    logger.error('Invalid transcript array provided to generateVideoSummary', {
-                        isArray: Array.isArray(transcriptArray),
-                        length: transcriptArray?.length
-                    });
-                    throw new Error('Invalid transcript format. Expected array of transcript objects.');
+            // Create a parent span for the entire summarization agent
+            return await Sentry.startSpan({
+                name: 'invoke_agent Video Summarizer',
+                op: 'gen_ai.invoke_agent',
+                attributes: {
+                    'gen_ai.system': 'openrouter',
+                    'gen_ai.operation.name': 'video_summarization',
+                    'video.title': videoTitle?.substring(0, 100) || 'untitled',
+                    'transcript.segments': transcriptArray?.length || 0,
+                    'models.available': SUMMARIZATION_MODELS.length,
                 }
-
-                // Process transcript array into text
-                const transcriptText = processTranscript(transcriptArray);
-
-                if (!transcriptText || transcriptText.length < 50) {
-                    logger.warn('Processed transcript is too short', {
-                        length: transcriptText.length
-                    });
-                    throw new Error('Transcript is too short to generate a meaningful summary');
-                }
-
-                // Check transcript length (OpenRouter has limits)
-                const MAX_TRANSCRIPT_LENGTH = 50000; // ~50k chars
-                const truncatedTranscript = transcriptText.length > MAX_TRANSCRIPT_LENGTH
-                    ? transcriptText.substring(0, MAX_TRANSCRIPT_LENGTH) + '...'
-                    : transcriptText;
-
-                if (transcriptText.length > MAX_TRANSCRIPT_LENGTH) {
-                    logger.warn('Transcript truncated due to length', {
-                        original: transcriptText.length,
-                        truncated: MAX_TRANSCRIPT_LENGTH
-                    });
-                }
-
-                logger.info('Starting video summary generation with fallback chain', {
-                    transcriptLength: truncatedTranscript.length,
-                    segments: transcriptArray.length,
-                    totalModels: SUMMARIZATION_MODELS.length
-                });
-
-                // TRY EACH MODEL IN SEQUENCE
-                let lastError;
-                for (let i = 0; i < SUMMARIZATION_MODELS.length; i++) {
-                    const model = SUMMARIZATION_MODELS[i];
-
-                    try {
-                        logger.info('Attempting summary generation with model', {
-                            model,
-                            attemptNumber: i + 1,
-                            totalModels: SUMMARIZATION_MODELS.length,
-                            transcriptLength: truncatedTranscript.length
+            }, async (agentSpan) => {
+                try {
+                    // Validation: Check transcript array
+                    if (!validateTranscript(transcriptArray)) {
+                        logger.error('Invalid transcript array provided to generateVideoSummary', {
+                            isArray: Array.isArray(transcriptArray),
+                            length: transcriptArray?.length
                         });
+                        throw new Error('Invalid transcript format. Expected array of transcript objects.');
+                    }
 
-                        // Try this model
-                        const result = await attemptSummaryWithModel(
-                            model,
-                            transcriptText,
-                            truncatedTranscript,
-                            videoTitle,
-                            transcriptArray
-                        );
+                    // Process transcript array into text
+                    const transcriptText = processTranscript(transcriptArray);
 
-                        // SUCCESS - log and return
-                        logger.info('Video summary generated successfully', {
-                            model: result.aiModel,
-                            attemptNumber: i + 1,
-                            fallbackUsed: i > 0,
-                            summaryLength: result.summary.length,
-                            keyPointsCount: result.keyPoints.length,
-                            tokensUsed: result.tokensConsumed
+                    if (!transcriptText || transcriptText.length < 50) {
+                        logger.warn('Processed transcript is too short', {
+                            length: transcriptText.length
                         });
+                        throw new Error('Transcript is too short to generate a meaningful summary');
+                    }
 
-                        return result;
+                    // Check transcript length (OpenRouter has limits)
+                    const MAX_TRANSCRIPT_LENGTH = 50000; // ~50k chars
+                    const truncatedTranscript = transcriptText.length > MAX_TRANSCRIPT_LENGTH
+                        ? transcriptText.substring(0, MAX_TRANSCRIPT_LENGTH) + '...'
+                        : transcriptText;
 
-                    } catch (error) {
-                        lastError = error;
+                    if (transcriptText.length > MAX_TRANSCRIPT_LENGTH) {
+                        logger.warn('Transcript truncated due to length', {
+                            original: transcriptText.length,
+                            truncated: MAX_TRANSCRIPT_LENGTH
+                        });
+                        agentSpan.setAttribute('transcript.truncated', true);
+                        agentSpan.setAttribute('transcript.original_length', transcriptText.length);
+                    }
+
+                    agentSpan.setAttribute('transcript.length', truncatedTranscript.length);
+
+                    logger.info('Starting video summary generation with fallback chain', {
+                        transcriptLength: truncatedTranscript.length,
+                        segments: transcriptArray.length,
+                        totalModels: SUMMARIZATION_MODELS.length
+                    });
+
+                    // TRY EACH MODEL IN SEQUENCE
+                    let lastError;
+                    const attemptResults = [];
+
+                    for (let i = 0; i < SUMMARIZATION_MODELS.length; i++) {
+                        const model = SUMMARIZATION_MODELS[i];
                         const isLastModel = i === SUMMARIZATION_MODELS.length - 1;
 
-                        logger.warn('Model failed to generate summary', {
+                        addAIBreadcrumb(`Attempting model ${i + 1}/${SUMMARIZATION_MODELS.length}`, {
                             model,
-                            attemptNumber: i + 1,
-                            error: error.message,
-                            remainingModels: SUMMARIZATION_MODELS.length - i - 1,
-                            willRetry: !isLastModel
+                            attempt: i + 1,
+                            previousFailures: attemptResults.filter(r => !r.success).length
                         });
 
-                        // If this was the last model, throw the error
-                        if (isLastModel) {
-                            logger.error('All models failed to generate summary', {
-                                videoTitle,
-                                triedModels: SUMMARIZATION_MODELS,
-                                lastError: error.message,
-                                totalAttempts: SUMMARIZATION_MODELS.length
+                        try {
+                            logger.info('Attempting summary generation with model', {
+                                model,
+                                attemptNumber: i + 1,
+                                totalModels: SUMMARIZATION_MODELS.length,
+                                transcriptLength: truncatedTranscript.length
                             });
-                            throw error;
+
+                            // Try this model
+                            const result = await attemptSummaryWithModel(
+                                model,
+                                transcriptText,
+                                truncatedTranscript,
+                                videoTitle,
+                                transcriptArray
+                            );
+
+                            // SUCCESS - record metrics and return
+                            attemptResults.push({ model, success: true });
+
+                            agentSpan.setAttribute('gen_ai.model_used', result.aiModel);
+                            agentSpan.setAttribute('gen_ai.fallback_count', i);
+                            agentSpan.setAttribute('gen_ai.usage.total_tokens', result.tokensConsumed);
+                            agentSpan.setAttribute('gen_ai.success', true);
+
+                            logger.info('Video summary generated successfully', {
+                                model: result.aiModel,
+                                attemptNumber: i + 1,
+                                fallbackUsed: i > 0,
+                                summaryLength: result.summary.length,
+                                keyPointsCount: result.keyPoints.length,
+                                tokensUsed: result.tokensConsumed
+                            });
+
+                            addAIBreadcrumb('Summary generation successful', {
+                                model: result.aiModel,
+                                attemptNumber: i + 1,
+                                fallbacksUsed: i,
+                                tokensUsed: result.tokensConsumed
+                            });
+
+                            return result;
+
+                        } catch (error) {
+                            lastError = error;
+                            attemptResults.push({
+                                model,
+                                success: false,
+                                error: error.message
+                            });
+
+                            logger.warn('Model failed to generate summary', {
+                                model,
+                                attemptNumber: i + 1,
+                                error: error.message,
+                                remainingModels: SUMMARIZATION_MODELS.length - i - 1,
+                                willRetry: !isLastModel
+                            });
+
+                            addAIBreadcrumb(`Model ${model} failed`, {
+                                error: error.message,
+                                attempt: i + 1,
+                                willRetry: !isLastModel
+                            }, 'warning');
+
+                            // If this was the last model, capture critical error
+                            if (isLastModel) {
+                                agentSpan.setAttribute('gen_ai.success', false);
+                                agentSpan.setAttribute('gen_ai.all_models_failed', true);
+                                agentSpan.setAttribute('gen_ai.total_attempts', SUMMARIZATION_MODELS.length);
+
+                                logger.error('All models failed to generate summary', {
+                                    videoTitle,
+                                    triedModels: SUMMARIZATION_MODELS,
+                                    attemptResults,
+                                    lastError: error.message,
+                                    totalAttempts: SUMMARIZATION_MODELS.length
+                                });
+
+                                // Capture this critical failure to Sentry
+                                captureAllModelsExhausted(error, {
+                                    attemptedModels: SUMMARIZATION_MODELS,
+                                    attemptResults,
+                                    videoTitle,
+                                    transcriptLength: truncatedTranscript.length
+                                });
+
+                                throw error;
+                            }
+
+                            // Otherwise, continue to next model
                         }
-
-                        // Otherwise, continue to next model
                     }
+
+                    // Should never reach here, but TypeScript safety
+                    throw lastError || new Error('Unknown error in model fallback');
+
+                } catch (error) {
+                    // Log the error with full context
+                    logger.error('Error generating video summary', {
+                        error: error.message,
+                        stack: error.stack,
+                        isOperational: error.isOperational
+                    });
+
+                    // Throw error to trigger BullMQ retry mechanism
+                    // This ensures failed summaries are retried up to 3 times
+                    throw error;
                 }
-
-                // Should never reach here, but TypeScript safety
-                throw lastError || new Error('Unknown error in model fallback');
-
-            } catch (error) {
-                // Log the error with full context
-                logger.error('Error generating video summary', {
-                    error: error.message,
-                    stack: error.stack,
-                    isOperational: error.isOperational
-                });
-
-                // Throw error to trigger BullMQ retry mechanism
-                // This ensures failed summaries are retried up to 3 times
-                throw error;
-            }
+            });
         }
     );
 };
 
 /**
- * Parses key points from AI-generated text
- * 
- * @param {string} text - Text containing bullet points
- * @returns {Array<string>} Array of key points
+ * Parses key points from AI-generated bullet point text.
+ * Supports various bullet formats: -, •, *, or numbered (1., 2., etc.)
+ * @private
+ * @param {string} text - AI-generated text containing bullet points
+ * @returns {Array<string>} Array of extracted key points (max 10)
+ * @throws {Error} If no key points can be parsed from the text
  */
 const parseKeyPoints = (text) => {
     try {

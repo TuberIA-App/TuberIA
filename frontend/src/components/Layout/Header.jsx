@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Application header component with navigation and user actions.
+ * Displays main navigation, user info, and authentication actions.
+ * @module components/Layout/Header
+ */
+
 import React from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { BellIcon, UserIcon, HomeIcon, TrendingUpIcon, UsersIcon, FileTextIcon } from 'lucide-react';
@@ -7,17 +13,30 @@ import './Header.css';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../common/Button/Button';
 
+/**
+ * Main application header component.
+ * Provides navigation, user greeting, and authentication controls.
+ * @component
+ * @returns {JSX.Element} Header with navigation and user actions
+ */
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate(); 
   const { isAuthenticated, user, logout } = useAuth();
   const isActive = (path) => location.pathname.startsWith(path);
 
+  /**
+   * Handles user logout and redirects to home page.
+   */
   const handleLogout = () => {
-    logout();     
+    logout();
     navigate('/');
   };
 
+  /**
+   * Navigation menu items configuration.
+   * @type {Array<{path: string, label: string, icon: React.ComponentType}>}
+   */
   const navItems = [
   { path: '/dashboard', label: 'Inicio', icon: HomeIcon }, 
   { path: '/home', label: 'Canales', icon: TrendingUpIcon },

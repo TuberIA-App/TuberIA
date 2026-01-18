@@ -1,7 +1,19 @@
+/**
+ * @fileoverview Application footer component with navigation links.
+ * Displays product, company, and legal navigation sections.
+ * @module components/Layout/Footer
+ */
+
 import React from 'react';
 import Logo from '../common/Logo/Logo';
 import './Footer.css';
 
+/**
+ * Application footer component.
+ * Displays brand, navigation links, and copyright information.
+ * @component
+ * @returns {JSX.Element} Footer with navigation sections
+ */
 const Footer = () => {
   const productLinks = [
     { href: "#", text: "Características" },

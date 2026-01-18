@@ -1,14 +1,28 @@
+/**
+ * @fileoverview Optional authentication middleware for routes with mixed access.
+ * Provides user context when available without requiring authentication.
+ * @module middlewares/optionalAuth
+ */
+
 import jwt from 'jsonwebtoken';
 import User from '../model/User.js';
 import { secrets } from '../config/secrets.js';
 
 /**
- * Optional Authentication Middleware
- * If token is provided and valid, attaches user to req.user
- * If token is invalid or missing, continues without error
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
+ * Optional authentication middleware.
+ * If a valid token is provided, attaches user to req.user.
+ * If token is invalid or missing, continues without error (req.user will be undefined).
+ * Useful for routes that have different behavior for authenticated vs anonymous users.
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @param {import('express').NextFunction} next - Express next middleware function
+ * @returns {Promise<void>}
+ * @example
+ * // Usage in routes - get channel with optional isFollowing status
+ * router.get('/channel/:id', optionalAuthMiddleware, getChannelById);
+ *
+ * // In controller
+ * const userId = req.user?.id; // undefined if not authenticated
  */
 export const optionalAuthMiddleware = async (req, res, next) => {
     try {
