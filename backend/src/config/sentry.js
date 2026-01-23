@@ -74,29 +74,50 @@ export const initSentry = (app) => {
             'ETIMEDOUT',
         ],
     });
-
-    // Add Sentry request handler as first middleware
-    app.use(Sentry.Handlers.requestHandler());
 };
 
 /**
- * Sentry error handler middleware.
+ * Get Sentry error handler middleware.
+ * Returns a no-op middleware if Sentry is not configured.
  * Must be added after all routes but before other error handlers.
- * Automatically captures unhandled errors and attaches request context.
+ * @returns {import('express').ErrorRequestHandler} Error handler middleware
  */
-export const sentryErrorHandler = Sentry.Handlers.errorHandler({
-    shouldHandleError(error) {
-        // Capture all 5xx errors and unexpected 4xx errors
-        if (error.statusCode >= 500) {
-            return true;
+export const getSentryErrorHandler = () => {
+    if (!process.env.SENTRY_DSN) {
+        // No-op middleware when Sentry is not configured
+        return (err, req, res, next) => next(err);
+    }
+
+    // Use Sentry v8+ error handler with custom filtering
+    return (err, req, res, next) => {
+        // Only capture 5xx errors and unexpected 4xx errors
+        const shouldCapture =
+            (err.statusCode >= 500) ||
+            (err.statusCode >= 400 && ![400, 401, 403, 404].includes(err.statusCode));
+
+        if (shouldCapture) {
+            Sentry.captureException(err, {
+                extra: {
+                    url: req.url,
+                    method: req.method,
+                    statusCode: err.statusCode,
+                },
+            });
         }
-        // Also capture 4xx errors that aren't validation (400) or auth (401, 403)
-        if (error.statusCode >= 400 && ![400, 401, 403, 404].includes(error.statusCode)) {
-            return true;
-        }
-        return false;
-    },
-});
+        next(err);
+    };
+};
+
+/**
+ * Setup Sentry Express error handler on the app.
+ * Call this after all routes are defined.
+ * @param {import('express').Express} app - Express application instance
+ */
+export const setupSentryErrorHandler = (app) => {
+    if (process.env.SENTRY_DSN) {
+        Sentry.setupExpressErrorHandler(app);
+    }
+};
 
 export { Sentry };
 export default Sentry;

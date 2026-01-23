@@ -16,7 +16,7 @@ import { notFound } from './middlewares/notFound.middleware.js';
 import { timeoutMiddleware } from './middlewares/timeout.middleware.js';
 import logger from './utils/logger.js';
 import { RATE_LIMIT } from './config/constants.js';
-import { initSentry, sentryErrorHandler } from './config/sentry.js';
+import { initSentry, getSentryErrorHandler } from './config/sentry.js';
 
 /**
  * Express application instance.
@@ -137,7 +137,7 @@ app.use(notFound);
  * Sentry error handler.
  * Captures errors and sends them to Sentry. Must be before custom error handler.
  */
-app.use(sentryErrorHandler);
+app.use(getSentryErrorHandler());
 
 /**
  * Global error handler.
