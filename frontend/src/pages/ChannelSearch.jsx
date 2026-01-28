@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import * as Sentry from '@sentry/react';
 import SearchBar from '../components/SearchBar/SearchBar';
 import ChannelItem from '../components/ChannelItem/ChannelItem';
 import { UsersIcon, StarIcon, AlertCircle, Loader2 } from 'lucide-react';
@@ -54,7 +55,7 @@ const ChannelSearch = () => {
       const data = await channelService.getFollowedChannels();
       setFollowedChannels(data.channels);
     } catch (error) {
-      console.error('Error loading followed channels:', error);
+      Sentry.captureException(error, { extra: { context: 'loadFollowedChannels' } });
       setFollowedError(error.message);
     } finally {
       setFollowedLoading(false);
@@ -86,7 +87,7 @@ const ChannelSearch = () => {
         setSearchResult(searchData);
       }
     } catch (error) {
-      console.error('Error searching channel:', error);
+      Sentry.captureException(error, { extra: { context: 'searchChannel', query } });
       setSearchError(error.message);
       setSearchResult(null);
     } finally {
@@ -141,7 +142,7 @@ const ChannelSearch = () => {
       // Clear any previous errors
       setSearchError(null);
     } catch (error) {
-      console.error('Error toggling follow:', error);
+      Sentry.captureException(error, { extra: { context: 'toggleFollow', mongoId } });
       setSearchError(error.message);
       
       // Revert optimistic update on error

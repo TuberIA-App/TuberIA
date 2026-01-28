@@ -48,19 +48,19 @@ const videoSchema = new mongoose.Schema({
 
     videoId: {
         type: String,
-        required: [true, 'YouTube Video ID es obligatorio'],
+        required: [true, 'YouTube Video ID is required'],
         trim: true
     },
 
     title: {
         type: String,
-        required: [true, 'El titulo del video es obligatorio'],
+        required: [true, 'Video title is required'],
         trim: true
     },
 
     url: {
         type: String,
-        required: [true, 'La URL del video es obligatoria']
+        required: [true, 'Video URL is required']
     },
 
     thumbnail: {

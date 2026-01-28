@@ -16,6 +16,7 @@
 import 'dotenv/config';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import logger from '../utils/logger.js';
 
 /**
  * Get secret value from Docker secret file or environment variable
@@ -34,7 +35,7 @@ function getSecret(envVarName, secretFileName) {
         return secretValue;
       }
     } catch (error) {
-      console.error(`[SECRETS] Error reading Docker secret ${secretFileName}:`, error.message);
+      logger.error(`Error reading Docker secret ${secretFileName}`, { module: 'secrets', error: error.message });
       // Fall through to environment variable
     }
   }
@@ -92,7 +93,7 @@ try {
 
   // Log successful secrets loading (without exposing values)
   const source = existsSync('/run/secrets/jwt_secret') ? 'Docker secrets' : 'environment variables';
-  console.log(`[SECRETS] Loaded secrets from ${source}`);
+  logger.info(`Loaded secrets from ${source}`, { module: 'secrets' });
 
   // Set secrets in process.env for compatibility with environment validation
   process.env.JWT_SECRET = jwtSecret;
@@ -102,7 +103,7 @@ try {
   }
 
 } catch (error) {
-  console.error('[SECRETS] Failed to load secrets:', error.message);
+  logger.error('Failed to load secrets', { module: 'secrets', error: error.message });
   throw error;
 }
 

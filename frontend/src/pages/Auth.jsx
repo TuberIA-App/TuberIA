@@ -46,7 +46,7 @@ const handleSubmit = async (e) => {
 
     try {
       if (isLogin) {
-        // Validación sencilla en frontend
+        // Simple frontend validation
         if (!formData.email || !formData.password) {
           setError('Introduce correo y contraseña');
           return;
@@ -63,7 +63,6 @@ const handleSubmit = async (e) => {
             formData.password
           );
         } catch (apiError) {
-          console.log('ERROR authService.login >>>', apiError);
           setError(apiError.message || 'Correo o contraseña incorrectos');
           return;
         }
@@ -81,7 +80,6 @@ const handleSubmit = async (e) => {
             password: formData.password,
           });
         } catch (apiError) {
-          console.log('ERROR authService.register >>>', apiError);
           setError(apiError.message || 'Error en el registro');
           return;
         }
@@ -90,7 +88,6 @@ const handleSubmit = async (e) => {
         navigate('/dashboard');
       }
     } catch (err) {
-      console.log('ERROR LOGIN/REGISTER OUTER >>>', err);
       setError('Error inesperado en la autenticación');
     } finally {
       setLoading(false);

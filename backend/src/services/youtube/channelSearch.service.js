@@ -25,17 +25,17 @@ const parseInput = (input) => {
 
     const trimmedInput = input.trim();
 
-    // Si comienza con http:// o https://, es una URL
+    // If starts with http:// or https://, it's a URL
     if (trimmedInput.startsWith('http://') || trimmedInput.startsWith('https://')) {
         return { type: 'url', value: trimmedInput };
     }
 
-    // Si comienza con @, es un username
+    // If starts with @, it's a username
     if (trimmedInput.startsWith('@')) {
         return { type: 'username', value: trimmedInput };
     }
 
-    // Si no tiene @, lo agregamos (asumimos que es un username sin @)
+    // If no @, add it (assuming it's a username without @)
     return { type: 'username', value: `@${trimmedInput}` };
 };
 
@@ -72,11 +72,11 @@ export const searchChannel = async (query) => {
     try {
         logger.info(`Starting channel search with query: ${query}`);
 
-        // 1. Parsear el input para determinar si es URL o username
+        // 1. Parse input to determine if URL or username
         const { type, value } = parseInput(query);
         logger.info(`Input type detected: ${type}, value: ${value}`);
 
-        // 2. Construir la URL del canal si es necesario
+        // 2. Build channel URL if needed
         let channelUrl;
         if (type === 'url') {
             channelUrl = value;
@@ -85,22 +85,22 @@ export const searchChannel = async (query) => {
         }
         logger.info(`Channel URL: ${channelUrl}`);
 
-        // 3. Extraer el Channel ID usando el servicio existente
+        // 3. Extract Channel ID using existing service
         logger.info(`Extracting Channel ID from URL...`);
         const youtubeChannelId = await extractChannelId(channelUrl);
         logger.info(`Channel ID extracted: ${youtubeChannelId}`);
 
-        // 4. Obtener información del canal mediante el RSS feed
+        // 4. Get channel info via RSS feed
         logger.info(`Fetching channel feed for Channel ID: ${youtubeChannelId}`);
         const feedData = await channelFeedExtractor(youtubeChannelId);
         logger.info(`Channel feed fetched successfully`);
 
-        // 5. Extraer información relevante del feed
+        // 5. Extract relevant info from feed
         const channelName = feedData.feed?.title || feedData.title || 'Unknown Channel';
         const channelAuthor = feedData.feed?.author?.name || feedData.author?.name || '';
         const channelUri = feedData.feed?.author?.uri || feedData.author?.uri || channelUrl;
 
-        // 6. Extraer username del URI si está disponible
+        // 6. Extract username from URI if available
         let username = null;
         if (channelUri && channelUri.includes('/@')) {
             const match = channelUri.match(/@([^\/]+)/);
@@ -111,28 +111,28 @@ export const searchChannel = async (query) => {
             username = value;
         }
 
-        // 7. Intentar obtener thumbnail (del primer video del feed)
+        // 7. Try to get thumbnail (from first video in feed)
         let thumbnail = null;
         const entries = feedData.feed?.entry || feedData.entry || [];
         if (entries.length > 0 && entries[0]['media:group']) {
             thumbnail = entries[0]['media:group']['media:thumbnail']?.['@_url'] || null;
         }
 
-        // 8. Estructurar la respuesta
+        // 8. Structure the response
         const channelInfo = {
             channelId: youtubeChannelId,
             name: channelName,
             username: username,
             thumbnail: thumbnail,
-            description: null // El RSS feed no incluye descripción del canal
+            description: null // RSS feed doesn't include channel description
         };
 
-        // 9. Guardar/actualizar el canal en la base de datos
+        // 9. Save/update channel in database
         logger.info(`Saving channel to database: ${channelName}`);
         const savedChannel = await findOrCreateChannel(channelInfo);
         logger.info(`Channel saved to database with _id: ${savedChannel._id}`);
 
-        // 10. Retornar información enriquecida con datos de la BD
+        // 10. Return enriched info with DB data
         const enrichedChannelInfo = {
             _id: savedChannel._id.toString(),
             channelId: savedChannel.channelId,
@@ -147,7 +147,7 @@ export const searchChannel = async (query) => {
         return enrichedChannelInfo;
 
     } catch (error) {
-        // Si el error ya es operacional (de channelIdExtractor o channelFeedExtractor), lo re-lanzamos
+        // If error is already operational (from channelIdExtractor or channelFeedExtractor), re-throw it
         if (error.isOperational) {
             logger.error(`Channel search failed (operational error): ${error.message}`);
             throw error;
