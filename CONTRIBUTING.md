@@ -83,4 +83,6 @@ Feel free to open an issue for questions or reach out to the maintainers.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By contributing, you agree that your contributions will be licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+
+**Note:** This license allows personal, educational, and noncommercial use only. Commercial use is not permitted.

@@ -2,7 +2,7 @@
 
 ![Status](https://img.shields.io/badge/status-production-green)
 ![Stack](https://img.shields.io/badge/stack-MERN-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-PolyForm%20NC-red)
 ![Node](https://img.shields.io/badge/node-20.x-brightgreen)
 ![React](https://img.shields.io/badge/react-18.x-61DAFB)
 ![Docker](https://img.shields.io/badge/docker-ready-2496ED)
