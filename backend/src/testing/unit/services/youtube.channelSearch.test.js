@@ -110,8 +110,8 @@ describe('YouTube Channel Search Service - Integration Tests', () => {
             const url = 'https://youtube.com/@vegetta777';
             const result = await searchChannel(url);
 
-            // El thumbnail puede ser null si el canal no tiene videos
-            // pero si tiene videos, debe ser una URL válida
+            // Thumbnail may be null if the channel has no videos
+            // but if it has videos, it should be a valid URL
             if (result.thumbnail) {
                 expect(typeof result.thumbnail).toBe('string');
                 expect(result.thumbnail).toMatch(/^https?:\/\//);

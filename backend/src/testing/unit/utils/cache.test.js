@@ -4,12 +4,12 @@ import { redisClient } from '../../../config/redis.js';
 
 describe('Cache Utility', () => {
     beforeEach(async () => {
-        // Limpiar Redis antes de cada test
+        // Clear Redis before each test
         await redisClient.flushdb();
     });
 
     afterEach(async () => {
-        // Limpiar Redis después de cada test
+        // Clear Redis after each test
         await redisClient.flushdb();
     });
 
@@ -36,13 +36,13 @@ describe('Cache Utility', () => {
                 return { data: 'test-value' };
             };
 
-            // Primera llamada (cache miss)
+            // First call (cache miss)
             await getOrSet('test-key-2', 60, fetchData);
 
-            // Segunda llamada (cache hit)
+            // Second call (cache hit)
             const result = await getOrSet('test-key-2', 60, fetchData);
 
-            expect(callCount).toBe(1); // La función solo se ejecutó una vez
+            expect(callCount).toBe(1); // Function only executed once
             expect(result.data).toBe('test-value');
         });
 
@@ -64,10 +64,10 @@ describe('Cache Utility', () => {
         });
 
         it('should fallback to function execution on error', async () => {
-            // Simular error de Redis cerrando la conexión temporalmente
+            // Simulate Redis error by temporarily closing the connection
             const fetchData = async () => ({ data: 'fallback-value' });
 
-            // Incluso si Redis falla, la función debe ejecutarse
+            // Even if Redis fails, the function should execute
             const result = await getOrSet('test-key-4', 60, fetchData);
 
             expect(result.data).toBe('fallback-value');
@@ -76,12 +76,12 @@ describe('Cache Utility', () => {
 
     describe('invalidate', () => {
         it('should delete keys matching pattern', async () => {
-            // Crear varias claves con el patrón
+            // Create several keys with the pattern
             await redisClient.set('videos:user:123:all:1:20', 'value1');
             await redisClient.set('videos:user:123:completed:1:20', 'value2');
             await redisClient.set('other:key', 'value3');
 
-            // Invalidar el patrón
+            // Invalidate the pattern
             await invalidate('videos:user:123:*');
 
             // Verificar que se eliminaron las claves correctas

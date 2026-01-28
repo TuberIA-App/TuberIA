@@ -33,10 +33,10 @@ const Modal = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    // Guardar el elemento activo antes de abrir el modal
+    // Save the active element before opening the modal
     previousActiveElement.current = document.activeElement;
 
-    // Función para manejar el focus trap
+    // Function to handle focus trap
     const handleTabKey = (event) => {
       if (event.key !== 'Tab') return;
 
@@ -49,12 +49,12 @@ const Modal = ({
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
 
-      // Si Shift + Tab en el primer elemento, ir al último
+      // If Shift + Tab on first element, go to last
       if (event.shiftKey && document.activeElement === firstElement) {
         event.preventDefault();
         lastElement.focus();
       }
-      // Si Tab en el último elemento, ir al primero
+      // If Tab on last element, go to first
       else if (!event.shiftKey && document.activeElement === lastElement) {
         event.preventDefault();
         firstElement.focus();
@@ -70,11 +70,11 @@ const Modal = ({
       }
     };
 
-    // Configurar el modal
+    // Configure the modal
     document.addEventListener('keydown', handleKeyDown);
     document.body.style.overflow = 'hidden';
 
-    // Enfocar el modal después de un pequeño delay para asegurar que el DOM esté listo
+    // Focus the modal after a small delay to ensure the DOM is ready
     setTimeout(() => {
       modalRef.current?.focus();
     }, 10);
@@ -83,7 +83,7 @@ const Modal = ({
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
 
-      // Restaurar el focus al elemento anterior
+      // Restore focus to previous element
       if (previousActiveElement.current && previousActiveElement.current.focus) {
         previousActiveElement.current.focus();
       }

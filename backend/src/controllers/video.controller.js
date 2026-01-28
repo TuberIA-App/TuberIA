@@ -28,15 +28,15 @@ export const getMyVideos = asyncHandler(async (req, res) => {
     const userId = req.user.id; // From authMiddleware (toJSON virtual)
     const { page = 1, limit = 20, status } = req.query;
 
-    // Construir cache key con todos los parámetros relevantes
+    // Build cache key with all relevant parameters
     const cacheKey = `videos:feed:${userId}:${status || 'all'}:${page}:${limit}`;
 
-    // Usar getOrSet con TTL de 60 segundos
+    // Use getOrSet with 60 seconds TTL
     const result = await getOrSet(
         cacheKey,
-        60, // 60 segundos TTL
+        60, // 60 seconds TTL
         async () => {
-            // Ejecutar la query original
+            // Execute the original query
             return await videoService.getUserVideoFeed(userId, {
                 page,
                 limit,

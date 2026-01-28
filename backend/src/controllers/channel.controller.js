@@ -25,10 +25,10 @@ import { NotFoundError, ConflictError } from '../utils/errorClasses.util.js';
 export const searchChannel = asyncHandler(async (req, res) => {
     const { q } = req.query;
 
-    // Llamar al service de búsqueda
+    // Call the search service
     const channelInfo = await channelSearchService.searchChannel(q);
 
-    // Retornar respuesta exitosa
+    // Return success response
     successResponse(res, channelInfo, 'Channel found successfully', 200);
 });
 

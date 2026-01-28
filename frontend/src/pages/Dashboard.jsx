@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import * as Sentry from '@sentry/react';
 import { Link } from 'react-router-dom';
 import { TrendingUpIcon, Loader2Icon, AlertCircleIcon, SearchIcon, Trash2Icon } from 'lucide-react';
 import { useUserData } from '../context/UserDataContext';
@@ -44,7 +45,7 @@ const Dashboard = () => {
       setLoading(true);
       setError(null);
 
-      // Obtener canales y videos en paralelo
+      // Fetch channels and videos in parallel
       const [channelsData, videosData] = await Promise.all([
         userService.getMyChannels(),
         videoService.getMyVideos({ limit: 100, status: 'completed' })
@@ -53,19 +54,19 @@ const Dashboard = () => {
       const channels = channelsData.channels || [];
       const allVideos = videosData.videos || [];
 
-      // Agrupar videos por canal
+      // Group videos by channel
       const channelsWithVideosData = channels.map(channel => {
         const channelVideos = allVideos.filter(video => video.channelId === channel.id);
 
         return {
           ...channel,
-          videos: channelVideos.slice(0, 4) // Mostrar max 4 videos por canal
+          videos: channelVideos.slice(0, 4) // Show max 4 videos per channel
         };
       });
 
       setChannelsWithVideos(channelsWithVideosData);
     } catch (err) {
-      console.error('Error loading channels and videos:', err);
+      Sentry.captureException(err, { extra: { context: 'fetchChannelsAndVideos' } });
       setError(err.message || 'Error al cargar tus canales');
     } finally {
       setLoading(false);
@@ -97,8 +98,8 @@ const Dashboard = () => {
       // Update global counter
       decrementChannelsCount();
     } catch (err) {
-      console.error('Error unfollowing channel:', err);
-      
+      Sentry.captureException(err, { extra: { context: 'unfollowChannel', channelId: channelToUnfollow?.id } });
+
       // Revert on error
       await fetchChannelsAndVideos();
       

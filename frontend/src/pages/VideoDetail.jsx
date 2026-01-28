@@ -78,7 +78,7 @@ const VideoDetail = () => {
     );
   }
 
-  // TODO: El objeto video no trae el channelName. Se necesitará obtenerlo.
+  // TODO: Video object doesn't include channelName. Need to fetch it.
   const channelName = 'Canal Desconocido'; 
   const formattedDate = video.publishedAt ? format(parseISO(video.publishedAt), 'd MMM, yyyy') : 'Fecha desconocida';
   const durationInMinutes = video.durationSeconds ? Math.round(video.durationSeconds / 60) : 0;

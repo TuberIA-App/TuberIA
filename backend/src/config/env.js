@@ -43,9 +43,9 @@ export const validateEnv = () => {
         }
     }
 
-    // Checking if there is any missing env, and if so then throw an error and lgo it.
+    // Checking if there is any missing env, and if so then throw an error and log it.
     if (missing.length > 0) {
-        const errorMsg = `Missing required enviroment variables: ${missing.join(', ')}`;
+        const errorMsg = `Missing required environment variables: ${missing.join(', ')}`;
         logger.error(errorMsg);
         throw new Error(errorMsg);
     }
@@ -59,6 +59,6 @@ export const validateEnv = () => {
         throw new Error('JWT_REFRESH_SECRET must be at least 32 characters long');
     }
 
-    logger.info('Enviroment variables validated successfully :)');
+    logger.info('Environment variables validated successfully');
 
 }

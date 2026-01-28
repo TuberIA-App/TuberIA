@@ -6,13 +6,13 @@ import { config } from 'dotenv';
 config();
 
 /**
- * Script de migración: Corregir isActive en canales existentes
+ * Migration script: Fix isActive on existing channels
  *
- * Actualiza todos los canales para que:
- * - isActive: true si followersCount > 0
- * - isActive: false si followersCount === 0
+ * Updates all channels so that:
+ * - isActive: true if followersCount > 0
+ * - isActive: false if followersCount === 0
  *
- * Uso:
+ * Usage:
  *   node src/scripts/fixChannelIsActive.js
  */
 async function fixChannelIsActive() {
@@ -26,18 +26,18 @@ async function fixChannelIsActive() {
     await mongoose.connect(mongoUri);
     logger.info('Connected to MongoDB', { uri: mongoUri.replace(/\/\/.*@/, '//***@') });
 
-    // Encontrar canales con estado inconsistente
+    // Find channels with inconsistent state
     const inconsistentChannels = await Channel.find({
       $or: [
-        { followersCount: 0, isActive: true },   // Caso 1: Sin followers pero activo
-        { followersCount: { $gt: 0 }, isActive: false }  // Caso 2: Con followers pero inactivo
+        { followersCount: 0, isActive: true },   // Case 1: No followers but active
+        { followersCount: { $gt: 0 }, isActive: false }  // Case 2: Has followers but inactive
       ]
     });
 
     logger.info(`Found ${inconsistentChannels.length} channels with inconsistent state`);
 
     if (inconsistentChannels.length > 0) {
-      // Mostrar canales que serán actualizados
+      // Display channels that will be updated
       inconsistentChannels.forEach(channel => {
         logger.info('Inconsistent channel:', {
           channelId: channel.channelId,
@@ -49,7 +49,7 @@ async function fixChannelIsActive() {
       });
     }
 
-    // Actualizar en lote
+    // Bulk update
     const bulkOps = inconsistentChannels.map(channel => ({
       updateOne: {
         filter: { _id: channel._id },
@@ -69,7 +69,7 @@ async function fixChannelIsActive() {
       });
     }
 
-    // Verificar resultado
+    // Verify result
     const stillInconsistent = await Channel.countDocuments({
       $or: [
         { followersCount: 0, isActive: true },
@@ -83,7 +83,7 @@ async function fixChannelIsActive() {
       logger.warn(`⚠️ ${stillInconsistent} channels still inconsistent`);
     }
 
-    // Mostrar resumen final
+    // Display final summary
     const stats = await Channel.aggregate([
       {
         $group: {

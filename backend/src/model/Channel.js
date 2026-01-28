@@ -35,13 +35,13 @@ const channelSchema = new mongoose.Schema({
 
     channelId: {
         type: String,
-        required: [true, 'El YouTube Channel ID es obligatorio'],
+        required: [true, 'YouTube Channel ID is required'],
         trim: true
     },
 
     name: {
         type: String,
-        required: [true, 'El nombre del canal es obligatorio'],
+        required: [true, 'Channel name is required'],
         trim: true
     },
 
