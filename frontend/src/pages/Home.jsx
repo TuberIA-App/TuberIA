@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import * as Sentry from '@sentry/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRightIcon, SparklesIcon, ClockIcon, TrendingUpIcon, ZapIcon, CheckCircleIcon, UsersIcon, PlayCircleIcon, BookOpenIcon, XIcon, SearchIcon } from 'lucide-react';
 import Button from '../components/common/Button/Button';
@@ -82,7 +83,7 @@ const Home = () => {
       setDemoChannel(channelData);
     } catch (err) {
       setDemoError(err.message || 'No se puede conectar con el servidor. Inténtalo más tarde.');
-      console.error(err);
+      Sentry.captureException(err, { extra: { context: 'demoChannelSearch', query: demoUrl } });
     } finally {
       setDemoLoading(false);
     }
@@ -293,17 +294,6 @@ const Home = () => {
           </Link>
         </header>
         <ul className="featured-videos__grid" aria-labelledby="featured-videos-title">
-          {/*{featuredVideos.map(video => (
-            <li key={video.id}>
-              <VideoCard
-                id={video.id}
-                title={video.title}
-                channelName={video.channelName}
-                thumbnail={video.thumbnail}
-                duration={video.duration}
-              />
-            </li>
-          ))}*/}
         </ul>
       </section>
 

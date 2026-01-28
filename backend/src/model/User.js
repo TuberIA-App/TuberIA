@@ -31,7 +31,7 @@ import { generateAccessToken, generateRefreshToken } from '../utils/jwt.util.js'
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
-        required: [true, 'El nombre de usuario es obligatorio'],
+        required: [true, 'Username is required'],
         unique: true,
         trim: true,
         minlength: 1
@@ -44,16 +44,16 @@ const userSchema = new mongoose.Schema({
 
     email:{
         type: String,
-        required: [true, 'El email es obligatorio'],
+        required: [true, 'Email is required'],
         unique: true,
         trim: true,
         lowercase: true,
-        match: [/.+@.+\..+/, 'El email no es válido']
+        match: [/.+@.+\..+/, 'Invalid email format']
     },
 
     password: {
         type: String,
-        required: [true, 'La contraseña es obligatoria'],
+        required: [true, 'Password is required'],
         minlength: 8,
         select: false
     },

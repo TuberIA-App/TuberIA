@@ -20,3 +20,6 @@ mongo-backups/*
 
 # Traefik Let's Encrypt data
 letsencrypt/
+
+# Academic documentation (internal project docs)
+.academic-docs/

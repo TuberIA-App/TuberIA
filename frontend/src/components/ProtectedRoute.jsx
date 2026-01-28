@@ -34,7 +34,7 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!isAuthenticated) {
-    // Guardar la ruta intentada para redirigir después del login
+    // Save the attempted route to redirect after login
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

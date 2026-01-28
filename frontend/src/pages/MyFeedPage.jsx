@@ -39,21 +39,21 @@ const MyFeedPage = () => {
     pageSize: 10
   });
 
-  // Ref para el elemento observador (infinite scroll)
+  // Ref for observer element (infinite scroll)
   const observerRef = useRef(null);
   const loadMoreTriggerRef = useRef(null);
 
-  // Configurar IntersectionObserver para infinite scroll
+  // Configure IntersectionObserver for infinite scroll
   useEffect(() => {
-    // Limpiar observer anterior
+    // Clean up previous observer
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
 
-    // Crear nuevo observer
+    // Create new observer
     const options = {
       root: null,
-      rootMargin: '100px', // Comenzar a cargar 100px antes de llegar al final
+      rootMargin: '100px', // Start loading 100px before reaching end
       threshold: 0.1
     };
 
@@ -64,7 +64,7 @@ const MyFeedPage = () => {
       }
     }, options);
 
-    // Observar el elemento trigger
+    // Observe trigger element
     const currentTrigger = loadMoreTriggerRef.current;
     if (currentTrigger) {
       observerRef.current.observe(currentTrigger);
@@ -78,13 +78,13 @@ const MyFeedPage = () => {
     };
   }, [hasMore, loadingMore, loading, loadMore]);
 
-  // Manejar cambio de filtro
+  // Handle filter change
   const handleFilterChange = useCallback((newStatus) => {
     setStatusFilter(newStatus);
     setShowFilterMenu(false);
   }, []);
 
-  // Cerrar menú de filtros al hacer click fuera
+  // Close filter menu on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (showFilterMenu && !event.target.closest('.filter-dropdown')) {
@@ -96,7 +96,7 @@ const MyFeedPage = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showFilterMenu]);
 
-  // Estado de carga inicial
+  // Initial loading state
   if (loading && videos.length === 0) {
     return (
       <main className="my-feed-page">
@@ -116,7 +116,7 @@ const MyFeedPage = () => {
     );
   }
 
-  // Estado de error
+  // Error state
   if (error && videos.length === 0) {
     return (
       <main className="my-feed-page">
@@ -135,7 +135,7 @@ const MyFeedPage = () => {
     );
   }
 
-  // Empty state - no sigue ningún canal
+  // Empty state - not following any channel
   if (!loading && videos.length === 0 && statusFilter === 'all') {
     return (
       <main className="my-feed-page">
@@ -152,7 +152,7 @@ const MyFeedPage = () => {
     );
   }
 
-  // Empty state - no hay videos con el filtro actual
+  // Empty state - no videos with current filter
   if (!loading && videos.length === 0) {
     return (
       <main className="my-feed-page">
@@ -162,12 +162,12 @@ const MyFeedPage = () => {
             <h1 className="my-feed-page__title">Mi Feed</h1>
           </div>
 
-          {/* Filtro de estado */}
+          {/* Status filter */}
           <div className="filter-dropdown">
-            <button 
+            <button
               className="filter-dropdown__button"
               onClick={() => setShowFilterMenu(!showFilterMenu)}
-              aria-label="Filtrar por estado"
+              aria-label="Filter by status"
             >
               <FilterIcon size={18} aria-hidden="true" />
               {STATUS_OPTIONS.find(opt => opt.value === statusFilter)?.label}
@@ -204,7 +204,7 @@ const MyFeedPage = () => {
     );
   }
 
-  // Vista normal con videos
+  // Normal view with videos
   return (
     <main className="my-feed-page">
       <header className="my-feed-page__header">
@@ -216,12 +216,12 @@ const MyFeedPage = () => {
           </div>
         </div>
 
-        {/* Filtro de estado */}
+        {/* Status filter */}
         <div className="filter-dropdown">
-          <button 
+          <button
             className="filter-dropdown__button"
             onClick={() => setShowFilterMenu(!showFilterMenu)}
-            aria-label="Filtrar por estado"
+            aria-label="Filter by status"
           >
             <FilterIcon size={18} aria-hidden="true" />
             {STATUS_OPTIONS.find(opt => opt.value === statusFilter)?.label}
@@ -245,7 +245,7 @@ const MyFeedPage = () => {
         </div>
       </header>
 
-      {/* Grid de videos */}
+      {/* Videos grid */}
       <div className="my-feed-page__grid">
         {videos.map(video => (
           <VideoCard
@@ -258,7 +258,7 @@ const MyFeedPage = () => {
           />
         ))}
 
-        {/* Skeletons mientras carga más */}
+        {/* Skeletons while loading more */}
         {loadingMore && (
           <>
             {Array.from({ length: 3 }).map((_, index) => (
@@ -268,7 +268,7 @@ const MyFeedPage = () => {
         )}
       </div>
 
-      {/* Elemento para activar infinite scroll */}
+      {/* Element to trigger infinite scroll */}
       {hasMore && !loadingMore && (
         <div 
           ref={loadMoreTriggerRef} 
@@ -277,14 +277,14 @@ const MyFeedPage = () => {
         />
       )}
 
-      {/* Mensaje de fin de contenido */}
+      {/* End of content message */}
       {!hasMore && videos.length > 0 && (
         <div className="my-feed-page__end-message">
           <p>Has visto todos los videos disponibles</p>
         </div>
       )}
 
-      {/* Error al cargar más */}
+      {/* Error loading more */}
       {error && videos.length > 0 && (
         <div className="my-feed-page__error-inline">
           <AlertCircleIcon size={20} aria-hidden="true" />

@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import * as Sentry from '@sentry/react';
 import { Link } from 'react-router-dom';
 import VideoCard from '../components/common/VideoCard/VideoCard';
 import { SparklesIcon, TrendingUpIcon, ClockIcon, BookmarkIcon, Loader2Icon, AlertCircleIcon, SearchIcon } from 'lucide-react';
@@ -51,7 +52,7 @@ const UserHome = () => {
         setLoading(true);
         setError(null);
 
-        // Obtener stats, videos y canales en paralelo
+        // Fetch stats, videos, and channels in parallel
         const [statsData, videosData, channelsData] = await Promise.all([
           userService.getStats(),
           videoService.getMyVideos({ limit: 6, status: 'completed' }),
@@ -62,7 +63,7 @@ const UserHome = () => {
         setRecentVideos(videosData.videos || []);
         setChannels(channelsData.channels || []);
       } catch (err) {
-        console.error('Error loading user home data:', err);
+        Sentry.captureException(err, { extra: { context: 'loadUserHomeData' } });
         setError(err.message || 'Error al cargar los datos');
       } finally {
         setLoading(false);
@@ -116,7 +117,7 @@ const UserHome = () => {
         </p>
       </header>
 
-      {/* Empty state completo - usuario sin canales */}
+      {/* Complete empty state - user with no channels */}
       {stats.summariesRead === 0 && stats.followedChannels === 0 && !loading ? (
         <div className="user-home__empty-state">
           <SearchIcon size={64} className="user-home__empty-icon" aria-hidden="true" />

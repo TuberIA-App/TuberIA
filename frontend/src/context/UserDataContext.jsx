@@ -5,6 +5,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import * as Sentry from '@sentry/react';
 import { useAuth } from './AuthContext';
 import userService from '../services/user.service';
 
@@ -91,7 +92,7 @@ export const UserDataProvider = ({ children }) => {
       setStats(data);
       setChannelsCount(data.followedChannels);
     } catch (error) {
-      console.error('Error loading user stats:', error);
+      Sentry.captureException(error, { extra: { context: 'loadUserStats' } });
     } finally {
       setLoading(false);
     }

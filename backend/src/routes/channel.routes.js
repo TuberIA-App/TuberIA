@@ -71,9 +71,9 @@ router.delete(
 
 /**
  * @route   GET /api/channels/search
- * @desc    Buscar canal de YouTube por username o URL
- * @access  Public (decisión de diseño - permite exploración sin registro)
- * @query   q - Username (@vegetta777) o URL completa del canal
+ * @desc    Search YouTube channel by username or URL
+ * @access  Public (design decision - allows exploration without registration)
+ * @query   q - Username (@vegetta777) or full channel URL
  */
 router.get('/search', searchChannelValidator, validate, searchChannel);
 

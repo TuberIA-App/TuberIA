@@ -49,11 +49,11 @@ const register = async ({ username, name, email, password }) => {
       password
     });
 
-    // Verificar respuesta exitosa
+    // Verify successful response
     if (response.data.success && response.data.data) {
       const { accessToken, refreshToken, user } = response.data.data;
-      
-      // Guardar tokens y usuario
+
+      // Store tokens and user
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
@@ -61,16 +61,16 @@ const register = async ({ username, name, email, password }) => {
       return response.data;
     }
     
-    throw new Error(response.data.message || 'Error en el registro');
+    throw new Error(response.data.message || 'Registration failed');
   } catch (error) {
-    // Manejar errores de validación
+    // Handle validation errors
     if (error.response?.data?.errors) {
       const errorMessages = error.response.data.errors
         .map(err => err.message)
         .join(', ');
       throw new Error(errorMessages);
     }
-    throw new Error(error.response?.data?.message || 'Error en el registro');
+    throw new Error(error.response?.data?.message || 'Registration failed');
   }
 };
 
@@ -93,18 +93,18 @@ const login = async (email, password) => {
 
     if (response.data.success && response.data.data) {
       const { accessToken, refreshToken, user } = response.data.data;
-      
-      // Guardar tokens y usuario
+
+      // Store tokens and user
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
-      
+
       return response.data;
     }
-    
-    throw new Error(response.data.message || 'Error en el inicio de sesión');
+
+    throw new Error(response.data.message || 'Login failed');
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Credenciales inválidas');
+    throw new Error(error.response?.data?.message || 'Invalid credentials');
   }
 };
 
@@ -135,7 +135,7 @@ const refreshToken = async () => {
     
     throw new Error('Token refresh failed');
   } catch (error) {
-    // Si falla el refresh, cerrar sesión
+    // If refresh fails, log out
     logout();
     throw error;
   }

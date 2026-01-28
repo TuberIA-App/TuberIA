@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import * as Sentry from '@sentry/react';
 import videoService from '../services/video.service';
 
 /**
@@ -93,7 +94,7 @@ export const useMyFeed = ({ status = 'completed', pageSize = 10 } = {}) => {
    * @private
    */
   const loadVideos = useCallback(async (page) => {
-    // Prevenir carga duplicada
+    // Prevent duplicate loading
     if (loadingRef.current || loadedPagesRef.current.has(page)) {
       return;
     }
@@ -115,35 +116,35 @@ export const useMyFeed = ({ status = 'completed', pageSize = 10 } = {}) => {
         status: status === 'all' ? undefined : status
       });
 
-      // Marcar página como cargada
+      // Mark page as loaded
       loadedPagesRef.current.add(page);
 
       const newVideos = data.videos || [];
       
       setVideos(prev => {
-        // Si es la primera página, reemplazar
+        // If first page, replace all
         if (page === 1) {
           return newVideos;
         }
-        
-        // Evitar duplicados usando un Set con los IDs
+
+        // Prevent duplicates using Set with IDs
         const existingIds = new Set(prev.map(v => v._id || v.id));
         const uniqueNewVideos = newVideos.filter(v => !existingIds.has(v._id || v.id));
         
         return [...prev, ...uniqueNewVideos];
       });
 
-      // Actualizar hasMore basado en la paginación
+      // Update hasMore based on pagination
       const pagination = data.pagination;
       if (pagination) {
         setHasMore(pagination.currentPage < pagination.totalPages);
       } else {
-        // Si no hay paginación o no hay videos, no hay más
+        // If no pagination or no videos, no more available
         setHasMore(newVideos.length === pageSize);
       }
 
     } catch (err) {
-      console.error('Error loading videos:', err);
+      Sentry.captureException(err, { extra: { context: 'loadVideos', page } });
       setError(err.message || 'Error al cargar videos');
       setHasMore(false);
     } finally {
