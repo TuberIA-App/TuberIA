@@ -228,7 +228,7 @@ We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) 
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). This license allows personal, educational, and noncommercial use only. Commercial use is not permitted.
 
 ---
 
