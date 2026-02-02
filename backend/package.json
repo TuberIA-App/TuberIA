@@ -30,7 +30,7 @@
     "https-proxy-agent": "^7.0.6",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.19.3",
+    "mongoose": "^9.1.4",
     "node-cron": "^3.0.3",
     "user-agents": "^1.1.669",
     "winston": "^3.18.3",
