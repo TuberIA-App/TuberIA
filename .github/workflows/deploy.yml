@@ -12,7 +12,7 @@ jobs:
     steps:
       # Obtenemos el código mas reciente del repositorio
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Preparamos el SSH con la clave privada
       - name: webfactory/ssh-agent
