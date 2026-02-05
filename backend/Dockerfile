@@ -6,7 +6,7 @@
 # --------------------------------------------
 # Stage 1: Base - Common dependencies
 # --------------------------------------------
-FROM node:20-alpine AS base
+FROM node:25-alpine AS base
 
 WORKDIR /app
 
@@ -41,7 +41,7 @@ RUN npm ci --only=production && npm cache clean --force
 # --------------------------------------------
 # Stage 4: Production
 # --------------------------------------------
-FROM node:20-alpine AS production
+FROM node:25-alpine AS production
 
 # Set to production environment
 ENV NODE_ENV=production
