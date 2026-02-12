@@ -59,7 +59,7 @@ TuberIA is a full-stack web application that allows users to follow YouTube chan
 
 | Layer        | Technology                                  |
 | ------------ | ------------------------------------------- |
-| Frontend     | React 19, Vite, React Router, Tailwind CSS  |
+| Frontend     | React 18, Vite, React Router, Tailwind CSS  |
 | Backend      | Node.js, Express 5.1, BullMQ, node-cron     |
 | Database     | MongoDB 8 (Mongoose ODM)                    |
 | Cache/Queue  | Redis 7 (BullMQ job queue, token blacklist) |
