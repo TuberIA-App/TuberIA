@@ -1,0 +1,13 @@
+# robots.txt for TuberIA
+# https://tuberia.app
+
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /feed
+Disallow: /home
+Disallow: /video
+Disallow: /channels
+Disallow: /api/
+
+Sitemap: https://tuberia.app/sitemap.xml

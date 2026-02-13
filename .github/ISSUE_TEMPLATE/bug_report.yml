@@ -1,0 +1,97 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in TuberIA
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below to help us investigate.
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of the bug.
+      placeholder: Describe the bug...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Area
+      description: Which part of the application is affected?
+      options:
+        - Frontend
+        - Backend / API
+        - Database
+        - Docker / Infrastructure
+        - CI/CD
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this bug?
+      options:
+        - Critical - Application crash or data loss
+        - High - Major feature broken
+        - Medium - Feature partially broken
+        - Low - Minor issue or cosmetic
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Please provide your environment details.
+      placeholder: |
+        - OS: [e.g., Ubuntu 22.04, macOS 14]
+        - Browser: [e.g., Chrome 120, Firefox 121]
+        - Node.js: [e.g., 20.x]
+        - Docker: [e.g., 24.x]
+    validations:
+      required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If applicable, add screenshots to help explain your problem.
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: If applicable, paste relevant log output.
+      render: shell
+    validations:
+      required: false

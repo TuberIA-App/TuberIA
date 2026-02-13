@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability
+    url: https://github.com/TuberIA-App/TuberIA/security/advisories/new
+    about: Report security vulnerabilities privately using GitHub Security Advisories.
+  - name: Documentation
+    url: https://github.com/TuberIA-App/TuberIA/tree/main/docs
+    about: Check existing documentation before opening an issue.
