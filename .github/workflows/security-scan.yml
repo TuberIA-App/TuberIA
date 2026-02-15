@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Trivy scan (Backend)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           scan-type: 'fs'
           scan-ref: './backend'
@@ -32,7 +32,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Trivy scan (Frontend)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           scan-type: 'fs'
           scan-ref: './frontend'
@@ -63,7 +63,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Trivy config scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           scan-type: 'config'
           scan-ref: '.'
@@ -81,7 +81,7 @@ jobs:
           fetch-depth: 0
 
       - name: Trivy secret scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.34.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
