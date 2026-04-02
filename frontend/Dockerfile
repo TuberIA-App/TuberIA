@@ -51,7 +51,7 @@ RUN npm run build
 # --------------------------------------------
 # Stage 4: Production - Serve with Nginx
 # --------------------------------------------
-FROM nginx:1.27-alpine AS production
+FROM nginx:1.29-alpine AS production
 
 # Copy built files from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
