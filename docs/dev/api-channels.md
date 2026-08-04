@@ -73,7 +73,7 @@ Search for a YouTube channel by username or URL. This endpoint automatically sav
 
 **Example:**
 ```bash
-curl "http://localhost:5000/api/channels/search?q=@MrBeast"
+curl "http://127.0.0.1:7101/api/channels/search?q=@MrBeast"
 ```
 
 ---
@@ -122,7 +122,7 @@ Authorization: Bearer <access_token>
 **Example:**
 ```bash
 curl -X POST \
-  "http://localhost:5000/api/channels/674d8e9f12a3b4c5d6e7f890/follow" \
+  "http://127.0.0.1:7101/api/channels/674d8e9f12a3b4c5d6e7f890/follow" \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 ```
 
@@ -162,7 +162,7 @@ Authorization: Bearer <access_token>
 **Example:**
 ```bash
 curl -X DELETE \
-  "http://localhost:5000/api/channels/674d8e9f12a3b4c5d6e7f890/unfollow" \
+  "http://127.0.0.1:7101/api/channels/674d8e9f12a3b4c5d6e7f890/unfollow" \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 ```
 
@@ -222,7 +222,7 @@ Authorization: Bearer <access_token>
 
 **Example:**
 ```bash
-curl "http://localhost:5000/api/channels/user/followed" \
+curl "http://127.0.0.1:7101/api/channels/user/followed" \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 ```
 
@@ -290,10 +290,10 @@ Authorization: Bearer <access_token>
 
 ```bash
 # Get channel without authentication
-curl "http://localhost:5000/api/channels/UCX6OQ3DkcsbYNE6H8uQQuVA"
+curl "http://127.0.0.1:7101/api/channels/UCX6OQ3DkcsbYNE6H8uQQuVA"
 
 # Get channel with authentication (includes isFollowing status)
-curl "http://localhost:5000/api/channels/UCX6OQ3DkcsbYNE6H8uQQuVA" \
+curl "http://127.0.0.1:7101/api/channels/UCX6OQ3DkcsbYNE6H8uQQuVA" \
   -H "Authorization: Bearer TOKEN"
 ```
 

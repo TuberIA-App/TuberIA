@@ -92,63 +92,77 @@ The problem we solve: Students and professionals waste time watching long videos
 
 ### Prerequisites
 
-- Docker and Docker Compose installed
+- Docker and Docker Compose v2.20+
+- Node.js 24+ and pnpm 11+ (`npm install -g pnpm`)
 - Git
 
 ### Quick Start
 
 ```bash
-# 1. Clone the repository
+# 1. Clone
 git clone https://github.com/TuberIA-App/TuberIA.git
 cd TuberIA
 
-# 2. Copy environment variables
-cp .env.example .env
-# Edit .env with your credentials (JWT secrets, OpenRouter API key, etc.)
+# 2. Configure
+cp .env.example .env                   # ports, project name, domain
+cp backend/.env.example backend/.env   # JWT secrets, OpenRouter API key
 
-# 3. Start containers
-docker compose up -d
+# 3. Check the port block is free on your machine
+./scripts/check-ports.sh
 
-# 4. Access the application
-# Frontend: http://localhost:5173
-# Backend API: http://localhost:5000
+# 4. Start (builds images, enables hot reload)
+pnpm dev
+
+# 5. Open
+# Frontend:    http://127.0.0.1:7100
+# Backend API: http://127.0.0.1:7101/api
 ```
+
+TuberIA uses the port block **7100-7105**, bound to `127.0.0.1`, so it runs
+alongside your other Docker projects without collisions. Every port is an
+`.env` variable — see [Docker Configuration](docs/dev/README-DOCKER.md) to move
+the block.
 
 ---
 
 ## Development
 
-### Local Development (with hot-reload)
+Dependencies are managed with **pnpm workspaces**: one lockfile at the root
+covers both `backend/` and `frontend/`.
 
 ```bash
-# Frontend
-cd frontend && npm install && npm run dev
-
-# Backend
-cd backend && npm install && npm run dev
+pnpm install            # install everything
+pnpm dev                # full stack in Docker, with hot reload
+pnpm dev:down           # stop
+pnpm dev:logs           # follow logs
+pnpm ports              # check for port collisions
 ```
 
-### Running Tests
+### Running tests
+
+The backend suite talks to a real MongoDB and Redis, so run it inside the
+Docker network:
 
 ```bash
-# Backend tests
-cd backend && npm test
-
-# Frontend lint
-cd frontend && npm run lint
+docker compose exec backend ./node_modules/.bin/vitest run --project unit
+docker compose exec backend ./node_modules/.bin/vitest run --project integration
 ```
 
-### Docker Commands
+`unit` is deterministic and gates CI. `integration` reaches the public internet
+(YouTube, OpenRouter), so it is kept out of the required gate.
 
 ```bash
-# Build and start all services
-docker compose up --build
+pnpm lint               # ESLint across the workspace
+pnpm build              # production build of the frontend
+```
 
-# Stop all services
-docker compose down
+### Docker commands
 
-# View logs
-docker compose logs -f
+```bash
+docker compose up -d --watch     # start with file sync
+docker compose logs -f backend
+docker compose exec backend sh
+docker compose down              # stop  (add -v to wipe volumes)
 ```
 
 ---
@@ -165,8 +179,8 @@ Full API documentation is available in the `/docs/dev` directory:
 | Users | [api-users.md](docs/dev/api-users.md) |
 
 Additional documentation:
-- [Deployment Guide](docs/dev/DEPLOYMENT.md)
-- [Docker Configuration](docs/dev/README-DOCKER.md)
+- [Deployment Guide](DEPLOYMENT.md) — VPS setup, CI/CD, rollback, resource budget
+- [Docker Configuration](docs/dev/README-DOCKER.md) — local dev, ports, images
 - [Redis & BullMQ](docs/dev/README-REDIS.md)
 
 ---
@@ -195,11 +209,17 @@ TuberIA/
 │   │   ├── queues/        # Job queue definitions
 │   │   └── utils/         # Utility functions
 │   └── Dockerfile
-├── docs/dev/              # Technical documentation
-├── design/                # Wireframes and mockups
-├── .github/workflows/     # CI/CD with GitHub Actions
-├── docker-compose.yml     # Docker orchestration
-├── Caddyfile             # Reverse proxy configuration
+├── docs/dev/                       # Technical documentation
+├── design/                         # Wireframes and mockups
+├── scripts/                        # deployment.sh, check-ports.sh, backups
+├── .github/workflows/              # ci.yml, deploy.yml, security-scan.yml
+├── pnpm-workspace.yaml             # pnpm workspace definition
+├── pnpm-lock.yaml                  # single lockfile for both packages
+├── docker-compose.yml              # base topology (no ports, no container names)
+├── docker-compose.dev.yml          # dev overlay: watch + loopback ports
+├── docker-compose.prod.yml         # prod overlay: GHCR images, Caddy, hardening
+├── docker-compose.local-prod.yml   # run the prod stack locally to verify it
+├── Caddyfile                       # TLS termination and reverse proxy
 └── README.md
 ```
 

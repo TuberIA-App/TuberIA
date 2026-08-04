@@ -1,0 +1,49 @@
+# ============================================
+# pnpm workspace definition
+# ============================================
+# Since pnpm v10, project-wide settings live HERE rather than in .npmrc or
+# package.json. See: https://pnpm.io/settings
+# ============================================
+
+packages:
+  - backend
+  - frontend
+
+# --------------------------------------------
+# Build-script allow-list
+# --------------------------------------------
+# pnpm >=10 refuses to run install scripts (preinstall/install/postinstall)
+# unless the package is explicitly allow-listed. This is supply-chain
+# protection: a compromised transitive dependency cannot execute code just
+# because you ran `pnpm install`.
+#
+# Every entry below was reviewed and is required to build a *native* artifact.
+# Run `pnpm approve-builds` to review interactively when a new one appears.
+allowBuilds:
+  # Sentry's CPU profiler - prebuilt native addon for the running platform.
+  '@sentry/node-cpu-profiler': true
+  # esbuild - platform-specific binary used by Vite (build) and Vitest.
+  esbuild: true
+  # msgpackr-extract - optional native accelerator pulled in by BullMQ.
+  msgpackr-extract: true
+
+# --------------------------------------------
+# Resolution behaviour
+# --------------------------------------------
+autoInstallPeers: true
+dedupePeerDependents: true
+
+# --------------------------------------------
+# Engine enforcement
+# --------------------------------------------
+# Refuse to install when the running Node/pnpm does not satisfy the "engines"
+# field in package.json, instead of warning and producing a tree that only
+# works on the author's machine.
+#
+# NOTE: `useNodeVersion` is deliberately NOT set. It makes pnpm download and
+# manage its own Node.js build, which duplicates what .nvmrc, the pinned
+# Docker base images and CI already guarantee - and it silently changes which
+# Node runs your code. The Node version is declared in exactly three places
+# that are kept in sync: .nvmrc, package.json (engines + devEngines) and the
+# Dockerfiles.
+engineStrict: true

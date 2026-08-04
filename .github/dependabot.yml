@@ -1,9 +1,20 @@
+# ============================================================================
+# Dependabot
+# ============================================================================
+# The npm ecosystem understands pnpm workspaces and pnpm-lock.yaml. Because
+# this repo now has ONE lockfile at the root covering both packages, there is
+# a single npm entry pointing at "/" - the old per-directory backend/frontend
+# entries would each try to resolve a lockfile that no longer exists there.
+# ============================================================================
+
 version: 2
 
 updates:
-  # Backend npm dependencies
+  # --------------------------------------------------------------------------
+  # JavaScript dependencies (pnpm workspace, single root lockfile)
+  # --------------------------------------------------------------------------
   - package-ecosystem: "npm"
-    directory: "/backend"
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -12,45 +23,36 @@ updates:
       prefix: "(deps)"
     labels:
       - "dependencies"
-      - "backend"
     groups:
-      production:
-        patterns:
-          - "*"
-        exclude-patterns:
-          - "eslint*"
-          - "vitest*"
-          - "nodemon*"
-          - "supertest*"
+      # Patch and minor bumps land as one reviewable PR instead of a dozen.
+      production-minor:
+        dependency-type: "production"
         update-types:
           - "minor"
           - "patch"
-
-  # Frontend npm dependencies
-  - package-ecosystem: "npm"
-    directory: "/frontend"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "(deps)"
-    labels:
-      - "dependencies"
-      - "frontend"
-    groups:
-      production:
-        patterns:
-          - "*"
-        exclude-patterns:
-          - "eslint*"
-          - "vite*"
-          - "@vitejs/*"
+      development-minor:
+        dependency-type: "development"
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # Major upgrades of the build/runtime toolchain are migrations with real
+      # breaking changes, not routine bumps. They are done deliberately, with
+      # the test suite green, rather than merged from an automated PR.
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "express"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "mongoose"
+        update-types: ["version-update:semver-major"]
 
-  # Backend Dockerfile
+  # --------------------------------------------------------------------------
+  # Base images in the Dockerfiles
+  # --------------------------------------------------------------------------
   - package-ecosystem: "docker"
     directory: "/backend"
     schedule:
@@ -61,7 +63,6 @@ updates:
       - "dependencies"
       - "docker"
 
-  # Frontend Dockerfile
   - package-ecosystem: "docker"
     directory: "/frontend"
     schedule:
@@ -72,7 +73,27 @@ updates:
       - "dependencies"
       - "docker"
 
+  # --------------------------------------------------------------------------
+  # Digest-pinned images in the Compose files (mongo, redis, caddy)
+  # --------------------------------------------------------------------------
+  # Those images are pinned by sha256 digest, which is reproducible but frozen:
+  # without this entry they would silently never receive a security update.
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "(deps)"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  # --------------------------------------------------------------------------
   # GitHub Actions
+  # --------------------------------------------------------------------------
+  # Actions are pinned to commit SHAs; Dependabot updates the SHA and the
+  # trailing `# vX.Y.Z` comment together, which is what makes SHA pinning
+  # maintainable rather than a source of permanent staleness.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

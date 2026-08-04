@@ -1,70 +1,101 @@
-# ============================================
-# Multi-Stage Dockerfile for Frontend (Vite/React)
-# Supports both Development and Production
-# ============================================
+# syntax=docker/dockerfile:1.19
+# ============================================================================
+# TuberIA frontend image (Vite + React, served by nginx in production)
+# ============================================================================
+# Build context is the REPOSITORY ROOT (the pnpm workspace lockfile lives
+# there):
+#
+#     docker build -f frontend/Dockerfile .
+#
+# `frontend/Dockerfile.dockerignore` keeps backend source out of the context.
+# ============================================================================
 
-# --------------------------------------------
-# Stage 1: Base - Common dependencies
-# --------------------------------------------
-FROM node:20-alpine AS base
+ARG NODE_VERSION=24.15.0
+ARG PNPM_VERSION=11.20.0
+ARG NGINX_VERSION=1.29
+
+# ----------------------------------------------------------------------------
+# base - toolchain
+# ----------------------------------------------------------------------------
+FROM node:${NODE_VERSION}-slim AS base
+
+ARG PNPM_VERSION
+ENV PNPM_HOME="/pnpm" \
+    PATH="/pnpm:$PATH" \
+    NPM_CONFIG_UPDATE_NOTIFIER=false \
+    NPM_CONFIG_FUND=false
+RUN npm install --global "pnpm@${PNPM_VERSION}" \
+ && npm cache clean --force
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* ./
+# ----------------------------------------------------------------------------
+# deps - dependency resolution (cached independently of source)
+# ----------------------------------------------------------------------------
+FROM base AS deps
 
-# --------------------------------------------
-# Stage 2: Development
-# --------------------------------------------
-FROM base AS development
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY frontend/package.json ./frontend/
+COPY backend/package.json ./backend/
 
-# Install all dependencies
-RUN npm ci && npm cache clean --force
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store,sharing=locked \
+    pnpm install --frozen-lockfile --filter "@tuberia/frontend..."
 
-# Copy application code
-COPY . .
+# ----------------------------------------------------------------------------
+# development - Vite dev server with HMR
+# ----------------------------------------------------------------------------
+FROM deps AS development
 
-# Expose Vite dev server port
+ENV NODE_ENV=development
+
+COPY frontend/ ./frontend/
+
+WORKDIR /app/frontend
 EXPOSE 5173
 
-# Start Vite dev server
-CMD ["npm", "run", "dev"]
+# Vite binds 0.0.0.0 (see vite.config.js) so the port is reachable from the
+# host. Called through the local binary rather than `pnpm dev` so that Vite,
+# not pnpm, is PID 1 and receives SIGTERM directly.
+CMD ["./node_modules/.bin/vite", "--host", "0.0.0.0", "--port", "5173"]
 
-# --------------------------------------------
-# Stage 3: Build - Create production build
-# --------------------------------------------
-FROM base AS build
+# ----------------------------------------------------------------------------
+# build - produce the static bundle
+# ----------------------------------------------------------------------------
+FROM deps AS build
 
-# Accept build arguments for environment variables
+# Vite inlines VITE_* variables into the bundle at BUILD time - they are not
+# runtime configuration. The default "/api" is a same-origin relative path, so
+# the bundle works behind any domain Caddy serves it from without a rebuild.
 ARG VITE_API_URL=/api
-ENV VITE_API_URL=${VITE_API_URL}
+ARG VITE_SENTRY_DSN=
+ENV VITE_API_URL=${VITE_API_URL} \
+    VITE_SENTRY_DSN=${VITE_SENTRY_DSN} \
+    NODE_ENV=production
 
-# Install dependencies
-RUN npm ci && npm cache clean --force
+COPY frontend/ ./frontend/
 
-# Copy application code
-COPY . .
+RUN pnpm --filter "@tuberia/frontend" build
 
-# Build for production (environment variables are baked into the bundle)
-RUN npm run build
+# ----------------------------------------------------------------------------
+# production - static files behind nginx
+# ----------------------------------------------------------------------------
+# nginx-unprivileged instead of the stock nginx image: the stock one starts its
+# master process as root. This variant runs entirely as uid 101 and is
+# pre-configured to keep its pid file, cache and temp paths off the read-only
+# root filesystem the compose file gives it.
+FROM nginxinc/nginx-unprivileged:${NGINX_VERSION}-alpine AS production
 
-# --------------------------------------------
-# Stage 4: Production - Serve with Nginx
-# --------------------------------------------
-FROM nginx:1.27-alpine AS production
+# Listens on 8080: an unprivileged process cannot bind ports below 1024, and
+# 8080 is this image's documented convention.
+EXPOSE 8080
 
-# Copy built files from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --chown=nginx:nginx frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build --chown=nginx:nginx /app/frontend/dist /usr/share/nginx/html
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Liveness is declared in docker-compose.yml so it can differ per environment.
+HEALTHCHECK NONE
 
-# Expose port (internal nginx port)
-EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
-
-# Start nginx (runs as root by default, which is safe in Docker containers)
-CMD ["nginx", "-g", "daemon off;"]
+LABEL org.opencontainers.image.title="TuberIA Frontend" \
+      org.opencontainers.image.description="React SPA for TuberIA, served as static assets by nginx" \
+      org.opencontainers.image.source="https://github.com/TuberIA-App/TuberIA" \
+      org.opencontainers.image.licenses="PolyForm-Noncommercial-1.0.0"

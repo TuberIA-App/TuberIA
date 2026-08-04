@@ -1,0 +1,271 @@
+# ============================================================================
+# CI - runs on every push and pull request
+# ============================================================================
+# This is the quality gate that must pass before deploy.yml will build or ship
+# anything. Previously there was no test gate at all: deploy.yml went straight
+# from `push to main` to a production rebuild.
+#
+# Every action is pinned to a full commit SHA. Tags like `v4` are mutable - the
+# owner (or anyone who compromises the account) can repoint them at new code
+# that runs with your repository token. The `# vX.Y.Z` comment keeps it
+# readable, and Dependabot updates both the SHA and the comment together.
+# ============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+  # Lets deploy.yml reuse this entire workflow as its gate, so the tests that
+  # guard a production release are literally the same ones that run on a PR -
+  # they cannot drift apart.
+  workflow_call:
+
+# Least privilege by default; jobs opt in to more where genuinely needed.
+permissions: {}
+
+# Cancel superseded runs on the same branch. Safe here because CI has no side
+# effects - unlike the deploy workflow, which must never be cancelled mid-flight.
+#
+# github.workflow is included because deploy.yml calls this workflow via
+# `uses:`. For a called workflow that value is the CALLER's name, so the
+# standalone CI run on a push to main and the CI gate nested inside Deploy land
+# in different groups. Without it both share `ci-refs/heads/main` and cancel
+# each other on every push to main - meaning the deploy's own gate could be
+# killed by the parallel CI run.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PNPM_VERSION: 11.20.0
+
+jobs:
+  # --------------------------------------------------------------------------
+  lint-and-test:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    # The backend test suite talks to a real MongoDB and Redis rather than
+    # mocking them, so CI provides both. Ports are published on the runner's
+    # loopback only; nothing here is reachable from outside the job.
+    services:
+      mongo:
+        image: mongo:7.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: mongo
+          MONGO_INITDB_ROOT_PASSWORD: mongo
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --norc --eval 'db.adminCommand({ping:1}).ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        # `-e` makes redis-cli exit non-zero on an error reply. Without it a
+        # NOAUTH or LOADING response still exits 0 and the service is reported
+        # healthy while every command against it fails.
+        options: >-
+          --health-cmd "redis-cli -e ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      # pnpm is installed explicitly rather than through a third-party setup
+      # action: the version is pinned to match package.json "packageManager"
+      # exactly, and it is one fewer external action in the supply chain.
+      - name: Install pnpm
+        run: npm install --global "pnpm@${PNPM_VERSION}"
+
+      - name: Resolve pnpm store path
+        run: echo "PNPM_STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - name: Restore pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.PNPM_STORE_PATH }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      # --frozen-lockfile fails rather than silently re-resolving, so CI can
+      # never pass against a dependency tree the lockfile does not describe.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --recursive --if-present lint
+
+      - name: Build frontend
+        run: pnpm --filter "@tuberia/frontend" build
+
+      # Only the `unit` project gates CI. The integration/e2e suites reach the
+      # public internet (YouTube transcripts, OpenRouter), so a third-party
+      # outage or rate limit there must not be able to block a deploy.
+      - name: Test (unit)
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://mongo:mongo@127.0.0.1:27017/tuberia_test?authSource=admin
+          MONGODB_TEST_URI: mongodb://mongo:mongo@127.0.0.1:27017/tuberia_test?authSource=admin
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: "6379"
+          # Test-only values. Real secrets live in the production environment;
+          # these exist purely to satisfy startup validation.
+          JWT_SECRET: ci-test-jwt-secret-value-not-used-in-production-000
+          JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-value-not-used-in-prod-111
+          OPENROUTER_API_KEY: ci-test-placeholder
+          FRONTEND_URL: http://127.0.0.1:5173
+        run: pnpm test
+
+  # --------------------------------------------------------------------------
+  # Proves both images still build, on every PR, before anything reaches the
+  # deploy workflow. No push - this is a build-only smoke test.
+  docker-build:
+    name: Docker build (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [backend, frontend]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Build ${{ matrix.image }} image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          # Repository root: both Dockerfiles need the pnpm workspace lockfile,
+          # which lives there rather than inside the service directory.
+          context: .
+          file: ${{ matrix.image }}/Dockerfile
+          target: production
+          push: false
+          load: false
+          platforms: linux/amd64
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max
+
+  # --------------------------------------------------------------------------
+  # Fails the build if a compose file stops being valid or if a security
+  # invariant regresses. These assertions exist because both of the properties
+  # checked here were silently broken in production before.
+  compose-validate:
+    name: Validate compose stack
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Both overlays declare `env_file: {path: ./backend/.env, required: true}`,
+      # so `docker compose config` fails outright if the file is absent - and it
+      # is gitignored, so a CI checkout never has one. These are placeholder
+      # values purely to let the config parse; nothing is started from them.
+      - name: Create placeholder env files
+        run: |
+          cp .env.example .env
+          cp backend/.env.example backend/.env
+
+      - name: Validate dev overlay
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml config >/dev/null
+          echo "dev overlay OK"
+
+      - name: Validate prod overlay
+        env:
+          GHCR_OWNER: ci
+          IMAGE_TAG: ci
+          DOMAIN_NAME: example.com
+          SSL_EMAIL: ci@example.com
+          MONGO_USER: mongo
+          MONGO_PASSWORD: mongo
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml config >/dev/null
+          echo "prod overlay OK"
+
+      - name: Assert production isolation invariants
+        env:
+          GHCR_OWNER: ci
+          IMAGE_TAG: ci
+          DOMAIN_NAME: example.com
+          SSL_EMAIL: ci@example.com
+          MONGO_USER: mongo
+          MONGO_PASSWORD: mongo
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml config > /tmp/prod.yml
+          python3 - <<'PY'
+          import sys, yaml
+          cfg = yaml.safe_load(open('/tmp/prod.yml'))
+          services = cfg['services']
+          failures = []
+
+          # Datastores must never be published, and must sit only on the
+          # internal network. Both regressed silently once already: `expose:`
+          # does not cancel a `ports:` from the base file, and Compose UNIONS
+          # `networks:` lists across overlays instead of replacing them.
+          for name in ('mongo', 'redis'):
+              svc = services[name]
+              if svc.get('ports'):
+                  failures.append(f'{name} publishes ports in production')
+              nets = sorted((svc.get('networks') or {}).keys())
+              if nets != ['backend-internal']:
+                  failures.append(f'{name} is on {nets}, expected only backend-internal')
+
+          # Caddy is the single ingress.
+          publishing = sorted(n for n, s in services.items() if s.get('ports'))
+          if publishing != ['caddy']:
+              failures.append(f'services publishing ports: {publishing}, expected only caddy')
+
+          # Production must never build; images come from the registry.
+          for name, svc in services.items():
+              if svc.get('build'):
+                  failures.append(f'{name} still declares build: in production')
+
+          # BullMQ loses jobs under any eviction policy.
+          redis_cmd = ' '.join(str(x) for x in (services['redis'].get('command') or []))
+          if 'noeviction' not in redis_cmd:
+              failures.append('redis is not configured with maxmemory-policy noeviction')
+
+          if failures:
+              print('FAILED:'); [print('  -', f) for f in failures]; sys.exit(1)
+          print('All production isolation invariants hold.')
+          PY
+
+      - name: Validate Caddyfile
+        run: |
+          docker run --rm \
+            -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -e DOMAIN_NAME=example.com -e SSL_EMAIL=ci@example.com \
+            caddy:2.11-alpine caddy validate --config /etc/caddy/Caddyfile
+
+      - name: Lint shell scripts
+        run: |
+          docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:stable \
+            scripts/deployment.sh scripts/check-ports.sh scripts/backup-redis.sh

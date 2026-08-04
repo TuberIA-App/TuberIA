@@ -35,7 +35,7 @@ Esta es la documentación completa de la API del backend de TuberIA para el equi
 
 ```javascript
 // Login
-const response = await fetch('http://localhost:5000/api/auth/login', {
+const response = await fetch('http://127.0.0.1:7101/api/auth/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -71,18 +71,18 @@ const { accessToken, refreshToken, user } = (await response.json()).data;
 
 ```javascript
 // Buscar canal
-const response = await fetch('http://localhost:5000/api/channels/search?q=@vegetta777');
+const response = await fetch('http://127.0.0.1:7101/api/channels/search?q=@vegetta777');
 const { data } = await response.json();
 console.log(data.channelId); // UCam8T03EOFBsNdR0thrFHdQ
 
 // Seguir canal
-await fetch(`http://localhost:5000/api/channels/${mongoId}/follow`, {
+await fetch(`http://127.0.0.1:7101/api/channels/${mongoId}/follow`, {
   method: 'POST',
   headers: { 'Authorization': `Bearer ${accessToken}` }
 });
 
 // Obtener canal por ID de YouTube (con isFollowing)
-const response = await fetch('http://localhost:5000/api/channels/UCX6OQ3DkcsbYNE6H8uQQuVA', {
+const response = await fetch('http://127.0.0.1:7101/api/channels/UCX6OQ3DkcsbYNE6H8uQQuVA', {
   headers: { 'Authorization': `Bearer ${accessToken}` } // Opcional
 });
 ```
@@ -106,7 +106,7 @@ const response = await fetch('http://localhost:5000/api/channels/UCX6OQ3DkcsbYNE
 
 ```javascript
 // Obtener estadísticas del usuario
-const response = await fetch('http://localhost:5000/api/users/me/stats', {
+const response = await fetch('http://127.0.0.1:7101/api/users/me/stats', {
   headers: { 'Authorization': `Bearer ${accessToken}` }
 });
 
@@ -116,7 +116,7 @@ const { summariesRead, timeSaved, followedChannels } = (await response.json()).d
 // followedChannels: 8
 
 // Obtener canales seguidos con detalles enriquecidos
-const response = await fetch('http://localhost:5000/api/users/me/channels', {
+const response = await fetch('http://127.0.0.1:7101/api/users/me/channels', {
   headers: { 'Authorization': `Bearer ${accessToken}` }
 });
 
@@ -149,7 +149,7 @@ const { channels, count } = (await response.json()).data;
 
 ```javascript
 // Feed de videos (paginado)
-const response = await fetch('http://localhost:5000/api/users/me/videos?page=1&limit=20', {
+const response = await fetch('http://127.0.0.1:7101/api/users/me/videos?page=1&limit=20', {
   headers: { 'Authorization': `Bearer ${accessToken}` }
 });
 
@@ -158,7 +158,7 @@ const { videos, pagination } = (await response.json()).data;
 // pagination: { currentPage, totalPages, totalCount, hasNextPage, hasPreviousPage }
 
 // Detalles de video con transcripción completa
-const response = await fetch('http://localhost:5000/api/videos/dQw4w9WgXcQ', {
+const response = await fetch('http://127.0.0.1:7101/api/videos/dQw4w9WgXcQ', {
   headers: { 'Authorization': `Bearer ${accessToken}` }
 });
 
@@ -184,7 +184,7 @@ const { video } = (await response.json()).data;
 
 ```javascript
 // Verificar estado del servidor
-const response = await fetch('http://localhost:5000/health');
+const response = await fetch('http://127.0.0.1:7101/health');
 const { status, timestamp, services } = await response.json();
 // status: "ok"
 // services: { mongodb: "connected", redis: "connected" }
@@ -199,7 +199,7 @@ const { status, timestamp, services } = await response.json();
 ### 1. Configuración Base
 
 ```javascript
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://127.0.0.1:7101/api';
 
 // Configurar Axios (recomendado)
 import axios from 'axios';

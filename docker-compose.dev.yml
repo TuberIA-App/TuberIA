@@ -1,81 +1,142 @@
-## ============================================
-## Docker Compose - Development con Redis y hot reload
-## Para desarrollo local con Redis expuesto y frontend/backend con hot reload
-## ============================================
-## Uso recomendado:
-##   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-##
-## Documentación:
-## - Guía de desarrollo y comandos: docs/README-DOCKER.md
-## - Configuración y troubleshooting de Redis: docs/README-REDIS.md
-## ============================================
-version: '3.8'
+# ============================================================================
+# TuberIA - development overlay
+#
+#   docker compose up -d --watch          (.env sets COMPOSE_FILE)
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --watch
+#
+# Every published port is bound to 127.0.0.1 and taken from .env, so this stack
+# coexists with any other project on the machine. See .env.example section 2.
+# ============================================================================
+
+name: tuberia
 
 services:
 
-
+  # --------------------------------------------------------------------------
   frontend:
-    working_dir: /app
+    build:
+      target: development
     ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      # Long form with an explicit host_ip. The short syntax "5173:5173" binds
+      # 0.0.0.0, which exposes the dev server to the LAN and collides with any
+      # sibling project using the Vite default.
+      - name: frontend
+        target: 5173
+        published: "${FRONTEND_HOST_PORT:-7100}"
+        host_ip: ${HOST_BIND_ADDR:-127.0.0.1}
+        protocol: tcp
     environment:
-      - VITE_API_URL=http://localhost:5000/api
-      - CHOKIDAR_USEPOLLING=true
-    stdin_open: true
-    tty: true
-    restart: unless-stopped
-    depends_on:
-      backend:
-        condition: service_started
-    networks:
-      - tuberia-network
-
-  backend:
-    working_dir: /app
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-    env_file:
-      - ./backend/.env
-    restart: unless-stopped
-    networks:
-      - tuberia-network
-    depends_on:
-      mongo:
-        condition: service_healthy
-
-  # Redis - Development (exposed port for debugging)
-  redis:
-    image: redis:7-alpine
-    container_name: tuberia-redis-dev
-    restart: unless-stopped
-    # ports:
-    #   - "6379:6379"  # Commented out due to Windows port reservation issue
-    command: redis-server --appendonly yes --appendfsync everysec
-    volumes:
-      - redis_dev_data:/data
-    networks:
-      - tuberia-network
+      # RELATIVE, exactly as in production. The Vite dev server proxies /api to
+      # the backend (see vite.config.js), so browser requests are same-origin
+      # and CORS never enters the picture - development mirrors production
+      # instead of exercising a different code path.
+      VITE_API_URL: /api
+      # Where that proxy forwards to: the backend service on the compose
+      # network. Outside Docker, vite.config.js falls back to the published
+      # loopback port.
+      VITE_DEV_PROXY_TARGET: http://backend:5000
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      # Declared per-overlay rather than in the base file because the two
+      # frontend targets have different runtimes and different tools available:
+      # dev is Node running Vite (no wget/curl in node:24-slim), prod is
+      # nginx-alpine (no node). Without this, `up --wait` would consider the
+      # dev frontend ready the moment the container started, before Vite had
+      # bound its port.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5173/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 5s
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.5'
+      start_period: 30s
+      start_interval: 2s
+    develop:
+      # Replaces the old `./frontend:/app` bind mount + anonymous
+      # `/app/node_modules` volume + CHOKIDAR_USEPOLLING triad.
+      #
+      # That combination is fatal under pnpm: a package's node_modules is a
+      # tree of symlinks into the ROOT node_modules/.pnpm store, which lives
+      # OUTSIDE the mounted directory. An anonymous volume preserves the
+      # symlinks while the store they point at is masked -> MODULE_NOT_FOUND.
+      #
+      # `watch` copies files INTO the container instead of mounting the host
+      # tree over the image, so the container's node_modules stays intact and
+      # no filesystem polling is needed. Vite's HMR handles the browser side.
+      watch:
+        - action: sync
+          path: ./frontend/src
+          target: /app/frontend/src
+        - action: sync
+          path: ./frontend/index.html
+          target: /app/frontend/index.html
+        - action: sync
+          path: ./frontend/public
+          target: /app/frontend/public
+        - action: sync+restart
+          path: ./frontend/vite.config.js
+          target: /app/frontend/vite.config.js
+        # A dependency change cannot be synced - the image must be rebuilt.
+        - action: rebuild
+          path: ./pnpm-lock.yaml
+        - action: rebuild
+          path: ./frontend/package.json
 
-volumes:
-  redis_dev_data:
-    driver: local
+  # --------------------------------------------------------------------------
+  backend:
+    build:
+      target: development
+    ports:
+      - name: backend
+        target: 5000
+        published: "${BACKEND_HOST_PORT:-7101}"
+        host_ip: ${HOST_BIND_ADDR:-127.0.0.1}
+        protocol: tcp
+    env_file:
+      - path: ./backend/.env
+        required: true
+      - path: ./backend/.env.local
+        required: false          # optional per-developer overrides
+    environment:
+      NODE_ENV: development
+      # These deliberately override backend/.env: inside Compose the app must
+      # reach the service names on the Docker network, whatever a developer's
+      # local file says.
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      MONGODB_URI: mongodb://${MONGO_USER:-mongo}:${MONGO_PASSWORD:-mongo}@mongo:27017/${MONGO_DB:-tuberia_db}?authSource=admin
+    develop:
+      watch:
+        - action: sync
+          path: ./backend/src
+          target: /app/backend/src
+        - action: sync+restart
+          path: ./backend/.env
+          target: /app/backend/.env
+        - action: rebuild
+          path: ./pnpm-lock.yaml
+        - action: rebuild
+          path: ./backend/package.json
+
+  # --------------------------------------------------------------------------
+  mongo:
+    ports:
+      # Loopback only - attach MongoDB Compass to 127.0.0.1:7102.
+      - name: mongo
+        target: 27017
+        published: "${MONGO_HOST_PORT:-7102}"
+        host_ip: ${HOST_BIND_ADDR:-127.0.0.1}
+        protocol: tcp
+
+  # --------------------------------------------------------------------------
+  redis:
+    ports:
+      # This block used to be commented out with a note blaming a "Windows port
+      # reservation issue". The real cause was a collision: this machine runs
+      # another project's Redis on 0.0.0.0:6379. Commenting it out removed all
+      # redis-cli/GUI access; a loopback bind on 7103 fixes it properly.
+      - name: redis
+        target: 6379
+        published: "${REDIS_HOST_PORT:-7103}"
+        host_ip: ${HOST_BIND_ADDR:-127.0.0.1}
+        protocol: tcp
+    # Development is not memory-constrained: give the queue room and skip the
+    # production maxmemory ceiling entirely.
+    mem_limit: 256m

@@ -1,25 +1,84 @@
-node_modules
+# ============================================
+# Dependencies
+# ============================================
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-error.log*
+
+# Legacy lockfiles - this repo uses pnpm (see package.json "packageManager")
+package-lock.json
+yarn.lock
+bun.lockb
+bun.lock
+
+# ============================================
+# Build output
+# ============================================
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# ============================================
+# Environment / local config
+# ============================================
 .env
 .env.local
 .env.*.local
-.idea
+!.env.example
 
-# Logs
-logs/
-*.log
+# Local-only Compose overrides (never committed - machine specific)
+docker-compose.override.yml
+compose.override.yml
 
-# Docker secrets (CRITICAL - never commit!)
+# ============================================
+# Secrets (CRITICAL - never commit!)
+# ============================================
 secrets/*.txt
 secrets/*.key
 secrets/*.pem
 dev-secrets/
 
-# MongoDB backups
+# ============================================
+# Logs & runtime data
+# ============================================
+logs/
+*.log
+.deploy.lock
+
+# ============================================
+# Backups
+# ============================================
 mongo-backups/*
 !mongo-backups/.gitkeep
+redis-backups/*
+!redis-backups/.gitkeep
 
-# Traefik Let's Encrypt data
+# Caddy / Let's Encrypt data
 letsencrypt/
+caddy_data/
+
+# ============================================
+# Editors & OS
+# ============================================
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# ============================================
+# Test & tooling caches
+# ============================================
+coverage/
+.nyc_output/
+.eslintcache
+.playwright-mcp/
+test-results/
+playwright-report/
+testing/
 
 # Academic documentation (internal project docs)
 .academic-docs/

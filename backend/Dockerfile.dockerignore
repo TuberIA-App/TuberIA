@@ -1,0 +1,52 @@
+# ============================================================================
+# Build context filter for backend/Dockerfile
+# ============================================================================
+# BuildKit prefers `<dockerfile>.dockerignore` over the root `.dockerignore`
+# when it exists. This file exists so that editing frontend source code does
+# NOT invalidate the backend image cache, even though both images now build
+# from the repository root.
+# ============================================================================
+
+# --- everything the backend never needs -------------------------------------
+.git
+.github
+.vscode
+.idea
+docs
+design
+mongo-backups
+redis-backups
+secrets
+scripts
+*.md
+!backend/README.md
+
+# --- the frontend, except the one file pnpm needs ---------------------------
+# `pnpm install --frozen-lockfile` validates every workspace package listed in
+# pnpm-workspace.yaml, so frontend/package.json must stay in the context.
+# Its source, assets and build output must not.
+frontend/**
+!frontend/package.json
+
+# --- never ship dependency trees or build output ----------------------------
+**/node_modules
+**/dist
+**/build
+**/coverage
+.pnpm-store
+
+# --- never ship secrets or local state --------------------------------------
+**/.env
+**/.env.*
+!**/.env.example
+**/logs
+**/*.log
+.deploy.lock
+
+# --- local-only compose files -----------------------------------------------
+docker-compose.override.yml
+compose.override.yml
+
+# --- OS noise ---------------------------------------------------------------
+**/.DS_Store
+Thumbs.db

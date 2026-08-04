@@ -16,18 +16,29 @@ Thank you for your interest in contributing to TuberIA! This document provides g
    ```
 
 3. **Set up the development environment**
+
+   This repo is a pnpm workspace (pnpm 11+, Node 24+). There is one lockfile at
+   the root covering both `backend/` and `frontend/` — do not run `npm install`.
+
    ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   docker compose up -d
+   cp .env.example .env                   # ports, project name
+   cp backend/.env.example backend/.env   # secrets
+   ./scripts/check-ports.sh               # confirm 7100-7105 are free
+   pnpm install
+   pnpm dev                               # http://127.0.0.1:7100
    ```
 
 4. **Make your changes**
 
 5. **Test your changes**
+
+   The backend suite needs MongoDB and Redis, so run it inside the Docker
+   network:
+
    ```bash
-   cd backend && npm test
-   cd frontend && npm run build
+   docker compose exec backend ./node_modules/.bin/vitest run --project unit
+   pnpm lint
+   pnpm build
    ```
 
 6. **Commit your changes**

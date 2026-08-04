@@ -1,64 +1,67 @@
 /**
- * @fileoverview Environment variable validation for application startup.
- * Ensures all required configuration is present before the app runs.
+ * @fileoverview Startup validation for non-secret configuration.
  * @module config/env
+ *
+ * @description
+ * Secrets (JWT keys, API keys) are validated in `config/secrets.js`, which is
+ * imported first in `index.js`. This module covers the remaining configuration
+ * so that a misconfigured deployment fails immediately on boot with a message
+ * that says exactly what is missing.
  */
 
 import logger from '../utils/logger.js';
 
 /**
- * Validates that all required environment variables are set and meet minimum requirements.
- * Should be called during application startup before any other initialization.
+ * Configuration that must be present for the app to function at all.
+ * @type {Array<{name: string, hint: string}>}
+ */
+const REQUIRED_VARS = [
+  {
+    name: 'MONGODB_URI',
+    hint: 'MongoDB connection string, e.g. mongodb://user:pass@mongo:27017/tuberia_db?authSource=admin',
+  },
+];
+
+/**
+ * Configuration that has a sane default but is worth warning about when unset,
+ * because the default is only correct for local development.
+ * @type {Array<{name: string, hint: string}>}
+ */
+const RECOMMENDED_VARS = [
+  { name: 'REDIS_HOST', hint: "defaults to 'localhost'; inside Docker it should be 'redis'" },
+  { name: 'FRONTEND_URL', hint: 'required for CORS to accept the browser origin in production' },
+];
+
+/**
+ * Validate the runtime environment. Call once, at startup, before any service
+ * initialisation.
  *
- * Required variables:
- * - MONGODB_URI: MongoDB connection string
- * - JWT_SECRET: Secret for signing access tokens (min 32 chars)
- * - JWT_REFRESH_SECRET: Secret for signing refresh tokens (min 32 chars)
- * - OPENROUTER_API_KEY: API key for OpenRouter AI service
- *
- * @throws {Error} If any required environment variable is missing
- * @throws {Error} If JWT secrets are less than 32 characters
+ * @throws {Error} If a required environment variable is missing.
  * @example
  * import { validateEnv } from './config/env.js';
- *
- * // Call at startup
  * validateEnv();
- * // If validation passes, continue with app initialization
  */
 export const validateEnv = () => {
+  const missing = REQUIRED_VARS.filter(({ name }) => !process.env[name]);
 
-    // These are the required ENV VARIABLES that we need to exist on .env file
-    const requiredEnvVars = [
-        'MONGODB_URI',
-        'JWT_SECRET',
-        'JWT_REFRESH_SECRET',
-        'OPENROUTER_API_KEY'
-    ];
+  if (missing.length > 0) {
+    const details = missing.map(({ name, hint }) => `  - ${name}: ${hint}`).join('\n');
+    const errorMsg = `Missing required environment variables:\n${details}`;
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
+  }
 
-    const missing = [];
-
-    for (const envVar of requiredEnvVars) {
-        if (!process.env[envVar]) {
-            missing.push(envVar);
-        }
+  for (const { name, hint } of RECOMMENDED_VARS) {
+    if (!process.env[name]) {
+      logger.warn(`${name} is not set (${hint})`, { module: 'env' });
     }
+  }
 
-    // Checking if there is any missing env, and if so then throw an error and log it.
-    if (missing.length > 0) {
-        const errorMsg = `Missing required environment variables: ${missing.join(', ')}`;
-        logger.error(errorMsg);
-        throw new Error(errorMsg);
-    }
+  // Guard against the classic "deployed with NODE_ENV unset" mistake, which
+  // silently keeps Express in development mode (verbose errors, no caching).
+  if (!process.env.NODE_ENV) {
+    logger.warn("NODE_ENV is not set; defaulting to 'development' behaviour", { module: 'env' });
+  }
 
-    // Validating the JWT secrets length
-    if (process.env.JWT_SECRET.length < 32) {
-        throw new Error('JWT_SECRET must be at least 32 characters long');
-    }
-
-    if (process.env.JWT_REFRESH_SECRET.length < 32) {
-        throw new Error('JWT_REFRESH_SECRET must be at least 32 characters long');
-    }
-
-    logger.info('Environment variables validated successfully');
-
-}
+  logger.info('Environment variables validated successfully');
+};

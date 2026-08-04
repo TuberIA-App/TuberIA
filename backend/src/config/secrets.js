@@ -1,153 +1,116 @@
 /**
- * @fileoverview Unified secrets management with environment-aware loading.
- * Handles sensitive configuration from environment variables (development)
- * or Docker secrets (production) with validation.
+ * @fileoverview Centralised, validated access to the application's secrets.
  * @module config/secrets
- */
-
-/**
- * @description
- * Handles loading sensitive configuration from:
- * - Development: .env file via process.env
- * - Production: Docker secrets from /run/secrets/
  *
- * This provides a single source of truth for all secrets across environments.
+ * @description
+ * Secrets are read from the process environment, which is populated from:
+ *   - local development : `backend/.env` (loaded by dotenv, gitignored)
+ *   - Docker            : the `env_file:` / `environment:` keys in compose
+ *   - CI                : GitHub Actions secrets exported as env vars
+ *
+ * A single mechanism for every environment means there is exactly one place to
+ * look when a secret is missing, and no code path that only runs in production.
+ *
+ * Values are validated at import time so the process fails fast on boot rather
+ * than at the first request that happens to need a JWT.
  */
 import 'dotenv/config';
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
 import logger from '../utils/logger.js';
 
 /**
- * Get secret value from Docker secret file or environment variable
- * @param {string} envVarName - Environment variable name (e.g., 'JWT_SECRET')
- * @param {string} secretFileName - Docker secret file name (e.g., 'jwt_secret')
- * @returns {string} The secret value
+ * Read a required secret from the environment.
+ * @param {string} name - Environment variable name (e.g. 'JWT_SECRET').
+ * @returns {string} The secret value.
+ * @throws {Error} If the variable is unset or empty.
  */
-function getSecret(envVarName, secretFileName) {
-  const secretPath = join('/run/secrets', secretFileName);
+function requireSecret(name) {
+  const value = process.env[name];
 
-  // Production: Try to read from Docker secret first
-  if (existsSync(secretPath)) {
-    try {
-      const secretValue = readFileSync(secretPath, 'utf8').trim();
-      if (secretValue) {
-        return secretValue;
-      }
-    } catch (error) {
-      logger.error(`Error reading Docker secret ${secretFileName}`, { module: 'secrets', error: error.message });
-      // Fall through to environment variable
-    }
-  }
-
-  // Development: Read from environment variable
-  const envValue = process.env[envVarName];
-  if (!envValue) {
+  if (!value) {
     throw new Error(
-      `Secret '${envVarName}' not found. ` +
-      `In development, set it in .env file. ` +
-      `In production, create /run/secrets/${secretFileName} file.`
+      `Secret '${name}' is not set. ` +
+      `Add it to backend/.env locally, or to the environment of the ` +
+      `backend service (see backend/.env.example for the full list).`
     );
   }
 
-  return envValue;
+  return value;
 }
 
 /**
- * Validate secret value meets requirements
- * @param {string} name - Secret name for error messages
- * @param {string} value - Secret value to validate
- * @param {number} minLength - Minimum required length
+ * Reject secrets that are too short to be cryptographically meaningful, and
+ * placeholder values copied verbatim out of `.env.example`.
+ * @param {string} name - Secret name, used in the error message.
+ * @param {string} value - Secret value to validate.
+ * @param {number} [minLength=32] - Minimum acceptable length.
+ * @throws {Error} If the value is too short or is a known placeholder.
  */
 function validateSecret(name, value, minLength = 32) {
-  if (!value || value.length < minLength) {
+  if (value.length < minLength) {
     throw new Error(
-      `${name} must be at least ${minLength} characters long. ` +
-      `Current length: ${value?.length || 0}. ` +
-      `Generate a secure secret with: openssl rand -base64 ${minLength}`
+      `${name} must be at least ${minLength} characters long ` +
+      `(current length: ${value.length}). ` +
+      `Generate one with: openssl rand -hex 32`
+    );
+  }
+
+  // The example file ships long-but-worthless defaults; catch them before they
+  // reach a deployed environment.
+  if (/^your-super-secret|^your_api_key|change-this/i.test(value)) {
+    throw new Error(
+      `${name} still holds the placeholder value from .env.example. ` +
+      `Generate a real one with: openssl rand -hex 32`
     );
   }
 }
 
-// Load and validate all secrets
-let jwtSecret;
-let jwtRefreshSecret;
-let openRouterApiKey;
+const jwtSecret = requireSecret('JWT_SECRET');
+validateSecret('JWT_SECRET', jwtSecret, 32);
 
-try {
-  // JWT Secret (required, minimum 32 characters)
-  jwtSecret = getSecret('JWT_SECRET', 'jwt_secret');
-  validateSecret('JWT_SECRET', jwtSecret, 32);
+const jwtRefreshSecret = requireSecret('JWT_REFRESH_SECRET');
+validateSecret('JWT_REFRESH_SECRET', jwtRefreshSecret, 32);
 
-  // JWT Refresh Secret (required, minimum 32 characters)
-  jwtRefreshSecret = getSecret('JWT_REFRESH_SECRET', 'jwt_refresh_secret');
-  validateSecret('JWT_REFRESH_SECRET', jwtRefreshSecret, 32);
-
-  // OpenRouter API Key (optional - may be used in future features)
-  try {
-    openRouterApiKey = getSecret('OPENROUTER_API_KEY', 'openrouter_api_key');
-  } catch (error) {
-    // Optional secret - don't fail if missing
-    openRouterApiKey = null;
-  }
-
-  // Log successful secrets loading (without exposing values)
-  const source = existsSync('/run/secrets/jwt_secret') ? 'Docker secrets' : 'environment variables';
-  logger.info(`Loaded secrets from ${source}`, { module: 'secrets' });
-
-  // Set secrets in process.env for compatibility with environment validation
-  process.env.JWT_SECRET = jwtSecret;
-  process.env.JWT_REFRESH_SECRET = jwtRefreshSecret;
-  if (openRouterApiKey) {
-    process.env.OPENROUTER_API_KEY = openRouterApiKey;
-  }
-
-} catch (error) {
-  logger.error('Failed to load secrets', { module: 'secrets', error: error.message });
-  throw error;
+if (jwtSecret === jwtRefreshSecret) {
+  throw new Error(
+    'JWT_SECRET and JWT_REFRESH_SECRET must be different. Reusing one key for ' +
+    'both token types lets a leaked access token be replayed as a refresh token.'
+  );
 }
 
+// Required: AI summarisation is the product's core feature, so a deployment
+// without a key is a misconfiguration we want to catch at boot, not at runtime.
+const openRouterApiKey = requireSecret('OPENROUTER_API_KEY');
+
+logger.info('Secrets loaded and validated from environment', { module: 'secrets' });
+
 /**
- * Exported secrets object containing all application secrets.
- * Use this instead of directly accessing process.env for security-sensitive values.
- * Object is frozen to prevent accidental modification.
+ * Application secrets. Prefer importing this over reading `process.env`
+ * directly: it is validated, typed by JSDoc, and frozen.
  *
  * @constant {Object}
- * @property {string} jwtSecret - Secret key for signing JWT access tokens
- * @property {string} jwtRefreshSecret - Secret key for signing JWT refresh tokens
- * @property {string|null} openRouterApiKey - API key for OpenRouter AI service (optional)
+ * @property {string} jwtSecret - Signing key for JWT access tokens.
+ * @property {string} jwtRefreshSecret - Signing key for JWT refresh tokens.
+ * @property {string} openRouterApiKey - OpenRouter API key.
  * @example
  * import { secrets } from './config/secrets.js';
- *
  * jwt.sign(payload, secrets.jwtSecret, { expiresIn: '15m' });
  */
-export const secrets = {
-  /** JWT access token secret key */
+export const secrets = Object.freeze({
   jwtSecret,
-
-  /** JWT refresh token secret key */
   jwtRefreshSecret,
-
-  /** OpenRouter API key (optional) */
   openRouterApiKey,
-};
+});
 
 /**
- * JWT token expiration configuration from environment variables.
- * Uses defaults if not specified: 15 minutes for access, 7 days for refresh.
- * Object is frozen to prevent accidental modification.
+ * JWT lifetime configuration.
  *
  * @constant {Object}
- * @property {string} accessExpiry - Access token expiration time (default: '15m')
- * @property {string} refreshExpiry - Refresh token expiration time (default: '7d')
+ * @property {string} accessExpiry - Access token TTL (default '15m').
+ * @property {string} refreshExpiry - Refresh token TTL (default '7d').
  */
-export const jwtConfig = {
+export const jwtConfig = Object.freeze({
   accessExpiry: process.env.JWT_ACCESS_EXPIRY || '15m',
   refreshExpiry: process.env.JWT_REFRESH_EXPIRY || '7d',
-};
-
-// Freeze the secrets object to prevent accidental modification
-Object.freeze(secrets);
-Object.freeze(jwtConfig);
+});
 
 export default secrets;

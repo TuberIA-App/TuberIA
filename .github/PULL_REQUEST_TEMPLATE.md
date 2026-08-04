@@ -26,9 +26,9 @@
 
 ## Testing
 
-- [ ] Backend tests pass (`cd backend && npm test`)
-- [ ] Frontend builds successfully (`cd frontend && npm run build`)
-- [ ] Frontend lint passes (`cd frontend && npm run lint`)
+- [ ] Backend unit tests pass (`docker compose exec backend ./node_modules/.bin/vitest run --project unit`)
+- [ ] Frontend builds successfully (`pnpm build`)
+- [ ] Lint passes (`pnpm lint`)
 - [ ] Tested manually in development environment
 
 ## Checklist

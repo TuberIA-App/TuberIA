@@ -52,9 +52,25 @@ app.use(helmet());
  * Restricts origins based on environment: specific URLs in production, localhost in development.
  * @see https://www.npmjs.com/package/cors
  */
+// In production the allowlist is exactly one origin: FRONTEND_URL.
+//
+// In development it was previously the hardcoded pair
+// ['http://localhost:5173', 'http://localhost:3000'], which broke as soon as
+// anything moved. Two ways it failed: the dev server no longer runs on 5173
+// (published ports are configurable now), and `localhost` and `127.0.0.1` are
+// DIFFERENT origins to a browser, so opening the app on 127.0.0.1 was blocked
+// even on the right port. Matching any loopback origin keeps development
+// working whatever port the developer picks, and applies only when
+// NODE_ENV !== 'production'.
+const LOOPBACK_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
+
 const corsOrigins = process.env.NODE_ENV === 'production'
     ? process.env.FRONTEND_URL
-    : ['http://localhost:5173', 'http://localhost:3000'];
+    : (origin, callback) => {
+        // No Origin header: same-origin navigation, curl, or a health probe.
+        if (!origin) return callback(null, true);
+        callback(null, LOOPBACK_ORIGIN.test(origin));
+    };
 
 app.use(cors({
     origin: corsOrigins,
@@ -69,12 +85,28 @@ app.use(cors({
  * Protects against brute force and DoS attacks.
  * @type {import('express-rate-limit').RateLimitRequestHandler}
  */
+/**
+ * Rate limiting is bypassed under NODE_ENV=test.
+ *
+ * The limiters key on client IP, and every supertest request originates from
+ * the same address, so a suite that exercises login/logout flows exhausts the
+ * 10-attempt auth budget within a single file and every later assertion sees
+ * 429 instead of the status it expects. Vitest runs the whole suite in one
+ * process (`singleFork: true`), so the in-memory counter is shared across all
+ * test files and the failures cascade.
+ *
+ * No test asserts rate-limiting behaviour, so skipping here loses no coverage.
+ * @type {boolean}
+ */
+const skipRateLimit = process.env.NODE_ENV === 'test';
+
 const limiter = rateLimit({
     windowMs: RATE_LIMIT.WINDOW_MS,
     max: RATE_LIMIT.MAX_REQUESTS,
     message: 'Too many requests from this IP, please try again later',
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    skip: () => skipRateLimit
 });
 
 app.use('/api', limiter);
@@ -89,7 +121,8 @@ const authLimiter = rateLimit({
     max: RATE_LIMIT.AUTH.MAX_REQUESTS,
     message: 'Too many authentication attempts, please try again later',
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    skip: () => skipRateLimit
 });
 
 app.use('/api/auth', authLimiter);

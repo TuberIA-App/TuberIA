@@ -14,7 +14,7 @@
 - **Cleanup:** Completed jobs kept 7 days, failed jobs kept 30 days
 
 ## Docker Setup
-- **Redis Container:** `tuberia-redis-prod` with persistence
+- **Redis Container:** the `redis` service with persistence
 - **Memory Limit:** 128MB with LRU eviction policy
 - **Health Check:** Redis ping every 10 seconds
 
@@ -37,12 +37,12 @@ RSS_POLL_INTERVAL=30      # RSS polling interval in minutes
 
 Run Redis tests:
 ```bash
-npm run test -- config/redis.test.js
+docker compose exec backend ./node_modules/.bin/vitest run config/redis.test.js
 ```
 
 Run queue tests:
 ```bash
-npm run test -- queues/videoProcessing.queue.test.js
+docker compose exec backend ./node_modules/.bin/vitest run queues/videoProcessing.queue.test.js
 ```
 
 ## Usage

@@ -133,9 +133,9 @@ const Dashboard = () => {
           <AlertCircleIcon size={48} className="dashboard__error-icon" aria-hidden="true" />
           <h2>Error al cargar tus canales</h2>
           <p>{error}</p>
-          <button 
+          <button
             className="dashboard__retry-button"
-            onClick={fetchChannels}
+            onClick={fetchChannelsAndVideos}
           >
             Reintentar
           </button>

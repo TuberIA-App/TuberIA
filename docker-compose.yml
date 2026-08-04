@@ -1,68 +1,202 @@
+# ============================================================================
+# TuberIA - base Compose model, shared by every environment.
+#
+#   dev : docker compose -f docker-compose.yml -f docker-compose.dev.yml  up -d
+#   prod: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --wait
+#
+# (.env sets COMPOSE_FILE so a bare `docker compose up` picks the dev overlay.)
+#
+# This file publishes NO ports and names NO containers. Both were real
+# incidents waiting to happen:
+#   * a `ports:` entry here leaked MongoDB onto 0.0.0.0 even in production,
+#     because `expose:` in the prod overlay does not cancel it - they are
+#     different keys, and Compose never removes a key an overlay leaves out.
+#   * container_name is a flat, machine-global namespace shared with every
+#     other Docker project on the host, and it blocks `--scale` outright.
+#
+# There is no `version:` key: the Compose Specification is versionless and the
+# attribute now only produces a warning.
+# ============================================================================
 
-# ============================================
-# Docker Compose - Base Configuration
-# Shared settings for all environments
-# ============================================
-# Documentación:
-# - Guía de uso y comandos: docs/README-DOCKER.md
-# - Configuración de Redis: docs/README-REDIS.md
-# - Troubleshooting: docs/README-REDIS.md (sección troubleshooting)
+name: tuberia
+
+# ----------------------------------------------------------------------------
+# Reusable fragments
+# ----------------------------------------------------------------------------
+# Docker's default json-file driver has NO rotation. Caddy access logs, BullMQ
+# churn and mongod's JSON startup output will fill a small VPS disk. Belt and
+# braces alongside the daemon-wide setting in /etc/docker/daemon.json: the
+# daemon setting covers containers you forget, this makes the intent explicit
+# and travels with the repo.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+    compress: "true"
+
+# `unless-stopped`, never `always`: `always` restarts a container even after
+# you deliberately stopped it, which makes VPS maintenance fight you.
+x-restart: &restart unless-stopped
 
 services:
 
+  # --------------------------------------------------------------------------
+  # Frontend - Vite dev server (dev) / nginx serving the static build (prod)
+  # --------------------------------------------------------------------------
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: development  # Default to development, override in prod
-    container_name: tuberia-frontend
-    networks:
-      - tuberia-network
+      # Repo root, because the pnpm workspace lockfile lives there.
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: *restart
+    logging: *logging
+    depends_on:
+      backend:
+        # `service_started` (the previous value) is identical to the bare short
+        # syntax and guarantees nothing. `service_healthy` is satisfiable now
+        # that the backend healthcheck lives in this committed file rather than
+        # in a gitignored override.
+        condition: service_healthy
+        restart: true
 
+  # --------------------------------------------------------------------------
+  # Backend - Express 5 API + BullMQ workers
+  # --------------------------------------------------------------------------
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: development  # Default to development, override in prod
-    container_name: tuberia-backend
-    networks:
-      - tuberia-network
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: *restart
+    logging: *logging
+    # A real init shim as PID 1 reaps zombies and forwards signals. The app
+    # installs its own SIGTERM handler (src/index.js gracefulShutdown), and
+    # because the container command is plain `node` the signal reaches it.
+    init: true
+    # Default is 10s. BullMQ workers need room to finish an in-flight
+    # transcription or summarisation before SIGKILL, or jobs are orphaned in
+    # the `active` state and never retried.
+    stop_grace_period: 30s
+    healthcheck:
+      # Deliberately shallow - it asks only "can this process serve HTTP?".
+      # It does NOT assert Mongo/Redis: a liveness probe that checks
+      # dependencies flaps the container on any transient blip, and since
+      # frontend depends on backend being healthy, one blip wedges the deploy.
+      # The deep check lives at /health and is polled by scripts/deployment.sh.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5000/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+      # Probe every 2s while still inside start_period, so a healthy boot is
+      # detected in seconds instead of waiting out a full 30s interval.
+      start_interval: 2s
     depends_on:
       mongo:
         condition: service_healthy
+      redis:
+        condition: service_healthy
 
+  # --------------------------------------------------------------------------
+  # MongoDB
+  # --------------------------------------------------------------------------
+  # There is no ./mongo/Dockerfile any more: it existed only to COPY
+  # mongo-init.js into /docker-entrypoint-initdb.d/. A read-only bind mount
+  # does the same job with no second image to build, scan and patch.
+  #
+  # Pinned to 7.0 deliberately. MongoDB majors require an in-place binary swap
+  # plus a featureCompatibilityVersion step and are NOT downgradable, so 8.0 is
+  # a separate, backup-gated change. 7.0 is supported until 2027-08-31.
   mongo:
-    build: ./mongo
-    container_name: mongodb
+    image: mongo:7.0@sha256:35a5926f71f8b6cb19206bee928c5a85f241a8be99f20c81abe35ae78a73415d
+    restart: *restart
+    logging: *logging
+    # WiredTiger sizes its cache from HOST RAM and ignores the cgroup limit -
+    # on a 2 GB box it would reserve ~1 GB regardless of mem_limit. This is the
+    # single highest-leverage memory setting in the stack.
+    command: ["mongod", "--wiredTigerCacheSizeGB", "0.25", "--auth", "--quiet"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:?MONGO_USER must be set in .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?MONGO_PASSWORD must be set in .env}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-tuberia_db}
     volumes:
       - mongo_data:/data/db
-    networks:
-      - tuberia-network
+      # mongod also writes here; without its own volume a read-only root
+      # filesystem (production) prevents startup.
+      - mongo_config:/data/configdb
+      - ./mongo/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    ulimits:
+      # Without this mongod logs "Soft rlimits for open file descriptors too
+      # low: currentValue 1024, recommendedMinimum 64000" on every start.
+      nofile:
+        soft: 64000
+        hard: 64000
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
+      # --quiet and --norc keep each probe cheap: every mongosh invocation
+      # costs roughly 40 MB and a second, so 30s is the right interval here.
+      test: ["CMD", "mongosh", "--quiet", "--norc", "--eval", "db.adminCommand('ping').ok"]
+      interval: 30s
       timeout: 5s
       retries: 5
-      start_period: 20s
-    ports:
-      - "27017:27017"
+      start_period: 30s
+      start_interval: 3s
 
-  # Redis - Base configuration (overridden in dev/prod)
+  # --------------------------------------------------------------------------
+  # Redis - BullMQ job queue + cache
+  # --------------------------------------------------------------------------
+  # Redis 8: the 7.x line reaches end of life on 2026-11-30. Redis 8 reads
+  # Redis 7 AOF/RDB forward-compatibly; the reverse is NOT true, so back the
+  # volume up before the first deploy that lands this.
   redis:
-    image: redis:7-alpine
-    container_name: tuberia-redis
-    networks:
-      - tuberia-network
+    image: redis:8-alpine@sha256:978f0e01593e65eed801f2402944efcd936d43b5027e4908a7897baf88ed6241
+    restart: *restart
+    logging: *logging
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      # RDB snapshotting is switched off. AOF/everysec is ample durability for
+      # a job queue, and dropping RDB halves the number of fork()-based
+      # persistence paths - each fork's copy-on-write pages count against the
+      # cgroup limit and are what OOM-kills a tightly capped Redis.
+      - --save
+      - ""
+      - --maxmemory-policy
+      # NON-NEGOTIABLE. BullMQ keeps job state in Redis, so any eviction policy
+      # silently discards queued and in-flight jobs.
+      - noeviction
+    volumes:
+      - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
+      # -e is load-bearing. Plain `redis-cli ping` exits 0 even on an ERROR
+      # reply: with a password set it prints "NOAUTH Authentication required."
+      # and still returns 0. Without -e, Redis reports healthy while every
+      # BullMQ command fails and depends_on green-lights the backend anyway.
+      test: ["CMD", "redis-cli", "-e", "ping"]
+      interval: 30s
+      timeout: 3s
       retries: 3
+      start_period: 10s
+      start_interval: 2s
 
+# ----------------------------------------------------------------------------
+# Volumes (`driver: local` is the default and omitted as noise)
+# ----------------------------------------------------------------------------
 volumes:
   mongo_data:
+  mongo_config:
   redis_data:
 
+# ----------------------------------------------------------------------------
+# Networks
+# ----------------------------------------------------------------------------
+# Naming the default network beats declaring a custom one and then listing it
+# on every service purely to rejoin a network Compose would have attached them
+# to anyway. It also avoids a merge trap: Compose UNIONS `networks:` lists
+# across overlay files instead of replacing them, so a prod overlay that lists
+# only an internal network would leave services on the public bridge as well.
 networks:
-  tuberia-network:
-    driver: bridge
+  default:
+    name: tuberia

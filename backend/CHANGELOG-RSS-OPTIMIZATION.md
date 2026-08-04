@@ -121,13 +121,13 @@ Only retries **transcription errors**, not summarization errors.
 
 ```bash
 # Run RSS poller tests
-docker exec tuberia-backend npm test -- rssPoller.service.test.js
+docker compose exec backend ./node_modules/.bin/vitest run rssPoller.service.test.js
 
 # Run retry service tests
-docker exec tuberia-backend npm test -- retryFailedTranscriptions.service.test.js
+docker compose exec backend ./node_modules/.bin/vitest run retryFailedTranscriptions.service.test.js
 
 # Run all tests
-docker exec tuberia-backend npm test
+docker compose exec backend ./node_modules/.bin/vitest run
 ```
 
 ---

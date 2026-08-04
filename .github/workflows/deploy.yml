@@ -1,40 +1,255 @@
-name: TuberIA Automation Deployment 
+# ============================================================================
+# Deploy to production
+# ============================================================================
+# Flow: CI gate -> build images -> push to GHCR -> SSH to the VPS -> pull and
+# health-gated restart, with automatic rollback if the new tag is unhealthy.
+#
+# The images are built HERE, not on the VPS. Building on a 2 GB box ran a full
+# `vite build` and dependency install alongside a live mongod and reliably got
+# mongod OOM-killed. The VPS now only pulls an immutable, already-built image.
+#
+# Every action is pinned to a full commit SHA - a `v4` tag can be repointed at
+# new code by whoever controls the action's repository.
+# ============================================================================
+
+name: Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Existing image tag to deploy (leave blank to build from main)"
+        required: false
+        type: string
+
+permissions: {}
+
+# Never cancel a deploy in flight: killing it between "images pulled" and
+# "containers healthy" leaves production in an indeterminate state. Queue
+# instead, so two quick merges cannot race and roll production backwards.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
 
 jobs:
-  deploy:
+  # --------------------------------------------------------------------------
+  # Reuses ci.yml wholesale, so the release gate and the PR checks can never
+  # drift apart.
+  ci:
+    name: CI gate
+    if: ${{ !inputs.image_tag }}
+    uses: ./.github/workflows/ci.yml
+    # A called workflow can never hold more permissions than the calling job.
+    # This workflow sets `permissions: {}` at the top level, so without an
+    # explicit grant here the ci job would be handed nothing while ci.yml's own
+    # jobs request `contents: read` - and GitHub rejects the whole run with
+    # "the workflow is requesting 'contents: read', but is only allowed
+    # 'contents: none'".
+    permissions:
+      contents: read
+
+  # --------------------------------------------------------------------------
+  build:
+    name: Build and push ${{ matrix.image }}
+    if: ${{ !inputs.image_tag }}
+    needs: ci
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write        # push to GHCR
+      attestations: write    # build provenance
+      id-token: write        # OIDC, used by the attestation step
+    strategy:
+      fail-fast: true
+      matrix:
+        image: [backend, frontend]
 
     steps:
-      # Obtenemos el código mas reciente del repositorio
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Preparamos el SSH con la clave privada
-      - name: webfactory/ssh-agent
-        uses: webfactory/ssh-agent@v0.9.0
+      # GHCR rejects uppercase characters in an image path, but
+      # github.repository_owner preserves the account's original casing (e.g.
+      # "TuberIA-App"). docker/metadata-action lowercases the image name for us,
+      # but the attestation step below takes a raw string - so derive it once,
+      # explicitly, and use it in both places.
+      - name: Derive lowercase image name
+        id: img
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          echo "name=${REGISTRY}/${OWNER,,}/tuberia-${{ matrix.image }}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image metadata
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ steps.img.outputs.name }}
+          # The long SHA is the tag production actually deploys: it is
+          # immutable, so a rollback is a one-line change rather than a revert
+          # commit plus a rebuild. `latest` exists only for convenience.
+          tags: |
+            type=sha,format=long,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: ${{ matrix.image }}/Dockerfile
+          target: production
+          push: true
+          # Single architecture on purpose. Adding linux/arm64 would mean
+          # QEMU-emulated builds (5-10x slower) and double the registry
+          # storage, for a VPS that only ever runs amd64.
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-name: ${{ steps.img.outputs.name }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  # --------------------------------------------------------------------------
+  deploy:
+    name: Deploy to VPS
+    needs: build
+    # `always()` plus an explicit result check lets a manual workflow_dispatch
+    # with an existing image_tag skip straight to deploying, while a normal
+    # push still requires the build to have succeeded.
+    if: ${{ always() && (inputs.image_tag || needs.build.result == 'success') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    # Secrets live on this environment rather than the repository, so they are
+    # not readable by every workflow, and GitHub's deployment protection rules
+    # (required reviewers, wait timers) apply.
+    environment:
+      name: production
+      url: https://${{ vars.DOMAIN_NAME }}
+
+    steps:
+      - name: Resolve image tag
+        id: tag
+        env:
+          MANUAL_TAG: ${{ inputs.image_tag }}
+          SHA: ${{ github.sha }}
+        run: echo "value=${MANUAL_TAG:-$SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
         with:
           ssh-private-key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
 
-      # Mejoramos la seguridad al añadir la clave publica del servidor a known_hosts. Evitando así ataques MITM
-      - name: Add Server to Known Hosts
+      # A pinned host key, NOT `ssh-keyscan` at run time. Running keyscan on
+      # every deploy is trust-on-first-use that accepts whatever key is
+      # presented, so it does not prevent the man-in-the-middle attack it looks
+      # like it prevents. Capture the real value once on the VPS with
+      # `ssh-keyscan -t ed25519 <host>` and store it as SSH_KNOWN_HOSTS.
+      - name: Pin the server host key
+        env:
+          KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
         run: |
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
-      
-      # Ejecutamos el script de despliegue en el servidor remoto
-      - name: Deploy to VPS
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          if [ -z "$KNOWN_HOSTS" ]; then
+            echo "::error::SSH_KNOWN_HOSTS secret is not set. Generate it on the VPS with: ssh-keyscan -t ed25519 <host>"
+            exit 1
+          fi
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      # Secrets are passed through `env:` and referenced as shell variables.
+      # Interpolating ${{ secrets.* }} directly into a run block splices their
+      # value into the script text, which is a command-injection vector and can
+      # defeat log masking.
+      - name: Sync repository on the VPS
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          SHA: ${{ github.sha }}
         run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            echo "[+] Iniciando despliegue automatico desde GitHub Actions..."
+          # Deliberately a separate step from the deploy below: the reset
+          # rewrites scripts/deployment.sh, and bash reads a script
+          # incrementally. Changing that file inside the process running it can
+          # make it execute garbage. A fresh SSH session reads the new file.
+          ssh -o StrictHostKeyChecking=yes "${DEPLOY_USER}@${VPS_HOST}" \
+            "set -euo pipefail
+             cd ~/TuberIA
+             git fetch --quiet origin
+             git reset --quiet --hard '${SHA}'
+             chmod +x scripts/*.sh
+             echo \"repo now at \$(git rev-parse --short HEAD)\""
 
-            cd ~/TuberIA
+      - name: Deploy
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          # A plain command rather than a `<< 'EOF'` heredoc: a heredoc can
+          # swallow the remote exit status, which is how a failed deploy used
+          # to report a green check.
+          ssh -o StrictHostKeyChecking=yes "${DEPLOY_USER}@${VPS_HOST}" \
+            "cd ~/TuberIA && IMAGE_TAG='${TAG}' ./scripts/deployment.sh"
 
-            chmod +x scripts/deployment.sh
-            ./scripts/deployment.sh
+      # Independent confirmation from OUTSIDE the VPS: proves TLS, Caddy
+      # routing and the API are all working together, which no in-container
+      # healthcheck can establish.
+      - name: Smoke test the public endpoint
+        env:
+          DOMAIN: ${{ vars.DOMAIN_NAME }}
+        run: |
+          if [ -z "$DOMAIN" ]; then
+            echo "::warning::DOMAIN_NAME variable not set; skipping public smoke test"
+            exit 0
+          fi
+          for attempt in $(seq 1 10); do
+            code="$(curl -fsS -o /tmp/health.json -w '%{http_code}' "https://${DOMAIN}/api/health" || true)"
+            if [ "$code" = "200" ]; then
+              echo "Public health check OK:"; cat /tmp/health.json; exit 0
+            fi
+            echo "attempt ${attempt}: HTTP ${code:-none}, retrying..."
+            sleep 6
+          done
+          echo "::error::Public health check never returned 200"
+          exit 1
 
-            echo "[+] Deployment Completed"
-          EOF
+      - name: Summary
+        if: always()
+        env:
+          TAG: ${{ steps.tag.outputs.value }}
+          DOMAIN: ${{ vars.DOMAIN_NAME }}
+        run: |
+          {
+            echo "### Deployment"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Tag | \`${TAG}\` |"
+            echo "| URL | https://${DOMAIN} |"
+            echo "| Result | ${{ job.status }} |"
+            echo ""
+            echo "Roll back on the VPS with: \`./scripts/deployment.sh --rollback\`"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,54 @@
+# ============================================================================
+# Default build-context filter (repository root)
+# ============================================================================
+# Both images build from the repo root because the pnpm workspace lockfile
+# lives here. BuildKit prefers the more specific `backend/Dockerfile.dockerignore`
+# and `frontend/Dockerfile.dockerignore`; this file is the fallback and the
+# baseline for any ad-hoc `docker build .`.
+# ============================================================================
+
+# --- version control & CI ---------------------------------------------------
+.git
+.gitignore
+.github
+
+# --- editors / OS -----------------------------------------------------------
+.vscode
+.idea
+**/.DS_Store
+Thumbs.db
+
+# --- dependency trees & build output (always rebuilt inside the image) ------
+**/node_modules
+**/dist
+**/build
+**/coverage
+.pnpm-store
+
+# --- secrets and local state (must NEVER enter an image layer) --------------
+**/.env
+**/.env.*
+!**/.env.example
+secrets
+**/logs
+**/*.log
+.deploy.lock
+
+# --- data & backups ---------------------------------------------------------
+mongo-backups
+redis-backups
+letsencrypt
+caddy_data
+
+# --- docs, design assets and scripts ----------------------------------------
+docs
+design
+*.md
+LICENSE
+CITATION.cff
+
+# --- compose/infra files (mounted at runtime, not built in) -----------------
+docker-compose*.yml
+compose*.yaml
+Caddyfile
+.trivyignore

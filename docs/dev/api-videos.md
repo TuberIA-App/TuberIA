@@ -88,19 +88,19 @@ Authorization: Bearer <access_token>
 
 ```bash
 # Get first page (20 videos)
-curl "http://localhost:5000/api/users/me/videos" \
+curl "http://127.0.0.1:7101/api/users/me/videos" \
   -H "Authorization: Bearer TOKEN"
 
 # Get page 2 with 50 videos per page
-curl "http://localhost:5000/api/users/me/videos?page=2&limit=50" \
+curl "http://127.0.0.1:7101/api/users/me/videos?page=2&limit=50" \
   -H "Authorization: Bearer TOKEN"
 
 # Get only completed videos
-curl "http://localhost:5000/api/users/me/videos?status=completed" \
+curl "http://127.0.0.1:7101/api/users/me/videos?status=completed" \
   -H "Authorization: Bearer TOKEN"
 
 # Get all videos (no status filter)
-curl "http://localhost:5000/api/users/me/videos?status=all" \
+curl "http://127.0.0.1:7101/api/users/me/videos?status=all" \
   -H "Authorization: Bearer TOKEN"
 ```
 
@@ -159,7 +159,7 @@ Authorization: Bearer <access_token>
 **Example:**
 
 ```bash
-curl "http://localhost:5000/api/videos/dQw4w9WgXcQ" \
+curl "http://127.0.0.1:7101/api/videos/dQw4w9WgXcQ" \
   -H "Authorization: Bearer TOKEN"
 ```
 

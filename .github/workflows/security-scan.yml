@@ -1,4 +1,18 @@
-name: Security Scan (Trivy)
+# ============================================================================
+# Security scanning (Trivy)
+# ============================================================================
+# Three independent surfaces:
+#   1. filesystem  - dependency CVEs from the lockfile
+#   2. image       - CVEs in the images actually shipped, base layers included
+#   3. config      - misconfiguration in Dockerfiles and Compose files
+#   4. secrets     - credentials committed to git history
+#
+# The image scan is the important addition: a filesystem-only scan never looks
+# at the base image, so an unpatched CVE in node:24-slim or nginx would ship
+# to production completely unseen.
+# ============================================================================
+
+name: Security Scan
 
 on:
   pull_request:
@@ -7,81 +21,143 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
+    # Weekly: new CVEs are published against dependencies that have not
+    # changed, so scanning only on push would miss them entirely.
     - cron: '0 2 * * 0'
 
-permissions:
-  contents: read
-  security-events: write
+# Least privilege at workflow level; only the jobs that upload SARIF get
+# security-events: write. The config and secret jobs never needed it.
+permissions: {}
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  # --------------------------------------------------------------------------
   filesystem-scan:
-    name: Filesystem Vulnerability Scan
+    name: Dependency vulnerabilities
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Trivy scan (Backend)
-        uses: aquasecurity/trivy-action@0.28.0
+      # One scan at the repository root: the pnpm workspace has a single
+      # lockfile covering both packages, so the previous split
+      # backend/frontend scans would now each miss half the tree.
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: 'fs'
-          scan-ref: './backend'
+          scan-ref: '.'
           format: 'sarif'
-          output: 'trivy-backend.sarif'
+          output: 'trivy-fs.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
           ignore-unfixed: true
 
-      - name: Trivy scan (Frontend)
-        uses: aquasecurity/trivy-action@0.28.0
+      - name: Upload results
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4
+        if: always()
         with:
-          scan-type: 'fs'
-          scan-ref: './frontend'
+          sarif_file: 'trivy-fs.sarif'
+          category: 'trivy-filesystem'
+
+  # --------------------------------------------------------------------------
+  image-scan:
+    name: Image vulnerabilities (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [backend, frontend]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      # Built and loaded locally so the scan sees exactly the layers that would
+      # ship, without needing registry credentials.
+      - name: Build image for scanning
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: ${{ matrix.image }}/Dockerfile
+          target: production
+          push: false
+          load: true
+          tags: tuberia-${{ matrix.image }}:scan
+          platforms: linux/amd64
+          cache-from: type=gha,scope=${{ matrix.image }}
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: 'image'
+          image-ref: 'tuberia-${{ matrix.image }}:scan'
           format: 'sarif'
-          output: 'trivy-frontend.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
+          output: 'trivy-image-${{ matrix.image }}.sarif'
+          severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
 
-      - name: Upload Backend results
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Upload results
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4
         if: always()
         with:
-          sarif_file: 'trivy-backend.sarif'
-          category: 'trivy-backend'
+          sarif_file: 'trivy-image-${{ matrix.image }}.sarif'
+          category: 'trivy-image-${{ matrix.image }}'
 
-      - name: Upload Frontend results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-frontend.sarif'
-          category: 'trivy-frontend'
-
+  # --------------------------------------------------------------------------
   config-scan:
-    name: Configuration Scan
+    name: Configuration
     runs-on: ubuntu-latest
+    permissions:
+      contents: read      # no SARIF upload, so no security-events needed
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Trivy config scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: 'config'
           scan-ref: '.'
           format: 'table'
+          # Reported, not enforced: config findings need human judgement
+          # (several are deliberate, e.g. mongo running with a fixed uid).
           exit-code: '0'
           severity: 'CRITICAL,HIGH'
 
+  # --------------------------------------------------------------------------
   secret-scan:
-    name: Secret Detection
+    name: Committed secrets
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    permissions:
+      contents: read
 
+    steps:
+      # A shallow checkout is sufficient. Trivy's secret scanner inspects FILES
+      # IN THE WORKING TREE, not git history - so `fetch-depth: 0` would only
+      # slow the job down without scanning a single extra commit. For history,
+      # rely on GitHub's own secret scanning and push protection (Settings ->
+      # Code security), which reads every pushed commit.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # This one DOES fail the build. A committed credential is not a
+      # judgement call, and rotating it is urgent.
       - name: Trivy secret scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: 'fs'
           scan-ref: '.'

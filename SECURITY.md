@@ -61,12 +61,14 @@ If you're contributing to TuberIA, please follow these security guidelines:
 TuberIA implements the following security measures:
 
 - **Authentication**: JWT-based authentication with refresh tokens
-- **Rate Limiting**: Protection against brute force attacks (1000 req/15min general, 10 req/15min for auth)
+- **Rate Limiting**: Protection against brute force attacks (1000 req/15min general, 10 req/15min for auth). Bypassed only under `NODE_ENV=test`.
 - **Input Validation**: express-validator for request validation
-- **Security Headers**: Helmet.js for HTTP security headers
+- **Security Headers**: Helmet.js on the API, plus Caddy as the authoritative source at the edge — HSTS, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `X-Frame-Options: DENY`, and a Content-Security-Policy. The deprecated `X-XSS-Protection` header is explicitly stripped.
 - **CORS**: Configured for specific origins in production
-- **Secrets Management**: Docker secrets for production credentials
-- **Dependency Scanning**: Automated via Dependabot and Trivy
+- **Secrets Management**: Environment variables from a mode-0600 `backend/.env`, validated at startup — the process refuses to boot on a missing, too-short, or placeholder secret. Secrets never appear in `environment:` keys, so they stay out of `docker inspect` and CI logs.
+- **Container Hardening**: Production containers run with a read-only root filesystem, all Linux capabilities dropped (`cap_drop: ALL`), `no-new-privileges`, and as non-root users. MongoDB and Redis sit on an `internal: true` network with no published ports and no route to the internet; Caddy is the only service bound to a public address.
+- **Supply Chain**: Dependencies install with `--frozen-lockfile`; pnpm blocks dependency build scripts unless explicitly allow-listed in `pnpm-workspace.yaml`; GitHub Actions are pinned to full commit SHAs; images carry build provenance attestations.
+- **Dependency Scanning**: Automated via Dependabot and Trivy (filesystem, built image, configuration, and committed-secret scans)
 
 ## Acknowledgments
 

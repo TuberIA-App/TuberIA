@@ -74,7 +74,7 @@ Authorization: Bearer <access_token>
 
 ```bash
 # Get user stats
-curl "http://localhost:5000/api/users/me/stats" \
+curl "http://127.0.0.1:7101/api/users/me/stats" \
   -H "Authorization: Bearer TOKEN"
 ```
 
@@ -139,7 +139,7 @@ Authorization: Bearer <access_token>
 
 ```bash
 # Get followed channels
-curl "http://localhost:5000/api/users/me/channels" \
+curl "http://127.0.0.1:7101/api/users/me/channels" \
   -H "Authorization: Bearer TOKEN"
 ```
 

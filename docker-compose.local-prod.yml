@@ -1,0 +1,59 @@
+# ============================================================================
+# TuberIA - run the PRODUCTION stack locally, against locally built images
+# ============================================================================
+# Lets you verify the hardened production configuration (read-only root
+# filesystems, dropped capabilities, non-root users, the internal network, the
+# Caddy TLS front) on your own machine BEFORE it reaches the VPS. Several
+# production-only settings simply cannot be exercised by the dev overlay.
+#
+#   # 1. build and tag the images the prod overlay expects
+#   docker build -f backend/Dockerfile  --target production \
+#       -t ghcr.io/obezeq/tuberia-backend:localtest .
+#   docker build -f frontend/Dockerfile --target production \
+#       -t ghcr.io/obezeq/tuberia-frontend:localtest .
+#
+#   # 2. run it (COMPOSE_FILE from .env must be overridden)
+#   IMAGE_TAG=localtest DOMAIN_NAME=localhost COMPOSE_FILE= \
+#     docker compose -f docker-compose.yml \
+#                    -f docker-compose.prod.yml \
+#                    -f docker-compose.local-prod.yml up -d --wait
+#
+#   # 3. check it (Caddy issues its own local CA cert for "localhost",
+#   #    hence -k)
+#   curl -k https://localhost:${CADDY_HTTPS_PORT:-7105}/api/health
+#
+#   # 4. tear down, including the test volumes
+#   COMPOSE_FILE= docker compose -f docker-compose.yml \
+#       -f docker-compose.prod.yml -f docker-compose.local-prod.yml down -v
+#
+# DO NOT use this file on the VPS.
+# ============================================================================
+
+name: tuberia
+
+services:
+
+  # The prod overlay sets `pull_policy: always`, which is right for a server
+  # (it guarantees the tag's current content) but makes a locally built image
+  # unusable, because Compose tries to fetch it from GHCR and gets "denied".
+  backend:
+    pull_policy: never
+
+  frontend:
+    pull_policy: never
+
+  # Caddy would otherwise take 80/443 on every interface, which collides with
+  # anything else serving HTTP on the machine. Loopback + high ports keep this
+  # test isolated exactly like the dev overlay.
+  caddy:
+    ports: !override
+      - name: caddy-http
+        target: 80
+        published: "${CADDY_HTTP_PORT:-7104}"
+        host_ip: ${HOST_BIND_ADDR:-127.0.0.1}
+        protocol: tcp
+      - name: caddy-https
+        target: 443
+        published: "${CADDY_HTTPS_PORT:-7105}"
+        host_ip: ${HOST_BIND_ADDR:-127.0.0.1}
+        protocol: tcp

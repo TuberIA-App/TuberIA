@@ -5,7 +5,7 @@ Documentación completa de los endpoints de autenticación (Login, Registro y JW
 ## URL Base
 
 ```
-http://localhost:5000/api/auth
+http://127.0.0.1:7101/api/auth
 ```
 
 **Nota**: El puerto por defecto del backend es `5000` según la configuración en `.env`
@@ -127,7 +127,7 @@ Content-Type: application/json
 ### Ejemplo de uso (JavaScript)
 
 ```javascript
-const response = await fetch('http://localhost:5000/api/auth/register', {
+const response = await fetch('http://127.0.0.1:7101/api/auth/register', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
@@ -235,7 +235,7 @@ Content-Type: application/json
 ### Ejemplo de uso (JavaScript)
 
 ```javascript
-const response = await fetch('http://localhost:5000/api/auth/login', {
+const response = await fetch('http://127.0.0.1:7101/api/auth/login', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
@@ -338,7 +338,7 @@ Content-Type: application/json
 ```javascript
 const refreshToken = localStorage.getItem('refreshToken');
 
-const response = await fetch('http://localhost:5000/api/auth/refresh', {
+const response = await fetch('http://127.0.0.1:7101/api/auth/refresh', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
@@ -425,7 +425,7 @@ Authorization: Bearer {accessToken}
 ```javascript
 const accessToken = localStorage.getItem('accessToken');
 
-const response = await fetch('http://localhost:5000/api/auth/me', {
+const response = await fetch('http://127.0.0.1:7101/api/auth/me', {
   method: 'GET',
   headers: {
     'Authorization': `Bearer ${accessToken}`
@@ -537,7 +537,7 @@ Este endpoint implementa un sistema de revocación de tokens utilizando Redis bl
 ```javascript
 const accessToken = localStorage.getItem('accessToken');
 
-const response = await fetch('http://localhost:5000/api/auth/logout', {
+const response = await fetch('http://127.0.0.1:7101/api/auth/logout', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${accessToken}`,
@@ -564,7 +564,7 @@ if (data.success) {
 const accessToken = localStorage.getItem('accessToken');
 const refreshToken = localStorage.getItem('refreshToken');
 
-const response = await fetch('http://localhost:5000/api/auth/logout', {
+const response = await fetch('http://127.0.0.1:7101/api/auth/logout', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${accessToken}`,
@@ -597,7 +597,7 @@ async function logout() {
     const refreshToken = localStorage.getItem('refreshToken');
 
     // Intentar revocar tokens en el backend
-    await fetch('http://localhost:5000/api/auth/logout', {
+    await fetch('http://127.0.0.1:7101/api/auth/logout', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -638,7 +638,7 @@ await logout();
 ```javascript
 // Usuario sospecha que su token fue robado
 // Revoca ambos tokens inmediatamente
-const response = await fetch('http://localhost:5000/api/auth/logout', {
+const response = await fetch('http://127.0.0.1:7101/api/auth/logout', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${accessToken}`,
@@ -673,18 +673,18 @@ await logout();
 
 ```bash
 # Logout solo con access token
-curl -X POST http://localhost:5000/api/auth/logout \
+curl -X POST http://127.0.0.1:7101/api/auth/logout \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json"
 
 # Logout con ambos tokens
-curl -X POST http://localhost:5000/api/auth/logout \
+curl -X POST http://127.0.0.1:7101/api/auth/logout \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"refreshToken":"YOUR_REFRESH_TOKEN"}'
 
 # Intentar usar token revocado (debería fallar con 401)
-curl -X GET http://localhost:5000/api/auth/me \
+curl -X GET http://127.0.0.1:7101/api/auth/me \
   -H "Authorization: Bearer YOUR_REVOKED_ACCESS_TOKEN"
 ```
 
@@ -767,7 +767,7 @@ El sistema utiliza dos tipos de tokens JWT:
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api'
+  baseURL: 'http://127.0.0.1:7101/api'
 });
 
 // Request interceptor - añadir token
@@ -795,7 +795,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         const response = await axios.post(
-          'http://localhost:5000/api/auth/refresh',
+          'http://127.0.0.1:7101/api/auth/refresh',
           { refreshToken }
         );
 
@@ -901,7 +901,7 @@ When receiving 401 with "Token expired", implement automatic token refresh:
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api'
+  baseURL: 'http://127.0.0.1:7101/api'
 });
 
 // Request interceptor - add token to all requests
@@ -934,7 +934,7 @@ api.interceptors.response.use(
         // Attempt to refresh token
         const refreshToken = localStorage.getItem('refreshToken');
         const response = await axios.post(
-          'http://localhost:5000/api/auth/refresh',
+          'http://127.0.0.1:7101/api/auth/refresh',
           { refreshToken }
         );
 
@@ -1142,7 +1142,7 @@ RateLimit-Reset: 1700000900
 El backend acepta peticiones desde:
 
 ```
-Origin: http://localhost:5173 (configurable en .env)
+Origin: http://127.0.0.1:7100 (configurable en .env)
 ```
 
 Headers permitidos:
@@ -1171,7 +1171,7 @@ JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=7d
 
 # Frontend URL para CORS
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=http://127.0.0.1:7100
 ```
 
 ---
@@ -1209,16 +1209,16 @@ Ejemplo con curl:
 
 ```bash
 # Registro
-curl -X POST http://localhost:5000/api/auth/register \
+curl -X POST http://127.0.0.1:7101/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username":"johndoe","email":"john@example.com","password":"password123"}'
 
 # Login
-curl -X POST http://localhost:5000/api/auth/login \
+curl -X POST http://127.0.0.1:7101/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"john@example.com","password":"password123"}'
 
 # Obtener usuario actual
-curl -X GET http://localhost:5000/api/auth/me \
+curl -X GET http://127.0.0.1:7101/api/auth/me \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```

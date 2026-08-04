@@ -1,82 +1,187 @@
-# ============================================
-# Caddyfile - Production Configuration
-# Automatic HTTPS with Let's Encrypt
-# ============================================
+# ============================================================================
+# TuberIA - Caddy 2.11
+# ============================================================================
+# Caddy obtains and renews Let's Encrypt certificates automatically, redirects
+# HTTP to HTTPS, and serves HTTP/2 and HTTP/3 with no extra configuration.
 #
-# Caddy automatically:
-# - Obtains SSL certificates from Let's Encrypt
-# - Renews certificates before expiration
-# - Redirects HTTP to HTTPS
-# - Enables HTTP/2 and HTTP/3
-#
-# No additional configuration needed!
-# ============================================
-
-# Global options
+# NOTE ON DIRECTIVE ORDER: Caddy executes directives in a FIXED order
+# (root -> header -> redir -> rewrite -> encode -> handle -> reverse_proxy),
+# not in the order they appear in this file. A `header` block after a `handle`
+# block still applies. Do not "fix" the ordering.
+# ============================================================================
 {
-    # Email for Let's Encrypt notifications
-    email {$SSL_EMAIL:admin@example.com}
+	email {$SSL_EMAIL:admin@example.com}
 
-    # Disable admin API (security)
-    admin off
+	# The mutable admin API stays off. The container healthcheck uses the
+	# dedicated loopback site block at the bottom of this file instead.
+	admin off
 }
 
-# Main application - tuberia.app
+# ----------------------------------------------------------------------------
+# Security headers
+# ----------------------------------------------------------------------------
+# Every entry uses `>` (set and defer). Deferring matters: helmet on Express
+# emits its own X-Frame-Options / HSTS / Referrer-Policy on /api/* responses,
+# and a plain `header Foo bar` is applied on the way IN, so the upstream's
+# value would win. With `>` Caddy is authoritative.
+(security_headers) {
+	header {
+		# One year. `preload` is deliberately NOT included: submitting to
+		# hstspreload.org is effectively irreversible, and includeSubDomains
+		# would break any subdomain later needed on plain HTTP (staging,
+		# status page, mail host). Add it only after auditing every subdomain.
+		>Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+		>X-Content-Type-Options "nosniff"
+
+		# Replaces no-referrer-when-downgrade, which still leaked the full URL -
+		# including any token in a query string - to same-scheme third parties.
+		>Referrer-Policy "strict-origin-when-cross-origin"
+
+		# Blocks tabnabbing while still permitting OAuth popups.
+		>Cross-Origin-Opener-Policy "same-origin-allow-popups"
+
+		# Cheap, high-value: even if an attacker lands XSS they cannot reach
+		# the camera, microphone, geolocation or payment APIs.
+		>Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), midi=()"
+
+		# Legacy fallback; CSP frame-ancestors below is authoritative.
+		# DENY rather than SAMEORIGIN - this app is never framed.
+		>X-Frame-Options "DENY"
+
+		# X-XSS-Protection is REMOVED, not set. The header is deprecated, the
+		# XSS Auditor it controlled has been deleted from every major browser,
+		# and "1; mode=block" can itself introduce information disclosure. The
+		# `-` form is auto-deferred, so this also strips the value helmet sets.
+		-X-XSS-Protection
+
+		-Server
+		-X-Powered-By
+	}
+}
+
+# ----------------------------------------------------------------------------
+# Content Security Policy
+# ----------------------------------------------------------------------------
+# *** CURRENTLY IN REPORT-ONLY MODE - SEE "GOING LIVE" BELOW ***
+#
+# The allowlist below was derived from the source, not copied from a template:
+#   - script-src 'self' with no 'unsafe-inline': Vite emits only external,
+#     content-hashed <script type=module> tags and index.html has no inline
+#     script, so this is genuinely strong here.
+#   - style-src needs 'unsafe-inline' for React's inline style attributes -
+#     a far smaller risk than allowing it in script-src.
+#   - img-src: video and channel thumbnails arrive from the backend as
+#     i.ytimg.com URLs (parsed out of YouTube's RSS media:thumbnail), and the
+#     UI uses i.pravatar.cc / ui-avatars.com / via.placeholder.com as avatar
+#     placeholders. A naive `img-src 'self'` would blank every thumbnail.
+#   - connect-src: the SPA calls the API same-origin at /api. The Sentry hosts
+#     matter only when VITE_SENTRY_DSN is set at build time.
+#
+# GOING LIVE (do this once, after a visual check):
+#   1. Deploy as-is. Browse the dashboard, channel view, video summary and auth
+#      pages with the browser console open.
+#   2. Every "[Report Only] Refused to load ..." message names a host to add.
+#   3. When the console is clean, delete the `-Report-Only` suffix on the
+#      header name below to switch from reporting to enforcing.
+#
+# It ships in report-only mode because a missing host in an ENFORCING policy
+# fails silently and invisibly in production, whereas report-only cannot break
+# anything while the list is being confirmed.
+(csp) {
+	header {
+		>Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://i.ytimg.com https://yt3.ggpht.com https://i.pravatar.cc https://ui-avatars.com https://via.placeholder.com; font-src 'self' data:; connect-src 'self' https://*.ingest.sentry.io https://*.ingest.de.sentry.io; frame-src https://www.youtube.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests"
+	}
+}
+
+# ----------------------------------------------------------------------------
+# Main site
+# ----------------------------------------------------------------------------
 {$DOMAIN_NAME:localhost} {
-    # Backend API routes - must come first (more specific)
-    handle /api/* {
-        reverse_proxy backend:5000 {
-            # Forward real client information
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-        }
-    }
+	import security_headers
+	import csp
 
-    # Frontend routes - catch all remaining requests
-    handle {
-        reverse_proxy frontend:3000 {
-            # Forward real client information
-            header_up Host {host}
-            header_up X-Real-IP {remote}
-        }
-    }
+	# zstd first: it is the preferred modern encoder and matches Caddy's own
+	# default order. Brotli is not built into Caddy's `encode`.
+	encode zstd gzip
 
-    # Enable compression
-    encode gzip zstd
+	# `handle`, NOT `handle_path`. handle_path STRIPS the matched prefix
+	# (/api/videos -> /videos), but backend/src/app.js mounts its router with
+	# `app.use('/api', routes)` and therefore expects the prefix to survive.
+	# handle_path is the more commonly cited snippet and looks like a drop-in
+	# replacement - it would 404 every single API route.
+	handle /api/* {
+		reverse_proxy backend:5000 {
+			# {remote_host} is "1.2.3.4"; {remote} is "1.2.3.4:54321".
+			# The previous config forwarded {remote}, so every X-Real-IP the
+			# app saw carried a port and each request from one client looked
+			# like a different IP to rate limiting and logging.
+			header_up X-Real-IP {remote_host}
 
-    # Security headers
-    header {
-        # Prevent clickjacking
-        X-Frame-Options "SAMEORIGIN"
+			# `header_up Host {host}` was removed: Caddy 2 already preserves
+			# the client Host header for plaintext upstreams.
 
-        # Prevent MIME type sniffing
-        X-Content-Type-Options "nosniff"
+			# Ride out the 2-5 second gap while the backend container is
+			# replaced during a deploy, instead of serving 502s to real users.
+			lb_try_duration 10s
+			lb_try_interval 250ms
+		}
+	}
 
-        # Enable XSS protection
-        X-XSS-Protection "1; mode=block"
+	# Everything else is the SPA. nginx listens on 8080 inside the container
+	# because it runs unprivileged and cannot bind a port below 1024.
+	handle {
+		reverse_proxy frontend:8080 {
+			header_up X-Real-IP {remote_host}
+			lb_try_duration 5s
+			lb_try_interval 250ms
+		}
+	}
 
-        # Referrer policy
-        Referrer-Policy "no-referrer-when-downgrade"
-
-        # HSTS - Force HTTPS for 1 year
-        Strict-Transport-Security "max-age=31536000; includeSubDomains"
-
-        # Hide server information
-        -Server
-    }
-
-    # Access logging
-    log {
-        output file /var/log/caddy/access.log {
-            roll_size 100mb
-            roll_keep 5
-            roll_keep_for 720h
-        }
-        format json
-    }
+	# Access logs go to stdout, NOT to a file on a mounted volume.
+	#
+	# Writing to /var/log/caddy failed outright under the production hardening:
+	# `cap_drop: ALL` removes CAP_DAC_OVERRIDE, so root inside the container
+	# loses its ability to bypass file permission checks and cannot write to a
+	# host directory owned by another uid. Caddy then exits with
+	# "open /var/log/caddy/access.log: permission denied" and crash-loops.
+	#
+	# stdout is also simply better here: Docker's json-file driver already
+	# rotates and compresses it (see x-logging in docker-compose.yml), and
+	# `docker compose logs caddy` shows access logs and errors interleaved in
+	# one place instead of two.
+	log {
+		output stdout
+		format json
+	}
 }
 
-# WWW redirect (optional - redirects www.tuberia.app to tuberia.app)
+# ----------------------------------------------------------------------------
+# Canonical host redirect
+# ----------------------------------------------------------------------------
 www.{$DOMAIN_NAME:localhost} {
-    redir https://{$DOMAIN_NAME:localhost}{uri} permanent
+	redir https://{$DOMAIN_NAME:localhost}{uri} permanent
+}
+
+# ----------------------------------------------------------------------------
+# Internal health endpoint
+# ----------------------------------------------------------------------------
+# Bound to loopback INSIDE the container, so it is never published and never
+# reachable from outside. It answers the only question a Caddy healthcheck
+# should ask: did the config load and is the listener alive?
+#
+# This replaces the previous healthcheck, which proxied to the backend and so
+# marked the TLS terminator unhealthy exactly when the proxy needed to stay up
+# to return a clean 502.
+http://127.0.0.1:2021 {
+	# `bind` is required to actually restrict the listener. A site address of
+	# http://127.0.0.1:2021 only sets the address Caddy MATCHES on - the socket
+	# itself still binds every interface (verified: `netstat -ltn` showed
+	# :::2021). The port is not published, so this was not externally
+	# reachable either way, but the listener now matches the intent.
+	bind 127.0.0.1
+
+	handle /healthz {
+		respond "ok" 200
+	}
 }

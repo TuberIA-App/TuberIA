@@ -19,8 +19,27 @@ import { redisClient } from '../config/redis.js';
 const router = express.Router();
 
 /**
- * Health check endpoint that returns the status of all services.
- * Returns 200 if all services healthy, 503 if any service is unhealthy.
+ * Liveness probe. Answers exactly one question: can this process serve HTTP?
+ * It performs no I/O and asserts nothing about MongoDB or Redis.
+ *
+ * This is what the container HEALTHCHECK polls. A liveness probe that also
+ * checked dependencies would mark the backend unhealthy during any transient
+ * Redis blip - and because other services declare
+ * `depends_on: backend: {condition: service_healthy}`, a single blip would
+ * cascade into a wedged deploy. Dependency assertions belong in the readiness
+ * probe below, which the deploy script polls as its release gate.
+ *
+ * @route GET /health/live
+ * @access Public
+ * @returns {Object} Always {status: 'alive'} with HTTP 200.
+ */
+router.get('/health/live', (req, res) => {
+  res.status(200).json({ status: 'alive' });
+});
+
+/**
+ * Readiness probe: reports the status of every dependency.
+ * Returns 200 if all services are healthy, 503 if any is not.
  * @route GET /health
  * @access Public
  * @returns {Object} Health status with timestamp and service statuses
@@ -36,6 +55,39 @@ const router = express.Router();
  *   }
  * }
  */
+/**
+ * Milliseconds a dependency probe may take before it is declared unhealthy.
+ * @constant {number}
+ */
+const PROBE_TIMEOUT_MS = 2000;
+
+/**
+ * Reject a promise that takes too long, instead of waiting for it forever.
+ *
+ * This is load-bearing for the Redis probe. The ioredis client is created with
+ * `maxRetriesPerRequest: null` because BullMQ requires it, and that setting
+ * makes commands queue INDEFINITELY while Redis is unreachable rather than
+ * failing fast. Without this wrapper `await redisClient.ping()` simply never
+ * settles, so GET /health never sends a response at all - the one situation
+ * the endpoint exists to report. The deploy script polls /health as its
+ * release gate, so a silent hang there reads as a failed deploy and triggers
+ * an unnecessary rollback.
+ *
+ * @param {Promise} promise - The probe to bound.
+ * @param {number} ms - Timeout in milliseconds.
+ * @param {string} label - Name used in the timeout error.
+ * @returns {Promise} Settles with the probe, or rejects on timeout.
+ */
+const withTimeout = (promise, ms, label) => {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    // Do not keep the event loop alive purely for this timer.
+    timer.unref?.();
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+};
+
 router.get('/health', async (req, res) => {
   const health = {
     status: 'ok',
@@ -49,9 +101,9 @@ router.get('/health', async (req, res) => {
 
   // Check Redis
   try {
-    await redisClient.ping();
+    await withTimeout(redisClient.ping(), PROBE_TIMEOUT_MS, 'redis ping');
     health.services.redis = 'healthy';
-  } catch (error) {
+  } catch {
     health.services.redis = 'unhealthy';
     health.status = 'degraded';
   }

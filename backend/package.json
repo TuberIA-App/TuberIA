@@ -1,18 +1,22 @@
 {
-  "name": "app",
+  "name": "@tuberia/backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "dev": "nodemon --watch src --ext js,ts,json --exec \"node src/index.js\"",
-    "start": "node src/index.js",
-    "test": "vitest run --no-file-parallelism",
-    "test:watch": "vitest"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "PolyForm-Noncommercial-1.0.0",
+  "private": true,
+  "description": "TuberIA API - Express 5 REST API, BullMQ workers and YouTube ingestion",
   "type": "module",
+  "main": "src/index.js",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "nodemon --watch src --ext js,json --exec \"node src/index.js\"",
+    "start": "node src/index.js",
+    "test": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:all": "vitest run",
+    "test:watch": "vitest --project unit"
+  },
   "dependencies": {
     "@sentry/node": "^10.34.0",
     "@sentry/profiling-node": "^10.34.0",
